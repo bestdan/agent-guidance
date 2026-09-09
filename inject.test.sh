@@ -190,10 +190,10 @@ done
 # No version anywhere. A pinned version in either manifest makes the marketplace
 # resolve a release rather than this checkout, so an edit here would ship
 # nothing until someone remembered to bump it.
-check "plugin.json parses and names the plugin" agent-guidance \
+check ".claude-plugin/plugin.json parses and names the plugin" agent-guidance \
   "$(DIR="$dir" python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["DIR"], ".claude-plugin/plugin.json")))["name"])' 2>/dev/null)"
 
-check "plugin.json declares no version" absent \
+check ".claude-plugin/plugin.json declares no version" absent \
   "$(DIR="$dir" python3 -c 'import json,os; print("present" if "version" in json.load(open(os.path.join(os.environ["DIR"], ".claude-plugin/plugin.json"))) else "absent")' 2>/dev/null)"
 
 # The marketplace entry is what `enabledPlugins` resolves through; a wrong
