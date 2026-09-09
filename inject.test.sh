@@ -40,14 +40,32 @@ check() {
 # --- 1. registration ---
 # Running the script proves what the script emits; it proves nothing about what
 # invokes it. Those fail independently, so they are asserted independently.
+# Exact strings, not a suffix match: a registration pointing at a wrong subpath
+# or an unquoted root would otherwise pass while nothing ever runs.
 check "hooks.json registers inject.sh on SessionStart" ok \
   "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
 import json, os
 h = json.load(open(os.path.join(os.environ["DIR"], "hooks/hooks.json")))["hooks"]["SessionStart"]
 cmds = [c["command"] for m in h for c in m["hooks"]]
-print("ok" if any(c.endswith("/inject.sh") and "CLAUDE_PLUGIN_ROOT" in c for c in cmds) else cmds)
+print("ok" if '"${CLAUDE_PLUGIN_ROOT}"/inject.sh' in cmds else cmds)
 PY
 )"
+
+# The Codex registration must hand inject.sh portable.md ALONE: with no argument
+# the script defaults to both files, and portable-claude.md names machinery
+# Codex does not have.
+check "codex/hooks.json registers inject.sh with portable.md only" ok \
+  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+import json, os
+h = json.load(open(os.path.join(os.environ["DIR"], "codex/hooks.json")))["hooks"]["SessionStart"]
+cmds = [c["command"] for c in h]
+want = '"${PLUGIN_ROOT}"/inject.sh "${PLUGIN_ROOT}"/portable.md'
+print("ok" if cmds == [want] else cmds)
+PY
+)"
+
+check "root plugin.json points Codex at codex/hooks.json" ./codex/hooks.json \
+  "$(DIR="$dir" python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["DIR"], "plugin.json")))["extensions"]["com.openai"]["hooks"])' 2>/dev/null)"
 
 # --- 2. the hook runs and emits the documented contract ---
 out=$(printf '{"session_id":"t","cwd":"/tmp","hook_event_name":"SessionStart"}' \
@@ -77,6 +95,23 @@ elif claude < 0:
     print("claude sentinel missing")
 elif shared > claude:
     print("wrong order: portable-claude.md precedes portable.md")
+else:
+    print("ok")
+PY
+)"
+
+# --- 3b. a caller that names one file gets that file alone ---
+# This is the Codex path. The shared sentinel must arrive and the Claude one
+# must not; a hook that ignored its arguments would pass every check above.
+shared_out=$(printf '{"hook_event_name":"SessionStart"}' | "$dir/inject.sh" "$dir/portable.md" 2>/dev/null)
+check "inject.sh portable.md emits the shared sentinel only" ok \
+  "$(OUT="$shared_out" python3 - <<'PY' 2>/dev/null
+import json, os
+ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
+if "GUIDANCE-SENTINEL-SHARED" not in ctx:
+    print("shared sentinel missing")
+elif "GUIDANCE-SENTINEL-CLAUDE" in ctx:
+    print("claude sentinel leaked")
 else:
     print("ok")
 PY

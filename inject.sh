@@ -29,10 +29,20 @@
 # see to that: a plugin that silently injected one file of two would be the
 # exact silent loss the rule inventory exists to catch.
 #
+# Which files to inject is decided by the caller, not here. Claude's hook
+# (hooks/hooks.json) passes nothing and gets both. Codex's hook
+# (codex/hooks.json) passes portable.md alone, because portable-claude.md names
+# machinery Codex does not have — handing it over would be the exact cross-harness
+# leak the two-file split exists to prevent.
+#
 # stdin carries the hook payload (session_id, cwd, …); nothing here needs it.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ "$#" -eq 0 ]; then
+  set -- "$here/portable.md" "$here/portable-claude.md"
+fi
 
 # Built in Python rather than printf: the payload is a whole markdown file with
 # backticks, quotes and backslashes in it, and hand-quoted JSON mangles those
@@ -52,4 +62,4 @@ print(json.dumps({
         "additionalContext": "\n\n".join(parts) + "\n",
     }
 }))
-' "$here/portable.md" "$here/portable-claude.md"
+' "$@"

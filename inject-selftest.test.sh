@@ -98,9 +98,9 @@ import os
 path = os.environ["OUT"]
 with open(path) as f:
     src = f.read()
-old = '\' "$here/portable.md" "$here/portable-claude.md"'
-new = '\' "$here/portable.md"'
-assert src.count(old) == 1, "inject.sh no longer passes both files on one line"
+old = 'set -- "$here/portable.md" "$here/portable-claude.md"'
+new = 'set -- "$here/portable.md"'
+assert src.count(old) == 1, "inject.sh no longer defaults to both files on one line"
 with open(path, "w") as f:
     f.write(src.replace(old, new))
 PY
@@ -120,7 +120,23 @@ with open(path, "a") as f:
 PY
 check fail "claude sentinel copied into portable.md" "$target"
 
-# --- (d) a version sneaks back into a manifest ---
+# --- (d) the Codex hook stops naming portable.md ---
+# With no argument inject.sh defaults to both files, so Codex would receive
+# portable-claude.md — the cross-harness leak the two-file split prevents.
+target="$(fixture codex-both)"
+OUT="$target/codex/hooks.json" python3 - <<'PY'
+import json, os
+
+path = os.environ["OUT"]
+with open(path) as f:
+    hooks = json.load(f)
+hooks["hooks"]["SessionStart"][0]["command"] = '"${PLUGIN_ROOT}"/inject.sh'
+with open(path, "w") as f:
+    json.dump(hooks, f, indent=2)
+PY
+check fail "codex hook passes no payload argument" "$target"
+
+# --- (e) a version sneaks back into a manifest ---
 # A declared version is the update signal, so a pinned one silently freezes
 # every machine on the cached copy until someone bumps it.
 target="$(fixture versioned)"
@@ -137,8 +153,8 @@ PY
 check fail "version declared in plugin.json" "$target"
 
 # A table that silently checked nothing would pass. Guard against it.
-if [ "$checked" -lt 5 ]; then
-  printf 'FAIL (only %d fixtures ran; the table should hold at least 5)\n' "$checked"
+if [ "$checked" -lt 6 ]; then
+  printf 'FAIL (only %d fixtures ran; the table should hold at least 6)\n' "$checked"
   fail=1
 fi
 

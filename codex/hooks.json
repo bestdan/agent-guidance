@@ -3,7 +3,7 @@
     "SessionStart": [
       {
         "type": "command",
-        "command": "${PLUGIN_ROOT}/inject.sh"
+        "command": "\"${PLUGIN_ROOT}\"/inject.sh \"${PLUGIN_ROOT}\"/portable.md"
       }
     ]
   }
