@@ -1,0 +1,17 @@
+{
+  "name": "agent-guidance",
+  "description": "Daniel Egan's portable agent preferences, injected at session start.",
+  "owner": {
+    "name": "bestdan",
+    "url": "https://github.com/bestdan"
+  },
+  "plugins": [
+    {
+      "name": "agent-guidance",
+      "source": "./",
+      "description": "Injects portable engineering and communication preferences at session start, so they apply in every repo and in cloud sessions where ~/.claude is not yours.",
+      "category": "workflow",
+      "tags": ["preferences", "guidance", "session-start"]
+    }
+  ]
+}

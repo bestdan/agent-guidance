@@ -11,12 +11,12 @@ a later change.
 
 ## What it ships
 
-| File                 | Reaches                              | Carries                                              |
-| -------------------- | ------------------------------------ | ---------------------------------------------------- |
-| `portable.md`        | every harness                        | preferences any coding agent can act on              |
-| `portable-claude.md` | Claude Code only                     | preferences that name Claude Code machinery          |
-| `inject.sh`          | Claude Code and Codex `SessionStart` | reads both files and prints the hook's JSON contract |
-| `codex/hooks.json`   | Codex CLI                            | registers `inject.sh` on Codex's `SessionStart`      |
+| File                 | Reaches                              | Carries                                                                    |
+| -------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| `portable.md`        | every harness                        | preferences any coding agent can act on                                    |
+| `portable-claude.md` | Claude Code only                     | preferences that name Claude Code machinery                                |
+| `inject.sh`          | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
+| `codex/hooks.json`   | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`; the root `plugin.json` follows the
@@ -28,20 +28,19 @@ Claude Code:
 
 ```
 claude plugin marketplace add bestdan/agent-guidance
-claude plugin install guidance@agent-guidance
+claude plugin install agent-guidance@agent-guidance
 ```
 
 Cloud sessions install enabled plugins from account settings, so enable
-`guidance@agent-guidance` there as well. No local file can do that for you.
+`agent-guidance@agent-guidance` there as well. No local file can do that for you.
 
 Codex CLI reads the root `plugin.json`, whose `extensions.com.openai.hooks`
 points at `codex/hooks.json`. That registers the same `inject.sh` on Codex's
-`SessionStart`, whose output contract matches Claude Code's. It is declared
-but not yet verified on a live Codex session; until it is, the consuming
-dotfiles repo also builds `~/.codex/AGENTS.md` from `portable.md` at shell
-startup, so Codex loses nothing either way. Note that Codex injects both
-files through this hook; keep `portable-claude.md` free of anything Codex
-must not see, or split the hook.
+`SessionStart`, whose output contract matches Claude Code's, and hands it
+`portable.md` alone, so Codex never sees `portable-claude.md`. The hook is
+declared but not yet verified on a live Codex session; until it is, the
+consuming dotfiles repo also builds `~/.codex/AGENTS.md` from `portable.md`
+at shell startup, so Codex loses nothing either way.
 
 ```
 codex plugin marketplace add bestdan/agent-guidance
