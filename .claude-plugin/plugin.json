@@ -1,0 +1,9 @@
+{
+  "name": "guidance",
+  "description": "Injects Daniel's portable engineering preferences at session start, so they apply in every repo and in cloud sessions where ~/.claude is not his.",
+  "author": {
+    "name": "Daniel Egan"
+  },
+  "repository": "https://github.com/bestdan/dotfiles",
+  "license": "MIT"
+}
