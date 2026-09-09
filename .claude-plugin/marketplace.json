@@ -7,9 +7,9 @@
   },
   "plugins": [
     {
-      "name": "guidance",
+      "name": "agent-guidance",
       "source": "./",
-      "description": "Injects portable engineering preferences at session start, so they apply in every repo and in cloud sessions where ~/.claude is not yours.",
+      "description": "Injects portable engineering and communication preferences at session start, so they apply in every repo and in cloud sessions where ~/.claude is not yours.",
       "category": "workflow",
       "tags": ["preferences", "guidance", "session-start"]
     }

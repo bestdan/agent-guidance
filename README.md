@@ -28,11 +28,11 @@ Claude Code:
 
 ```
 claude plugin marketplace add bestdan/agent-guidance
-claude plugin install guidance@agent-guidance
+claude plugin install agent-guidance@agent-guidance
 ```
 
 Cloud sessions install enabled plugins from account settings, so enable
-`guidance@agent-guidance` there as well. No local file can do that for you.
+`agent-guidance@agent-guidance` there as well. No local file can do that for you.
 
 Codex CLI reads the root `plugin.json`, whose `extensions.com.openai.hooks`
 points at `codex/hooks.json`. That registers the same `inject.sh` on Codex's

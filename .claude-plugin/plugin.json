@@ -1,9 +1,9 @@
 {
-  "name": "guidance",
-  "description": "Injects Daniel's portable engineering preferences at session start, so they apply in every repo and in cloud sessions where ~/.claude is not his.",
+  "name": "agent-guidance",
+  "description": "Injects portable engineering and communication preferences at session start, so they apply in every repo and in cloud sessions where ~/.claude is not yours.",
   "author": {
     "name": "Daniel Egan"
   },
-  "repository": "https://github.com/bestdan/dotfiles",
+  "repository": "https://github.com/bestdan/agent-guidance",
   "license": "MIT"
 }

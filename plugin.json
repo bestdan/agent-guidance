@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "guidance",
-  "description": "Carries portable agent preferences into every session, at session start.",
+  "name": "agent-guidance",
+  "description": "Injects portable engineering and communication preferences at session start.",
   "license": "MIT",
   "extensions": {
     "com.openai": {
