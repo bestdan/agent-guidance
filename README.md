@@ -71,9 +71,7 @@ a string. `inject-selftest.test.sh` fails if one comes back.
 machine sits on the old commit until `claude plugin marketplace update` and
 `claude plugin update` run; a cloud environment is frozen at its last build,
 because a cached setup script is skipped entirely and nothing inside a session
-can move it. Both failures are silent, and a hook-only plugin does not appear
-in the session's plugin or skill listings, so "am I current?" has no answer
-from a listing.
+can move it. Both failures are silent.
 
 So the hook appends a **provenance block** naming the copy that was loaded —
 the commit for an installed copy, or "a working checkout" under `--plugin-dir`
@@ -82,6 +80,13 @@ make a session current; it makes a session able to say what it is running,
 which is the part that was missing. It is computed at inject time rather than
 written into the markdown, because a literal in the file reads identically on a
 fresh copy and a year-old one and so can never signal staleness.
+
+It is not the only route on every audience, and the README should not pretend
+otherwise: a local Claude session can run `claude plugin list`, which reports
+`Version: <commit>` (verified 2026-09-10). What the block adds there is that the
+answer is already in context, needing no command and no idea that one should be
+run. Where it is the only route is **Codex**, whose generated
+`~/.codex/AGENTS.md` reads identically however old it is.
 
 ## Tests
 
