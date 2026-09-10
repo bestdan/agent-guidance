@@ -164,13 +164,18 @@ PY
 # Both are injected into the same session, so anything in both is delivered
 # twice. The sentinels are the coarse form of the same check: each marks its
 # own file, so a marker appearing in the other means the halves were merged.
+#
+# Headings are excluded because they are structure, not content. Both files
+# group their rules under the same section names as agents/AGENTS.md, so
+# `## Rules` is in both by construction and says nothing about whether a rule
+# is. Every other line still has to be unique across the pair.
 check "no line appears in both payload files" "" \
   "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
 import os
 
 def lines(path):
     with open(path) as f:
-        return {l.strip() for l in f if l.strip()}
+        return {l.strip() for l in f if l.strip() and not l.startswith("#")}
 
 d = os.environ["DIR"]
 both = lines(os.path.join(d, "portable.md")) & lines(os.path.join(d, "portable-claude.md"))
