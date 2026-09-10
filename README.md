@@ -4,10 +4,14 @@ Portable agent preferences, injected at the start of every coding-agent
 session: every repo, every machine, and cloud sessions where the agent's home
 directory is not yours.
 
-**Status: rails only.** The two payload files carry a sentinel rule each, not
-real content. The plugin landed first so that delivery to every audience could
-be verified before anything worth losing moved. The real preferences arrive in
-a later change.
+**Status: carrying real content.** The two payload files hold 58 rules — 48 in
+`portable.md`, 10 in `portable-claude.md` — projected from the rule inventory in
+the consuming `bestdan/dotfiles` repo, which decides per rule whether it is
+portable and which harnesses can act on it. The plugin landed first carrying a
+sentinel rule per file, so that delivery to every audience could be verified
+before anything worth losing moved; both files still declare a
+`GUIDANCE-SENTINEL-*` marker, now as a permanent delivery canary rather than as
+a placeholder.
 
 ## What it ships
 

@@ -11,6 +11,11 @@ session gets it because `sync_codex.sh` concatenates this file into
 live in `portable-claude.md` instead; the hook injects that file and
 `sync_codex.sh` leaves it out.
 
+A few rules below cite a `bestdan/dotfiles` path, or a skill installed there, as
+the mechanism that enforces them. The rule still stands where that mechanism is
+absent — the citation says how it is held up on one machine, not that it applies
+only there.
+
 Marker for the delivery tests: `GUIDANCE-SENTINEL-SHARED`. It stays as a
 permanent delivery canary — a session that carries no marker proves the carrier
 is broken, and that is worth two lines in every session.
