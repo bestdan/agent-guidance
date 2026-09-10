@@ -44,17 +44,86 @@ if [ "$#" -eq 0 ]; then
   set -- "$here/portable.md" "$here/portable-claude.md"
 fi
 
+# A provenance line is appended to the payload, naming the copy this session
+# actually loaded. It exists because an installed plugin does not follow a merge
+# and nothing in a session can tell: a local machine sits on the old commit
+# until someone runs `claude plugin marketplace update` and `claude plugin
+# update`, and a cloud environment is worse — its copy is frozen at the last
+# environment build because a cached setup script is skipped entirely. Both
+# failures are silent. `claude plugin list` does report the installed commit,
+# but only to someone who runs it and knows to — and Codex has no listing at
+# all, its generated AGENTS.md reading identically however old it is. The line
+# does not make the session current; it puts what the session is running into
+# its context, which is the part that was missing.
+#
+# It is computed here rather than written into the markdown, because a literal
+# in the file would be identical upstream and installed — the same string on a
+# fresh copy and a year-old one — and so could never signal staleness.
+#
+# GUIDANCE_ROOT rather than another argv entry: the Codex registration
+# (codex/hooks.json) passes portable.md as $1, so argv is already a meaningful,
+# caller-owned list of files to inject.
+#
 # Built in Python rather than printf: the payload is a whole markdown file with
 # backticks, quotes and backslashes in it, and hand-quoted JSON mangles those
 # silently — the result stays parseable, so the damage shows up as garbled
 # guidance rather than an error.
-python3 -c '
-import json, sys
+GUIDANCE_ROOT="$here" python3 -c '
+import datetime, json, os, re, sys
 
 parts = []
 for path in sys.argv[1:]:
     with open(path) as f:
         parts.append(f.read().rstrip("\n"))
+
+root = os.environ["GUIDANCE_ROOT"]
+name = os.path.basename(root)
+
+# How the copy identifies itself, in the three shapes it comes in.
+#
+# A marketplace install lands at <cache>/agent-guidance/agent-guidance/<version>,
+# and because plugin.json declares no `version`, Claude Code uses the short
+# commit sha as that directory name. So the basename IS the commit — an
+# inference from an undocumented layout, hence the hex test rather than a bare
+# assumption, with the directory name reported verbatim when it does not match.
+#
+# `.git` may be a directory (a main checkout) or a file holding `gitdir: …` (a
+# linked worktree), and a worktree is the normal shape of a checkout here — so
+# the test is existence, not isdir, or a worktree would be offered a refresh
+# that discards it.
+if os.path.exists(os.path.join(root, ".git")):
+    ident = "an editable working checkout at " + root + " (unreleased code)"
+    refresh = ""
+elif re.fullmatch(r"[0-9a-f]{7,40}", name):
+    ident = "commit `" + name + "`"
+    refresh = (" To refresh it: `claude plugin marketplace update agent-guidance`"
+               " then `claude plugin update agent-guidance@agent-guidance`.")
+else:
+    ident = "version `" + name + "`"
+    refresh = (" To refresh it: `claude plugin marketplace update agent-guidance`"
+               " then `claude plugin update agent-guidance@agent-guidance`.")
+
+# The mtime of a payload file, never of the plugin directory: the harness writes
+# an `.in_use` marker inside the installed copy, which bumps the DIRECTORY mtime
+# on ordinary use and would report every session as a fresh install.
+try:
+    stamp = datetime.date.fromtimestamp(
+        os.path.getmtime(sys.argv[1])).isoformat()
+    when = ", written " + stamp
+except (OSError, IndexError):
+    when = ""
+
+parts.append(
+    "## Provenance of this guidance\n\n"
+    "It was delivered by the `agent-guidance` plugin: " + ident + when + ".\n"
+    "Nothing inside a session can check whether that is the current commit, so"
+    " when asked whether your guidance is up to date, report this line rather"
+    " than assuming it is." + refresh + "\n"
+    "A cloud session cannot be refreshed from inside at all — its copy is frozen"
+    " at the last environment build, because a cached setup script is skipped"
+    " entirely. That needs a human to invalidate the environment'"'"'s"
+    " setup-script cache."
+)
 
 print(json.dumps({
     "hookSpecificOutput": {
