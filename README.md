@@ -67,6 +67,22 @@ Neither manifest declares a version, on purpose. The resolved version is the
 commit, so every push is an update and nothing depends on remembering to bump
 a string. `inject-selftest.test.sh` fails if one comes back.
 
+**Every push is an update, but no session picks one up on its own.** A local
+machine sits on the old commit until `claude plugin marketplace update` and
+`claude plugin update` run; a cloud environment is frozen at its last build,
+because a cached setup script is skipped entirely and nothing inside a session
+can move it. Both failures are silent, and a hook-only plugin does not appear
+in the session's plugin or skill listings, so "am I current?" has no answer
+from a listing.
+
+So the hook appends a **provenance block** naming the copy that was loaded —
+the commit for an installed copy, or "a working checkout" under `--plugin-dir`
+— with the date its payload was written, and how to refresh it. That does not
+make a session current; it makes a session able to say what it is running,
+which is the part that was missing. It is computed at inject time rather than
+written into the markdown, because a literal in the file reads identically on a
+fresh copy and a year-old one and so can never signal staleness.
+
 ## Tests
 
 ```
