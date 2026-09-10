@@ -182,15 +182,19 @@ mkdir -p "$sha_root"
 cp "$dir/inject.sh" "$sha_root/inject.sh"
 printf 'payload\n' > "$sha_root/portable.md"
 printf 'payload two\n' > "$sha_root/portable-claude.md"
+# The payload file is backdated while its directory stays at now: the date must
+# come from the file, never the directory, which an `.in_use` marker bumps on
+# every use. A regression to the directory mtime reports today and fails here.
+touch -t 202001010000 "$sha_root/portable.md"
 sha_out=$(printf '{"hook_event_name":"SessionStart"}' | "$sha_root/inject.sh" 2>/dev/null)
 check "an installed copy reports its commit" ok \
   "$(OUT="$sha_out" python3 - <<'PY' 2>/dev/null
-import json, os, re
+import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 if "commit `87e76fd2bf12`" not in ctx:
     print(f"commit not named: {ctx[-400:]!r}")
-elif not re.search(r"written \d{4}-\d{2}-\d{2}", ctx):
-    print("no written date")
+elif "written 2020-01-01" not in ctx:
+    print(f"date is not the payload file's: {ctx[-400:]!r}")
 elif "claude plugin update agent-guidance@agent-guidance" not in ctx:
     print("no refresh instruction")
 else:
@@ -199,15 +203,24 @@ PY
 )"
 
 # A `--plugin-dir` checkout is unreleased code, and saying "commit <dirname>"
-# there would name a directory, not a commit — confidently wrong.
-git_root="$work/agent-guidance"
-mkdir -p "$git_root/.git"
-cp "$dir/inject.sh" "$git_root/inject.sh"
-printf 'payload\n' > "$git_root/portable.md"
-printf 'payload two\n' > "$git_root/portable-claude.md"
-git_out=$(printf '{"hook_event_name":"SessionStart"}' | "$git_root/inject.sh" 2>/dev/null)
-check "a working checkout says so instead of naming a commit" ok \
-  "$(OUT="$git_out" python3 - <<'PY' 2>/dev/null
+# there would name a directory, not a commit — confidently wrong. A checkout
+# comes in two shapes: a main checkout, whose `.git` is a directory, and a
+# linked worktree, whose `.git` is a file holding `gitdir: …`. Both must read as
+# a checkout; an isdir test passed the first and offered the second a refresh.
+for shape in directory file; do
+  git_root="$work/checkout-$shape/agent-guidance"
+  mkdir -p "$git_root"
+  if [ "$shape" = directory ]; then
+    mkdir "$git_root/.git"
+  else
+    printf 'gitdir: /elsewhere/.git/worktrees/agent-guidance\n' > "$git_root/.git"
+  fi
+  cp "$dir/inject.sh" "$git_root/inject.sh"
+  printf 'payload\n' > "$git_root/portable.md"
+  printf 'payload two\n' > "$git_root/portable-claude.md"
+  git_out=$(printf '{"hook_event_name":"SessionStart"}' | "$git_root/inject.sh" 2>/dev/null)
+  check "a working checkout (.git $shape) says so instead of naming a commit" ok \
+    "$(OUT="$git_out" python3 - <<'PY' 2>/dev/null
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 if "working checkout" not in ctx:
@@ -221,7 +234,8 @@ elif "claude plugin update" in ctx:
 else:
     print("ok")
 PY
-)"
+  )"
+done
 
 # The Codex registration passes one file. The provenance has to survive that
 # path too — it is the path on which a stale copy is hardest to notice, because

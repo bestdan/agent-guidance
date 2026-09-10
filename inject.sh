@@ -50,10 +50,11 @@ fi
 # until someone runs `claude plugin marketplace update` and `claude plugin
 # update`, and a cloud environment is worse — its copy is frozen at the last
 # environment build because a cached setup script is skipped entirely. Both
-# failures are silent, and a hook-only plugin does not appear in the session's
-# plugin or skill listings, so "am I current?" cannot be answered from a
-# listing. The line does not make the session current; it makes the session able
-# to say what it is running, which is the part that was missing.
+# failures are silent. `claude plugin list` does report the installed commit,
+# but only to someone who runs it and knows to — and Codex has no listing at
+# all, its generated AGENTS.md reading identically however old it is. The line
+# does not make the session current; it puts what the session is running into
+# its context, which is the part that was missing.
 #
 # It is computed here rather than written into the markdown, because a literal
 # in the file would be identical upstream and installed — the same string on a
@@ -85,7 +86,12 @@ name = os.path.basename(root)
 # commit sha as that directory name. So the basename IS the commit — an
 # inference from an undocumented layout, hence the hex test rather than a bare
 # assumption, with the directory name reported verbatim when it does not match.
-if os.path.isdir(os.path.join(root, ".git")):
+#
+# `.git` may be a directory (a main checkout) or a file holding `gitdir: …` (a
+# linked worktree), and a worktree is the normal shape of a checkout here — so
+# the test is existence, not isdir, or a worktree would be offered a refresh
+# that discards it.
+if os.path.exists(os.path.join(root, ".git")):
     ident = "an editable working checkout at " + root + " (unreleased code)"
     refresh = ""
 elif re.fullmatch(r"[0-9a-f]{7,40}", name):
