@@ -12,6 +12,11 @@
 # skill would only load when Claude judged it relevant; preferences have to be
 # there from the first turn. So: SessionStart, which is the always-on carrier.
 #
+# That is a claim about the PAYLOAD, not about the plugin's shape. The plugin
+# does ship one skill (skills/plugin-delivery), for material nobody needs until
+# a symptom appears — where loading on demand is the right answer rather than
+# the wrong one. The README's Versioning section carries what that costs.
+#
 # This is the sole carrier of the portable half, on every machine including my
 # laptop. That is deliberate: if agents/AGENTS.md also imported portable.md,
 # every laptop session would load it twice. The machine-local half stays in

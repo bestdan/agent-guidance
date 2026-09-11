@@ -19,16 +19,23 @@ rather than as a placeholder.
 
 ## What it ships
 
-| File                 | Reaches                              | Carries                                                                    |
-| -------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
-| `portable.md`        | every harness                        | preferences any coding agent can act on                                    |
-| `portable-claude.md` | Claude Code only                     | preferences that name Claude Code machinery                                |
-| `inject.sh`          | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
-| `codex/hooks.json`   | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
+| File                     | Reaches                              | Carries                                                                    |
+| ------------------------ | ------------------------------------ | -------------------------------------------------------------------------- |
+| `portable.md`            | every harness                        | preferences any coding agent can act on                                    |
+| `portable-claude.md`     | Claude Code only                     | preferences that name Claude Code machinery                                |
+| `inject.sh`              | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
+| `codex/hooks.json`       | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
+| `skills/plugin-delivery` | Claude Code, on demand               | why a release may not have reached the session reading it, and what to do  |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`; the root `plugin.json` follows the
 [Agent Plugins](https://agent-plugins.org) layout for harnesses that read it.
+
+The payload and the skill load by different routes on purpose. Preferences have
+to be in context from the first turn, so they ride the always-on hook.
+Troubleshooting nobody needs until a symptom appears would only be noise there,
+so it is a skill the harness loads when the symptom shows up. The one cost is
+in [Versioning](#versioning): the two can skew.
 
 ## Install
 
@@ -88,6 +95,17 @@ answer is already in context, needing no command and no idea that one should be
 run. Where it is the only route is **Codex**, whose generated
 `~/.codex/AGENTS.md` reads identically however old it is.
 
+**The payload and the skill can skew, and neither one dates the other.**
+Auto-update hot-loads newer skills into a running process while leaving the
+registry — and so the bundled hooks — pinned to the old install
+([#52218](https://github.com/anthropics/claude-code/issues/52218)). A session can
+therefore be reading a current `skills/plugin-delivery` while running a stale
+`portable.md`, or the reverse. The provenance block dates the payload and only
+the payload; do not infer the payload's age from anything the skill says.
+
+Why a release stalls in the first place, the upstream reports, the dead ends not
+worth re-walking, and the cloud procedure are all in `skills/plugin-delivery`.
+
 ## Tests
 
 ```
@@ -95,4 +113,6 @@ scripts/run-tests.sh
 ```
 
 `inject.test.sh` proves the wiring; `inject-selftest.test.sh` proves each of
-those assertions fails when its wiring is broken.
+those assertions fails when its wiring is broken. `skills.test.sh` does the same
+job for `skills/`, where the failure is quieter still: a skill whose front matter
+does not parse is skipped rather than reported, so it is simply never offered.

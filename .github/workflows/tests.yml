@@ -23,5 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Discovered, not enumerated, so the step's name stays true: a hand-kept
+      # list drops a new shell file silently, which is a green run that checked
+      # less than it did yesterday. `git ls-files` is the same discovery
+      # scripts/run-tests.sh already uses to find suites.
       - name: shellcheck every shell file
-        run: shellcheck -S warning inject.sh inject.test.sh inject-selftest.test.sh scripts/*.sh
+        run: git ls-files '*.sh' | xargs shellcheck -S warning
