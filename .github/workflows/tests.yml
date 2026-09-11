@@ -27,5 +27,11 @@ jobs:
       # list drops a new shell file silently, which is a green run that checked
       # less than it did yesterday. `git ls-files` is the same discovery
       # scripts/run-tests.sh already uses to find suites.
+      #
+      # `-z` / `-0` because the alternative degrades the same way the hand-kept
+      # list did: without it `git ls-files` C-quotes a path holding a space and
+      # `xargs` splits it, so the step checks paths that do not exist instead of
+      # the file it was meant to read. No such path exists here today; the point
+      # is that discovery should not acquire a new silent gap while closing one.
       - name: shellcheck every shell file
-        run: git ls-files '*.sh' | xargs shellcheck -S warning
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -S warning

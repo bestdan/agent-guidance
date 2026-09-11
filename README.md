@@ -74,11 +74,13 @@ Neither manifest declares a version, on purpose. The resolved version is the
 commit, so every push is an update and nothing depends on remembering to bump
 a string. `inject-selftest.test.sh` fails if one comes back.
 
-**Every push is an update, but no session picks one up on its own.** A local
-machine sits on the old commit until `claude plugin marketplace update` and
-`claude plugin update` run; a cloud environment is frozen at its last build,
+**Every push is an update, but no session picks up a new _payload_ on its own.**
+A local machine sits on the old commit until `claude plugin marketplace update`
+and `claude plugin update` run; a cloud environment is frozen at its last build,
 because a cached setup script is skipped entirely and nothing inside a session
-can move it. Both failures are silent.
+can move it. Both failures are silent. The payload is the part that cannot
+advance by itself — the skill can, which is the skew the end of this section
+describes.
 
 So the hook appends a **provenance block** naming the copy that was loaded —
 the commit for an installed copy, or "a working checkout" under `--plugin-dir`
@@ -116,3 +118,7 @@ scripts/run-tests.sh
 those assertions fails when its wiring is broken. `skills.test.sh` does the same
 job for `skills/`, where the failure is quieter still: a skill whose front matter
 does not parse is skipped rather than reported, so it is simply never offered.
+`skills-selftest.test.sh` is its tripwire, and it is not ceremony — two of that
+suite's three assertions shipped **vacuous**, passing on the exact regressions
+they named, and review caught them rather than the suite. The mutations now live
+in CI so a future edit cannot quietly restore that.

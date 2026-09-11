@@ -47,15 +47,28 @@ gh api repos/bestdan/agent-guidance/commits/main --jq '.sha[:12]' # what shipped
 
 `$CLAUDE_PLUGIN_ROOT`, not a repository path: this has to answer in a session
 that has the plugin and no checkout of anything, which is the case that matters
-most. On a machine that syncs `bestdan/dotfiles`, `agents/agent-guidance-dir.sh`
-resolves the same directory and additionally honours an `AGENT_GUIDANCE_DIR`
-override.
+most. **It is set in the contexts the plugin itself provides — its hooks, and
+commands a skill declares — not in an ordinary shell.** Run that line in a plain
+terminal, or through a session's generic shell tool, and it expands to nothing:
+`basename ""` prints an empty line, which reads as "no answer" rather than
+"wrong place to ask". An empty result means use one of the two routes below, not
+that the copy is missing. On a machine that syncs `bestdan/dotfiles`,
+`agents/agent-guidance-dir.sh` resolves the same directory from anywhere and
+additionally honours an `AGENT_GUIDANCE_DIR` override.
 
 `basename`, not `git log`: **the installed copy is an export, not a clone.** It
 has no `.git`, so every git command against it fails. Its directory name is the
-12-character commit, which is the same fact the provenance block relies on. A
-basename that is not 12 hex characters is a working checkout under
-`--plugin-dir` rather than an install — the provenance block says so in words.
+short commit — 12 characters today — which is the same fact the provenance block
+relies on.
+
+**Do not read the basename's shape as a verdict about which copy you have.** The
+hook does not. `inject.sh` calls it a working checkout when the directory holds
+a `.git` at all (a file or a directory — a linked worktree has the former),
+matches `[0-9a-f]{7,40}` for the commit case, and calls anything else a
+`version`. So a non-hex basename means an install whose directory is named
+something other than a commit — **not** a `--plugin-dir` checkout. The
+provenance block is the source of truth for which shape you are in, and it says
+so in words rather than leaving it to be inferred from a directory name.
 
 A local Claude session has a more direct route — `claude plugin list` reports
 `Version: <commit>`. **Prefer the provenance block when the two disagree.** The
