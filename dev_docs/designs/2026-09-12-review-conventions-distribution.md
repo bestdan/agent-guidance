@@ -1,5 +1,7 @@
 # Review and authoring conventions: one home, three carriers
 
+> Dated design record. The live description of this system is [`dev_docs/conventions.md`](../conventions.md); where the two disagree, that file is current and this one is history.
+
 The reviewing and PR-authoring conventions move out of `bestdan/dotfiles` and into this plugin, where two skills expose them by verb. Three carriers deliver them — the skills, co-review's assembled `<INPUT>`, and the Codex pointer — and a precedence rule in `portable.md` says what happens when a repo disagrees.
 
 **Nothing is committed to any consumer repo.** Every carrier is plugin-delivered and already reaches every machine and harness today. That is the property that makes this safe to carry into a repo you do not own.
