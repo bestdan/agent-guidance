@@ -1,3 +1,9 @@
+---
+created: 2026-09-12
+status: accepted
+live: ../conventions.md
+---
+
 # Review and authoring conventions: one home, three carriers
 
 > Dated design record. The live description of this system is [`dev_docs/conventions.md`](../conventions.md); where the two disagree, that file is current and this one is history.

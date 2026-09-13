@@ -28,6 +28,7 @@ rather than as a placeholder.
 | `skills/plugin-delivery` | Claude Code, on demand               | why a release may not have reached the session reading it, and what to do  |
 | `skills/authoring`       | Claude Code, at PR time              | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
 | `skills/reviewing`       | Claude Code, when reviewing a change | reads `writing_about_code.md` and `reviewing.md`                           |
+| `dev_docs_layout.md`     | every harness, by name               | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`; the root `plugin.json` follows the
