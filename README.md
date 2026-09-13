@@ -94,9 +94,9 @@ written into the markdown, because a literal in the file reads identically on a
 fresh copy and a year-old one and so can never signal staleness.
 
 The block also names the **plugin root** it delivered from, which is a second
-job: `portable.md`'s two `Rules` bullets send a harness with no skills to that
-directory for `writing_about_code.md`, `authoring_pull_requests.md` and
-`reviewing.md`, and the block is what resolves it. `dev_docs/conventions.md`
+job: `portable.md`'s three `Rules` bullets send a harness with no skills to
+that directory for `writing_about_code.md`, `authoring_pull_requests.md`,
+`reviewing.md` and `dev_docs_layout.md`, and the block is what resolves it. `dev_docs/conventions.md`
 carries which carriers resolve the root and which do not.
 
 It is not the only route on every audience, and the README should not pretend

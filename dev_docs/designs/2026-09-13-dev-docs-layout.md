@@ -1,246 +1,188 @@
 ---
 created: 2026-09-13
 status: proposed
-live: ../../dev_docs_layout.md
+tracks: https://github.com/bestdan/agent-guidance/pull/31
 ---
 
 # One `dev_docs/` layout for every repo
 
-> Dated design record. The live convention is [`dev_docs_layout.md`](../../dev_docs_layout.md) at the plugin root; where the two disagree, that file is current and this one is history.
-
 Four repos use `dev_docs/` and no two agree on what goes where. This design
-fixes one layout, states the rule the layout follows from, and lists what each
-repo changes to match. The convention ships as a content file in this plugin,
-reached by name from `portable.md`, so it arrives in every session the way the
-reviewing and authoring conventions do.
+fixes one layout, states the rule it follows from, gives each directory its
+own README with a template, and lists what each repo changes to match. The
+convention ships in this plugin as `dev_docs_layout.md`, reached by name from
+`portable.md`, so it arrives in every session the way the reviewing and
+authoring conventions do.
 
-**Nothing here changes tooling.** `workflow-skills` keeps ownership of
-`dev_docs/tasks/` and `dev_docs/research/`; this design takes those two
-directories as given and lays out everything around them.
+Nothing here changes tooling. `workflow-skills` keeps ownership of
+`dev_docs/tasks/` and of research-spike trees under `dev_docs/research/`.
 
 ## What is true today
 
-Surveyed 2026-09-13 across `agent-guidance`, `dotfiles`, `workflow-skills`,
-and `papercuts-plugin`. Paths are as found.
+The survey is `../research/2026-09-13-dev-docs-survey.md`. In short: the only
+consistent directory is `.handoffs/`; `designs/` and `decisions/` have no
+stated boundary and both hold standing decisions, measurement records, and
+data; about half the records are dated, with prefix dates in most directories
+and suffix dates in one; slug case varies within single directories; status
+lives in prose that nothing can check; graduate-then-delete is written down
+and honoured nowhere; skill config under `dev_docs/` uses three ignore
+channels and one machine-local file is tracked as a result; no repo has a
+`dev_docs/README.md`.
 
-**The only consistent directory is `.handoffs/`.** All three repos that have
-it share a `README.md` copied from `dotfiles`, with the same naming rule
-(`YYYY-MM-DD-<short-topic>.md`), the same front matter, and the same
-ignored-twice mechanism. That README is the only written convention in any of
-the four repos, and it covers one directory.
+The format research is `../research/2026-09-13-adr-and-design-templates.md`.
 
-**`designs/` and `decisions/` have no stated boundary.**
+## Proposal
 
-- `dotfiles` has `designs/` only. Several files there are standing decisions
-  by their own status line ("accepted on merge — merging this document is the
-  decision"), and one, `2026-09-05-agents-md-rule-inventory.md`, is
-  machine-readable data with a YAML head, not a design.
-- `workflow-skills` has both. `decisions/` holds measurement records
-  (`python_type_checking.md`: "Measured 2026-09-04"); `designs/` holds
-  proposals. Nothing says which is which, and `workflow-review/` sits beside
-  them holding what reads as more designs.
-- `papercuts-plugin` has `designs/` only, and its one design says "merging
-  this document is the decision".
-
-**Dating is applied to about half the records.** `dotfiles/designs/` is dated
-except `claude-settings-portable-sync-design.md`; `workflow-skills/decisions/`
-is 3 of 8 dated and `designs/` 1 of 5. `dotfiles/papercuts_reports/` dates its
-files as a suffix (`papercuts_triage_2026-07-20.md`) while every other
-directory uses a prefix. `portable.md` already says "a file that records a
-moment must carry its date in the filename or path", so this is a rule that
-exists and is not followed.
-
-**Slug case is unsettled inside single directories.**
-`workflow-skills/decisions/` mixes `linear_read_fastpaths.md` with
-`2026-09-05-cloud-session-plugin-and-proxy.md`; `designs/` mixes
-`research_spike_skill.md` with `auth-key-resolution.md`.
-
-**Records carry status as prose, and only `tasks/` and `.handoffs/` use front
-matter.** Designs open with `**Status:** proposed` or `Date: 2026-08-01`,
-`Supersedes: …` as body lines. Nothing can check them. Amendment is done two
-ways: `dotfiles/designs/2026-09-04-agents-md-context-budget.md` is amended in
-place with a dated callout; `papercuts_oss_task_11_assessment.md` supersedes an
-earlier draft by saying so in prose.
-
-**`tasks/` is tooling-owned and the tooling is consistent; the repos are
-not.**
-
-- Ignore policy differs: `workflow-skills` ignores `dev_docs/tasks/*` except
-  `.task-config.yml`; `dotfiles` tracks its plan directories under a
-  `gh-issue` handler; `papercuts-plugin` tracks `.task-config.yml` in an
-  otherwise empty directory.
-- Graduate-then-delete is written in `skills/plan-with-docs` and honoured
-  nowhere: `workflow-skills/tasks/autopilot_hardening_plan/` holds 26 cards
-  marked `done` beside the graduated `dev_docs/auto-pilot-hardening.md`;
-  `dotfiles` has three plans whose final card is "delete this directory", all
-  still present.
-- `dotfiles/tasks/cmux_session_checkpoint_plan/` holds only a `design.md`, and
-  `papercut-dotfiles-dir_plan/` only a dated, front-matter-less checkbox plan.
-  Both pass the layout test, which checks the directory name and nothing
-  inside it.
-
-**Skill config under `dev_docs/` uses three ignore channels.** `co-review`
-appends to `.gitignore`, `orchestrate-coders` to `.git/info/exclude`,
-`/task-config` uses a local exclude for tracker handlers. The failure it
-produces: `papercuts-plugin/dev_docs/orchestrate-coders/.coders.yml` is
-tracked, and it is a machine-local probe result (`installed: false` for two
-backends, an auth choice) that is wrong on every other machine.
-
-**`research/` is misused once.** `workflow-skills/dev_docs/research/` holds a
-single flat document, not the `<project>/` tree the `research-spike` skill
-scaffolds. `scripts/check.sh` says the repo does not gate on that tree at all,
-and the skill's own documentation notes that "no research dir" and "wrong tree
-scanned" produce identical clean output, so the stray file is unchecked.
-
-**No repo has a `dev_docs/README.md`.** `papercuts-plugin` has no `AGENTS.md`
-either, so its layout is undocumented for a reader at the root.
-`workflow-skills`' `AGENTS.md` carries a routing table and `dotfiles`'
-carries pointers; neither describes the directories.
+`dev_docs_layout.md` at the plugin root is the umbrella: the record/live rule,
+the three kinds of knowledge, the directory table, naming, and what never
+goes there. Each directory carries a `README.md` with that directory's rules
+and template. This repo holds the canonical READMEs for `designs/`,
+`decisions/`, and `research/`, beside the `.handoffs/README.md` that already
+exists; other repos copy the ones they use, each copy naming its source.
 
 ## Decisions
 
 ### The record/live split is the organising rule
 
-Everything else follows from one distinction: a file with a date in its name
-is a record and may go stale; a file without one is live and must not. This
-is not new; `dotfiles/designs/2026-08-01-state-locality-design.md` states it
-and `portable.md` carries it. What is new is making it the axis the
-directories are laid out on, so a reader knows from the path alone which kind
-of file is in hand.
+A file with a date in its name is a record and may go stale; a file without
+one is live and must not. `dotfiles`' state-locality design and `portable.md`
+already state this; what is new is laying the directories out on it, so the
+path alone says which kind of file is in hand. The alternative, a README per
+directory each stating its own rules with no shared principle, is what
+`.handoffs/` does today, and three diverging copies of that README show where
+it stops.
 
-The alternative was a per-directory README each stating its own rules, which
-is what `.handoffs/` does. That scales to one directory and stops: three copies
-of that README already exist and already diverge.
+### Conventions, decisions, and designs are three different things
 
-### Keep `designs/` and `decisions/` both, with a plan-shaped boundary
+A convention says what to do and is live. A decision says why, at the time,
+and what would reopen it, and is a record. A design proposes a change and is
+transient. An agent reads conventions to work; it reads decisions only to
+revisit one; it reads a design only to review it.
 
-Collapsing to `designs/` alone (the `dotfiles` shape) was considered and
-rejected: a one-page measurement record and a forty-line design proposal are
-different things to search for, and `workflow-skills` already has enough of
-the first kind to justify a directory. Collapsing to `decisions/` alone was
-rejected for the same reason in reverse.
+Rejected: `designs/` doing all three jobs (the `dotfiles` shape) and
+`decisions/` as a place for measurements (the `workflow-skills` shape). Both
+leave a reader unable to tell from the path whether a file is guidance,
+history, or a plan.
 
-The boundary chosen is whether acting on the file needs a plan. A design
-proposes a shape and spawns work; a decision answers a question a reader can
-apply as written. The test is about the reader's next move, which is easier to
-apply than "is this an ADR" and does not depend on length.
+### Designs are transient and only ever `proposed`
 
-What this does not do: it does not extract decisions out of designs. A design
-that settles five questions stays one file; splitting it produces five records
-that repeat the design and go stale independently.
+A design's job ends when its change lands. It then graduates: each choice it
+argued for becomes a decision record, what a reader needs becomes a
+convention, and the design is deleted. A landed design that stays is residue
+that reads as either a description of the system or a plan that changed on
+the way, and the next reader cannot tell which.
+
+Rejected: keeping designs as accepted historical records, which is what
+Fuchsia's RFC process does. The history a design carries is its decisions,
+and those are better kept one per file where each can be superseded alone.
+
+### Decisions are ADRs with a "revisit when" section
+
+Nygard's four sections and immutability rule, MADR's consequence phrasing and
+confirmation section, plus a required section naming the evidence that would
+reopen the decision. No surveyed format has that section; it is the stated
+purpose of keeping the record, so it is required rather than optional.
+`accepted` is the starting status, because a decision is written once taken;
+an open choice is a design.
+
+Rejected: MADR's `NNNN-` numbering, since the date is already the sort key
+everywhere under `dev_docs/`; MADR's people fields, since the PR carries the
+reviewer.
+
+### Research is its own record, cited from designs and decisions
+
+A survey or a comparison goes in `research/` as a dated record with a
+`question` and a `feeds` pointer, and the design cites it. This keeps designs
+to material impact and keeps evidence readable without the conclusion beside
+it. Research-spike trees from `workflow-skills` live as subdirectories of the
+same `research/` and keep the skill's conventions.
+
+### Each directory carries its own README and template
+
+How to write a decision is not how to write a design, so the rules and the
+template sit in the directory they govern, where the writer is. The umbrella
+file stays short. The cost is copies across repos, each marked with its
+source, which is the same trade `.handoffs/README.md` already made.
 
 ### Date first, kebab-case, no type suffix
 
-Prefix dates so the directory listing sorts by time and a stale file is
-visible at a glance. Kebab-case because it is the majority form in every
-record directory surveyed, and because `tasks/` cannot change: the task
-tooling resolves slugs by filename stem with snake_case fixed in its schema,
-so snake_case stays there as the one documented exception. No `-design` or
-`-decision` suffix, since the directory already says so and three of nine
-`dotfiles` designs already omit it.
+Prefix dates so a listing sorts by time and a stale file is visible.
+Kebab-case because it is the majority form in every record directory
+surveyed. `tasks/` stays snake_case because its tooling fixes the form.
 
-### Front matter on every record
+### Records carry front matter
 
-Records get a small Obsidian YAML block: `created`, `status`, and the
-`supersedes`/`superseded_by`/`live` pointers. This is the one decision that
-costs a migration, and the reason is that prose status lines cannot be
-checked. A `created` that must match the filename date is a test; a bold
-`Drafted:` line is not. The vocabulary is four states shared by designs and
-decisions (`proposed`, `accepted`, `superseded`, `abandoned`) rather than two
-vocabularies to keep straight.
-
-Handoffs and task cards keep the schemas they have; both already work and both
-have owners.
-
-### Records are amended by callout or superseded by a new file, never rewritten
-
-Both forms already exist in `dotfiles`; the rule picks when each applies. A
-correction that leaves the conclusion standing is a dated callout in place. A
-change of conclusion is a new dated record with the pointer fields set both
-ways. The test is whether a reader who acted on the old file would now act
-differently.
+`created` and `status` at minimum, with the supersede pointers. Prose status
+lines cannot be checked; a `created` that must match the filename date is a
+test. This is the one decision that costs a migration.
 
 ### `tasks/` ignore policy follows the handler
 
-Under `repo-pr` the cards are the tracker, so they are committed. Under any
-other handler the tracker owns the state and the scaffolding is local, which
-is the `workflow-skills` `.gitignore` shape. `dotfiles` tracking its plans
-under `gh-issue` is the inconsistency, and the fix is the ignore entry plus
-the graduate-then-delete the plans already promise.
+Under `repo-pr` the cards are the tracker and are committed. Under any other
+handler the tracker owns the state and the scaffolding is local, which is the
+`workflow-skills` `.gitignore` shape. `dotfiles` tracking plans under
+`gh-issue` is the inconsistency.
 
 ### One ignore channel for skill config: `.gitignore`
 
-`.git/info/exclude` does not travel with a clone, so a fresh checkout has no
-way to know a directory is local until the skill runs and writes the entry.
-`.gitignore` is visible in the repo, so it also serves as documentation. The
-`.coders.yml` tracked in `papercuts-plugin` is what the other channel
-produces.
+`.git/info/exclude` does not travel with a clone, so a fresh checkout cannot
+know a directory is local until the skill runs. `.gitignore` is visible and
+doubles as documentation. The tracked `.coders.yml` in `papercuts-plugin` is
+what the other channel produced.
 
 ### The convention lives in this plugin
 
-It is delivered like `writing_about_code.md`: a root content file, reached by
-name from a `portable.md` Rules bullet, so it arrives in every harness and
-every cloud session without any repo committing it. Each repo's
-`dev_docs/README.md` and `.handoffs/README.md` shrink to pointers plus that
-repo's exceptions, which ends the three-way copy of the handoffs README.
-
-### Enforcement is a shared checker, later
-
-`dotfiles/scripts/dev_docs_layout.test.sh` already checks the `tasks/`
-contents and stray checkboxes. Two more checks fall out of this design: record
-filenames match `YYYY-MM-DD-<slug>.md`, and a record's `created` matches its
-date. A checker in this plugin that any repo's check suite can call is the
-right home, and it is a follow-up rather than part of this change, so the
-convention can land and be argued with before code depends on it.
-
-## Migration
-
-Each item is a follow-up in its repo. None is a prerequisite for merging this
-design.
-
-**`agent-guidance`** (this change): add `dev_docs_layout.md`, this record,
-`dev_docs/README.md`, the `portable.md` bullet, and the `README.md` row. The
-existing design record gains front matter.
-
-**`dotfiles`:**
-
-- Date `designs/claude-settings-portable-sync-design.md` (its body says
-  2026-07-02) and add front matter to every design.
-- Rename `papercuts_reports/` files to date-first.
-- Move `2026-09-05-agents-md-rule-inventory.md` out of `designs/`; it is data,
-  and `decisions/` is the nearer fit if it settles a question.
-- Ignore `dev_docs/tasks/*` except `.task-config.yml` (the handler is
-  `gh-issue`), and run the graduate-then-delete the three finished plans
-  already schedule.
-- Add `dev_docs/README.md`; shrink `.handoffs/README.md` to a pointer and its
-  repo-specific notes; extend `dev_docs_layout.test.sh` with the two new
-  checks, or replace it with the shared checker when that exists.
-- Drop the stale `dev_docs/nightly_reports/` citation in `justfile`.
-
-**`workflow-skills`:**
-
-- Date and front-matter the undated files in `decisions/` and `designs/`;
-  normalise slugs to kebab-case.
-- Fold `workflow-review/` into `designs/` or a `<topic>.md`.
-- Move `research/research-spike-lean-evaluation.md` to `decisions/` or
-  `designs/` so `research/` is reserved.
-- Delete `tasks/autopilot_hardening_plan/` (graduated) and finish
-  `cao_usage_plan`'s graduation.
-- Point `orchestrate-coders` at `.gitignore` instead of `.git/info/exclude`.
-- Add `dev_docs/README.md`; shrink `.handoffs/README.md`.
-
-**`papercuts-plugin`:**
-
-- Untrack `dev_docs/orchestrate-coders/.coders.yml` and ignore the directory.
-- Front-matter the one design; add `dev_docs/README.md`.
-- Resolve the handoff whose milestones have closed.
+Delivered like `writing_about_code.md`: a root content file, reached by name
+from a `portable.md` Rules bullet, so it reaches every harness and every
+cloud session without a consumer repo committing it. The per-directory
+READMEs are the one part that is copied, because they have to sit in the
+directory they govern.
 
 ## Not decided here
 
-- Whether `dev_docs/tasks/` should ever hold non-card files inside a
-  `<name>_plan/` (`DECISIONS.md`, `prompt.md`). The task tooling tolerates
-  them; the plan-with-docs skill says to delete them. That is a
+- The shared layout checker: its shape and where a repo calls it from.
+  `dotfiles/scripts/dev_docs_layout.test.sh` stays the reference until then.
+- Whether a `<name>_plan/` may hold non-card files. The task tooling
+  tolerates them; `plan-with-docs` says to delete them. That is a
   `workflow-skills` question.
-- The shape of the shared checker and where a repo calls it from.
-- Whether `portable.md`'s handoffs bullet under "Output Formats" moves under
-  "Rules" beside the new pointer. It works where it is.
+- Whether `dev_docs/conventions.md` in this repo splits its `## Decisions`
+  section into decision records. It is the obvious first use of the new
+  directory, and it is a follow-up.
+
+## Migration
+
+Each item is a follow-up in its repo.
+
+**`agent-guidance`:** graduate this design once merged: write the decision
+records listed below, delete this file. Split `conventions.md`'s decisions
+into records.
+
+**`dotfiles`:** date and front-matter every design; delete the ones whose
+changes have landed after writing their decisions; rename
+`papercuts_reports/` files to date-first; move the rule inventory out of
+`designs/`; ignore `dev_docs/tasks/*` except `.task-config.yml` and run the
+graduate-then-delete the three finished plans schedule; add
+`dev_docs/README.md` and the directory READMEs; extend the layout test with
+the two new checks; drop the stale `nightly_reports/` citation in `justfile`.
+
+**`workflow-skills`:** sort `decisions/` into decisions and conventions, and
+`designs/` and `workflow-review/` into designs still proposed and
+conventions; date and front-matter what stays; move
+`research/research-spike-lean-evaluation.md` to a research record; delete
+`tasks/autopilot_hardening_plan/` and finish `cao_usage_plan`'s graduation;
+point `orchestrate-coders` at `.gitignore`; add `dev_docs/README.md` and the
+directory READMEs.
+
+**`papercuts-plugin`:** untrack `dev_docs/orchestrate-coders/.coders.yml` and
+ignore the directory; graduate or front-matter the one design; add
+`dev_docs/README.md`; resolve the handoff whose milestones have closed.
+
+## Graduation
+
+- Decision records: the record/live rule; three kinds of knowledge; designs
+  transient; decisions as ADRs with revisit-when; research as its own record;
+  per-directory READMEs; naming; front matter on records; `tasks/` ignore
+  policy; one ignore channel for skill config; the convention lives in the
+  plugin.
+- Conventions: `dev_docs_layout.md` and the three directory READMEs are
+  already the live guidance; graduation adds nothing to them beyond replacing
+  the pointer to this design with pointers to the decisions.
