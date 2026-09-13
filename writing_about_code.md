@@ -43,6 +43,11 @@ one name for one thing throughout; a synonym introduced for variety reads as a s
 Name a symbol only when the sentence is about that symbol. A list of the symbols you touched is an inventory, not an
 explanation.
 
+A bare number names nothing. Say what it is: PR #543, issue #534, commit `26a4361`, line 87 of the fixture. The case that
+actually misleads is two of them in one sentence — "running the gate on 543 and dispatching #534" reads as one kind of
+thing twice, and `#` does not distinguish a PR from an issue. A quantity carries its unit, and a comparison carries its
+baseline: "2.1s at p99", not "2.1"; "faster than the loop it replaces", not "faster".
+
 ## A command's output is not a result
 
 Report the outcome of the task you were asked to do. A command run along the way may print state
