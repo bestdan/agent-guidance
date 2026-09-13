@@ -39,12 +39,14 @@ finding like any other. Check, when they are in front of you:
 - **Body** matches the diff. Every claim about what the change does is visible
   in the diff; intended, dropped, or follow-up work is not described as done.
   Context, links, and verification are the exception.
-- **Body** opens with the problem it solves or the capability it adds, and the
-  approach; it fits on one screen (about 200 words, 400 at most), and carries
-  no line counts, no per-file bullets, no walkthrough of the diff, and no
-  "tests pass".
+- **Body**, where no repo template or documented body convention says
+  otherwise, opens with the problem it solves or the capability it adds, and
+  the approach; it fits on one screen (about 200 words, 400 at most), and
+  carries no line counts, no per-file bullets, no walkthrough of the diff, and
+  no "tests pass".
 - **Commit subjects** use the same type-and-scope grammar, without the ticket
-  key — that suffix is the PR title's alone. A commit body says why, not what.
+  key — that suffix is the PR title's alone. A commit body says why, not
+  what.
 
 ## Blocking or not
 
@@ -54,10 +56,10 @@ when the fix is worth doing only if it turns out cheap.
 
 The decoration is a claim about the merge, not a volume control. Do not mark
 a defect `(non-blocking)` to be gentle, and do not mark a preference
-`(blocking)` to be heard. A high-confidence typo is still non-blocking; a
-medium-confidence data-loss bug is still blocking. How sure you are is not
-how much it matters. An `UNVERIFIED` finding is decorated by what it would
-cost if true.
+`(blocking)` to be heard. A high-confidence spelling fix is still
+non-blocking; a medium-confidence data-loss bug is still blocking. How sure
+you are is not how much it matters. An `UNVERIFIED` finding is decorated by
+what it would cost if true.
 
 ## The label
 
