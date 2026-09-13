@@ -92,6 +92,12 @@ which is the part that was missing. It is computed at inject time rather than
 written into the markdown, because a literal in the file reads identically on a
 fresh copy and a year-old one and so can never signal staleness.
 
+The block also names the **plugin root** it delivered from, which is a second
+job: `portable.md`'s two `Rules` bullets send a harness with no skills to that
+directory for `writing_about_code.md`, `authoring_pull_requests.md` and
+`reviewing.md`, and the block is what resolves it. `dev_docs/conventions.md`
+carries which carriers resolve the root and which do not.
+
 It is not the only route on every audience, and the README should not pretend
 otherwise: a local Claude session can run `claude plugin list`, which reports
 `Version: <commit>` (verified 2026-09-10). What the block adds there is that the

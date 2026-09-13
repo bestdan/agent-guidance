@@ -17,10 +17,12 @@ live in `portable-claude.md` instead; the hook injects that file and
 `sync_codex.sh` leaves it out.
 
 The `SessionStart` hook appends a `## Provenance of this guidance` section. That
-section names the plugin root: the directory this file was delivered from. A
-rule below that names a file by filename alone means a file in that directory.
-A copy delivered by plain concatenation carries no such section, so ask for the
-root rather than skipping the file.
+section names the plugin root: the directory this file was delivered from. The
+two `Rules` bullets below that send you to the plugin root mean that directory,
+and no other rule here does — a filename elsewhere in this file is a file in the
+repo or the machine-local half, as its own rule says. A copy delivered by plain
+concatenation carries no such section, so ask for the root rather than skipping
+the file.
 
 A few rules below cite a `bestdan/dotfiles` path, or a skill installed there, as
 the mechanism that enforces them. The rule still stands where that mechanism is
