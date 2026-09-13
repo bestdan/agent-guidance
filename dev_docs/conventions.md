@@ -31,7 +31,9 @@ repo:
    `scripts/agent-guidance-dir.sh` and prints the paths of
    `writing_about_code.md` then `reviewing.md`. The dispatcher pastes those
    paths into the `cat` that assembles `<INPUT>`, so every reviewer reads
-   rubric, then conventions, then requests, then diff.
+   rubric, then conventions, then requests, then diff. Lands in
+   `bestdan/workflow-skills#591`; until that merges, no reviewer receives the
+   conventions.
 3. **The Codex pointer.** `sync_codex.sh` in `bestdan/dotfiles` concatenates the
    installed plugin's `portable.md` into `~/.codex/AGENTS.md`, and the two
    `Rules` bullets in `portable.md` tell any harness without skills to read the
@@ -81,14 +83,16 @@ more.
 
 ### The co-review carrier is the assembled file, not stdin
 
-Five reviewers (`codex`, `copilot`, `crush`, `agy`, `devin`) are cut off from
-repo context by design: `crush` pins `--cwd <NEUTRAL>`, `agy` trusts only its
-`--add-dir`, `devin` runs from a neutral cwd, `copilot` runs in GitHub's
-cloud. The one artifact all five receive is the assembled `<INPUT>` file, so
-the conventions go into that file. Three reviewers get it piped on stdin, but
-`agy` opens `<INPUT>` by the path in its pointer and `devin` takes it with
-`--prompt-file`; a segment wired into the pipe reaches three of five and
-silently misses two.
+Four of the five reviewers are cut off from repo context by mechanism: `crush`
+pins `--cwd <NEUTRAL>`, `agy` trusts only its `--add-dir`, `devin` runs from a
+neutral cwd, `copilot` runs in GitHub's cloud. `codex` is the partial
+exception: `codex exec` runs in the repo and `~/.codex/AGENTS.md` carries
+`portable.md`, though it is unverified that a co-review dispatch loads it, and
+its pointer forbids exploring the filesystem in any case. The one artifact all
+five receive is the assembled `<INPUT>` file, so the conventions go into that
+file. Three reviewers get it piped on stdin, but `agy` opens `<INPUT>` by the
+path in its pointer and `devin` takes it with `--prompt-file`; a segment wired
+into the pipe reaches three of five and silently misses two.
 
 Two more details of the shape are load-bearing:
 
@@ -104,10 +108,10 @@ Two more details of the shape are load-bearing:
   `conventions: not attached — <reason>` on the run summary's Reviewers line.
   Exit `1` (`AGENT_GUIDANCE_DIR` set but wrong) is surfaced, not swallowed.
 
-This is the only path that does not depend on a skill firing, which makes it
-the load-bearing carrier for reviewing. Its cost is ongoing: measured at
-10,509 bytes, about 2.6k tokens, per reviewer dispatch, so about 13k tokens
-across a five-reviewer run.
+This is the only carrier that reads the files itself rather than instructing a
+model to read them, which makes it the load-bearing carrier for reviewing. Its
+cost is ongoing: measured at 10,509 bytes, about 2.6k tokens, per reviewer
+dispatch, so about 13k tokens across a five-reviewer run.
 
 ## Gotchas
 
