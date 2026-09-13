@@ -26,6 +26,8 @@ rather than as a placeholder.
 | `inject.sh`              | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
 | `codex/hooks.json`       | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
 | `skills/plugin-delivery` | Claude Code, on demand               | why a release may not have reached the session reading it, and what to do  |
+| `skills/authoring`       | Claude Code, at PR time              | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
+| `skills/reviewing`       | Claude Code, when reviewing a change | reads `writing_about_code.md` and `reviewing.md`                           |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`; the root `plugin.json` follows the
