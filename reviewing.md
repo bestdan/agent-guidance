@@ -16,8 +16,8 @@ extra reading, never the rule itself.
   not only the ones visible in the diff. A reviewer that can read the repo
   finds those docs on its own: `README`, `CONTRIBUTING`, `AGENTS.md` or
   `CLAUDE.md`, a `dev_docs/` directory, and the code next to the change. A
-  reviewer that cannot checks against the text it has and marks the rest
-  `UNVERIFIED`. A second convention where one exists is a finding.
+  reviewer that cannot read the repo checks against the text it has, and marks
+  the rest `UNVERIFIED`. A second convention where one exists is a finding.
 - **Test-coverage gaps that matter.** A behaviour the change adds or alters
   with no test that would fail if it broke. A test whose assertions would pass
   with the guarded behaviour removed is the same gap with a comment on it.
@@ -33,14 +33,18 @@ finding like any other. Check, when they are in front of you:
 - **Title** is `<type>(scope): <description> [KEY]`: a Conventional Commits
   type (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`) with an optional
   scope, imperative, under 70 characters, and it stands alone. That grammar
-  holds in every repo. A PR template governs the body only.
+  holds whether or not the repo ships a PR template — a template governs the
+  body, never the title. A repo that documents its own title convention wins;
+  check against that instead.
 - **Body** matches the diff. Every claim about what the change does is visible
   in the diff; intended, dropped, or follow-up work is not described as done.
   Context, links, and verification are the exception.
-- **Body** opens with the problem and the approach, fits on one screen (about
-  200 words, 400 at most), and carries no line counts, no per-file bullets, no
-  walkthrough of the diff, and no "tests pass".
-- **Commit subjects** use the same grammar; a commit body says why, not what.
+- **Body** opens with the problem it solves or the capability it adds, and the
+  approach; it fits on one screen (about 200 words, 400 at most), and carries
+  no line counts, no per-file bullets, no walkthrough of the diff, and no
+  "tests pass".
+- **Commit subjects** use the same type-and-scope grammar, without the ticket
+  key — that suffix is the PR title's alone. A commit body says why, not what.
 
 ## Blocking or not
 
@@ -70,10 +74,10 @@ Labels: `praise`, `nitpick`, `suggestion`, `issue`, `todo`, `question`,
 
 Two rules carry the weight:
 
-- **The label is a claim about the finding, not decoration.** Do not label a
-  defect `nitpick` to soften it, and do not label a preference `issue` to
-  force it. The label is the only signal of how hard the finding is meant to
-  land.
+- **The label is a claim about the finding, not decoration.** The label says
+  what the finding is; the decoration says what it costs the merge. Do not
+  label a defect `nitpick` to soften it, and do not label a preference `issue`
+  to force it.
 - **`praise:` is a real label. Use it.** A review that is only defects reads
   as hostile, and it hides which parts of the change are right. Praise a
   specific decision, with the same precision as a defect.
