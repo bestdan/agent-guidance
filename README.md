@@ -130,3 +130,10 @@ does not parse is skipped rather than reported, so it is simply never offered.
 suite's three assertions shipped **vacuous**, passing on the exact regressions
 they named, and review caught them rather than the suite. The mutations now live
 in CI so a future edit cannot quietly restore that.
+
+`prose-check.test.sh` is the odd one out: it checks content, not wiring. It runs
+`scripts/prose-check.py` over every tracked markdown file and fails on a
+paragraph carrying more than one em-dash interruption, which is a rule from
+`writing_about_code.md` that prose alone did not hold. The same script reports
+how many sentences run over the 25-word cap, and that half never fails. Why the
+two rules are treated differently is in `dev_docs/conventions.md`.

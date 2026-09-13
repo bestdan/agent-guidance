@@ -103,7 +103,7 @@ No line budget is needed now that nothing is generated into a size-capped file.
 
 ## Sequencing against issue #10
 
-Issue #10 is a contradiction problem — `portable.md`, `dotfiles`, and `workflow-skills` each state a different PR-title rule, and the one that actually writes the titles is not the SOT. This design is a distribution problem — the rules exist and reach nobody. They share one step, the file move in decision 1, which this design owns. Issue #10's remaining steps stay there: the four `workflow-skills` handler templates and the `guard_pr_body.py` title check. The `portable.md` title grammar is the exception — it comes here, as issue #11, because `skills/authoring/SKILL.md` cites it.
+Issue #10 is a contradiction problem: `portable.md`, `dotfiles`, and `workflow-skills` each state a different PR-title rule, and the one that actually writes the titles is not the SOT. This design is a distribution problem, where the rules exist and reach nobody. They share one step, the file move in decision 1, which this design owns. Issue #10's remaining steps stay there: the four `workflow-skills` handler templates and the `guard_pr_body.py` title check. The `portable.md` title grammar is the exception — it comes here, as issue #11, because `skills/authoring/SKILL.md` cites it.
 
 One ordering constraint runs inside that scope. **The title grammar must land in `portable.md` before `skills/authoring/SKILL.md` cites it.** The skill points at the conventions; if it ships while `portable.md` is still silent on the ticket key, it points at a rule set missing the most-violated convention in issue #10's measured data. One line, no shared code, no merged PR — but a real dependency edge.
 

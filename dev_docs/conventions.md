@@ -129,6 +129,34 @@ model to read them, which makes it the load-bearing carrier for reviewing. Its
 cost is ongoing: measured at 10,509 bytes, about 2.6k tokens, per reviewer
 dispatch, so about 13k tokens across a five-reviewer run.
 
+### Two of the voice rules are a check, and only one of them blocks
+
+`scripts/prose-check.py` measures every tracked markdown file against the
+em-dash cap and the 25-word sentence cap. `prose-check.test.sh` runs it over the
+repository, so the em-dash cap fails CI. Sentence length prints a per-file rate
+and never decides the exit code.
+
+Issue #8 is why there is a check at all. Both rules are specific, and both were
+in force for a whole session that broke them continuously. A rewrite whose
+purpose was plainer prose then halved the sentence count and left the em-dash
+count untouched. The rule lives in `writing_about_code.md`, which is read on
+demand. The moment it is most needed is the moment an author is deepest in the
+writing and furthest from the rulebook.
+
+The split between blocking and reporting is measured, not a preference. On
+2026-09-13 the corpus broke the em-dash cap in 12 of 213 paragraphs and the word
+cap in 30% of sentences, `writing_about_code.md` itself included. Run the script
+to re-measure. A cap the corpus breaks at that rate is wrong more often than
+unheeded. `portable.md`'s check-over-prose bullet says what to do about that:
+report until the rate says otherwise. The 12 paragraphs were rewritten in the
+same change.
+
+The em-dash count is charitable by construction. One dash is an interruption,
+and so is a matched pair. A paragraph is therefore flagged only at three, where
+the cap is exceeded however the dashes pair up. A check that fires on a
+legitimate aside teaches people to ignore it, which is the failure this one
+exists to fix.
+
 ## Gotchas
 
 **`agy` and `devin` never read stdin.** `agy` reads the file its pointer names;
