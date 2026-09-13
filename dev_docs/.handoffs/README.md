@@ -21,7 +21,7 @@ Start with the aim: what the work is trying to achieve and why, not just where
 it stopped. A session that knows the goal can re-derive a plan; one that only
 knows the last step cannot tell a detour from the route.
 
-Then whatever the next session cannot reconstruct from the repository — what was
+Then whatever the next session cannot reconstruct from the repository: what was
 already tried and rejected, which measurement is load-bearing, which constraint
 is not obvious from the code, and the next concrete step. Anything that _is_
 reconstructable — commit history, a PR, a tracker issue — goes in as a link
