@@ -73,9 +73,10 @@ Before writing, read, in this order, and follow whichever exist:
 2. `CONTRIBUTING.md` / `doc/CONTRIBUTION_GUIDELINES.md`
 3. `AGENTS.md` or `CLAUDE.md`
 
-Those are the source of truth for title format and required sections. Follow them exactly instead of improvising a
-different structure. A template section that genuinely does not apply is omitted per the template's own instructions.
-This document governs how to write within that structure, not what the structure is.
+Those are the source of truth for the body's required sections and structure. Follow them exactly instead of improvising
+a different structure. A template section that genuinely does not apply is omitted per the template's own instructions.
+Title format follows the repo's convention plus the Ticket key rule below, which a template does not override. This
+document governs how to write within that structure, not what the structure is.
 
 ## Ticket key
 
@@ -97,7 +98,8 @@ A repo with no template: write the body in this shape. Adding the file to the re
 never a side effect of authoring a PR.
 
 ```markdown
-<!-- Title: imperative, <70 chars, Conventional Commits if the repo uses them. -->
+<!-- Title: imperative, <70 chars, Conventional Commits if the repo uses them,
+     with the ticket key in brackets at the end — [ABC-1234], or N/A. -->
 
 ## Summary
 
