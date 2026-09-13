@@ -2,9 +2,8 @@
 
 How the reviewing and PR-authoring conventions are stored, delivered, and
 enforced, and the decisions that gave the system this shape. This is the live
-description. The dated design record,
-`designs/2026-09-12-review-conventions-distribution.md`, says what was decided
-on 2026-09-12 and is not kept current; where the two disagree, this file wins.
+description. The `2026-09-12-*` records under `decisions/` carry the choices
+behind it; the `Decisions` section below is the working summary.
 
 ## Architecture
 
