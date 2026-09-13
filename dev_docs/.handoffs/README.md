@@ -79,8 +79,9 @@ agent that is not told to clean up will not:
 
 > **When the work described above is done, delete this file.** It is a handoff,
 > not a record. If what it says is worth keeping, it belongs in a commit
-> message, a PR body, a design doc under `dev_docs/designs/`, or the tracker —
-> move it there first, then delete this file.
+> message, a PR body, a decision under `dev_docs/decisions/`, a convention
+> under `dev_docs/`, or the tracker — move it there first, then delete this
+> file.
 
 A directory of stale handoffs is worse than an empty one: nothing marks which of
 them still describes reality, so the next session reads all of them and trusts

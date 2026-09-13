@@ -143,7 +143,9 @@ this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
 1. **A layout test in the repo**, run by its check suite. Minimum checks:
    `dev_docs/tasks/` holds only what its section allows; no unchecked
    checkbox outside `dev_docs/tasks/*_plan/`; every file in a record or design
-   directory is `YYYY-MM-DD-<slug>.md` or `README.md`; a record's `created`
+   directory is `YYYY-MM-DD-<slug>.md` or `README.md`, skipping subdirectories
+   of `dev_docs/research/`, which the `research-spike` skill owns and validates
+   itself; a record's `created`
    matches its filename date. `bestdan/dotfiles`'
    `scripts/dev_docs_layout.test.sh` is the reference for the first two; a
    shared checker in the plugin is the follow-up.

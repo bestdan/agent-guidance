@@ -144,17 +144,14 @@ directory they govern.
 - Whether a `<name>_plan/` may hold non-card files. The task tooling
   tolerates them; `plan-with-docs` says to delete them. That is a
   `workflow-skills` question.
-- Whether `dev_docs/conventions.md` in this repo splits its `## Decisions`
-  section into decision records. It is the obvious first use of the new
-  directory, and it is a follow-up.
 
 ## Migration
 
 Each item is a follow-up in its repo.
 
 **`agent-guidance`:** graduate this design once merged: write the decision
-records listed below, delete this file. Split `conventions.md`'s decisions
-into records.
+records listed below, delete this file. The 2026-09-12 design's three
+decisions are already records under `decisions/`.
 
 **`dotfiles`:** date and front-matter every design; delete the ones whose
 changes have landed after writing their decisions; rename

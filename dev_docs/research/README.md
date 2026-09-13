@@ -34,8 +34,9 @@ should not repeat it. A quick fact goes in the design or the PR body.
 ## Naming and front matter
 
 `YYYY-MM-DD-<slug>.md`, kebab-case. The date is when the research was done
-and matches `created`. A research record is a snapshot and is never updated;
-research done again later is a new record.
+and matches `created`. A research record is a snapshot. `feeds` is the one
+field set after writing, when the design or decision it supports exists;
+nothing else changes, and research done again later is a new record.
 
 ```yaml
 ---
