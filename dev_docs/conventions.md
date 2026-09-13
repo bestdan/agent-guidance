@@ -31,9 +31,7 @@ repo:
    `scripts/agent-guidance-dir.sh` and prints the paths of
    `writing_about_code.md` then `reviewing.md`. The dispatcher pastes those
    paths into the `cat` that assembles `<INPUT>`, so every reviewer reads
-   rubric, then conventions, then requests, then diff. Lands in
-   `bestdan/workflow-skills#591`; until that merges, no reviewer receives the
-   conventions.
+   rubric, then conventions, then requests, then diff.
 3. **The Codex pointer.** `sync_codex.sh` in `bestdan/dotfiles` concatenates the
    installed plugin's `portable.md` into `~/.codex/AGENTS.md`, and the two
    `Rules` bullets in `portable.md` tell any harness without skills to read the
