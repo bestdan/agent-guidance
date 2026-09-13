@@ -16,7 +16,7 @@ more usually needs to be a smaller PR, or the extra content belongs somewhere el
 
 ## Shape
 
-**Title.** Imperative, under 70 characters, follows the repo's convention (Conventional Commits where the repo uses it).
+**Title.** Imperative, under 70 characters, follows the **`Git:`** bullet in `portable.md`.
 It must stand alone: a reader scanning a list of merged PRs understands the change from the title only.
 
 **First paragraph.** One to three sentences: the problem this solves or the capability it adds, and the approach. This
@@ -75,16 +75,15 @@ Before writing, read, in this order, and follow whichever exist:
 
 Those are the source of truth for the body's required sections and structure. Follow them exactly instead of improvising
 a different structure. A template section that genuinely does not apply is omitted per the template's own instructions.
-Title format follows the repo's convention plus the Ticket key rule below, which a template does not override. This
-document governs how to write within that structure, not what the structure is.
+Title format is the **`Git:`** bullet in `portable.md` (see Title grammar below), which a template does not override.
+This document governs how to write within that structure, not what the structure is.
 
-## Ticket key
+## Title grammar
 
-The repo decides where issues live — read `dev_docs/tasks/.task-config.yml` if present. Put the key in brackets at the
-end of the title (`[ABC-1234]`). A pull request template governs the body, not the title.
-
-- The prompt said "ad hoc" or "unticketed" → `N/A`.
-- No ticket is evident from the prompt or the branch → ask before opening.
+The title's grammar — the Conventional Commits prefix, the bracketed ticket key at the end, which key each
+`.task-config.yml` handler uses, `[N/A]`, and when to ask instead of guessing — is the **`Git:`** bullet in
+`portable.md`, which every session already carries. This file restates none of it; if the two ever disagree,
+`portable.md` is right and this file is stale.
 
 ## Before you open it
 
@@ -98,8 +97,7 @@ A repo with no template: write the body in this shape. Adding the file to the re
 never a side effect of authoring a PR.
 
 ```markdown
-<!-- Title: imperative, <70 chars, Conventional Commits if the repo uses them,
-     with the ticket key in brackets at the end — [ABC-1234], or N/A. -->
+<!-- Title: imperative, <70 chars, grammar per the Git bullet in portable.md. -->
 
 ## Summary
 
