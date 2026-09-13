@@ -97,7 +97,7 @@ name = os.path.basename(root)
 # the test is existence, not isdir, or a worktree would be offered a refresh
 # that discards it.
 if os.path.exists(os.path.join(root, ".git")):
-    ident = "an editable working checkout at " + root + " (unreleased code)"
+    ident = "an editable working checkout (unreleased code)"
     refresh = ""
 elif re.fullmatch(r"[0-9a-f]{7,40}", name):
     ident = "commit `" + name + "`"
@@ -121,6 +121,9 @@ except (OSError, IndexError):
 parts.append(
     "## Provenance of this guidance\n\n"
     "It was delivered by the `agent-guidance` plugin: " + ident + when + ".\n"
+    "The plugin root is `" + root + "`. That is the directory these files were"
+    " delivered from. Where a rule below tells you to read a file from the"
+    " plugin root, read it from there.\n"
     "Nothing inside a session can check whether that is the current commit, so"
     " when asked whether your guidance is up to date, report this line rather"
     " than assuming it is." + refresh + "\n"

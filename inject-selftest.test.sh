@@ -152,9 +152,28 @@ with open(path, "w") as f:
 PY
 check fail "version declared in plugin.json" "$target"
 
+# --- (f) the provenance stops naming the plugin root ---
+# The payload still arrives and still carries a provenance section, so every
+# other assertion passes. What breaks is the one thing a harness without skills
+# has to resolve the three files portable.md names by filename alone.
+target="$(fixture rootless-provenance)"
+OUT="$target/inject.sh" python3 - <<'PY'
+import os
+
+path = os.environ["OUT"]
+with open(path) as f:
+    src = f.read()
+old = '"The plugin root is `" + root + "`. That is the directory these files were"'
+new = '"The plugin root is not named here. That is the directory these files were"'
+assert src.count(old) == 1, "inject.sh no longer names the root on one line"
+with open(path, "w") as f:
+    f.write(src.replace(old, new))
+PY
+check fail "provenance stops naming the plugin root" "$target"
+
 # A table that silently checked nothing would pass. Guard against it.
-if [ "$checked" -lt 6 ]; then
-  printf 'FAIL (only %d fixtures ran; the table should hold at least 6)\n' "$checked"
+if [ "$checked" -lt 7 ]; then
+  printf 'FAIL (only %d fixtures ran; the table should hold at least 7)\n' "$checked"
   fail=1
 fi
 

@@ -248,6 +248,20 @@ print("ok" if "## Provenance of this guidance" in ctx else "provenance missing")
 PY
 )"
 
+# The provenance must also name the directory it delivered from. Two rules in
+# portable.md tell a harness with no skills to read three files by filename
+# alone, and nothing else in the payload resolves that directory. A path merely
+# being present is not enough — it has to be the copy that ran — so the
+# assertion compares it against the directory under test.
+check "the provenance names the plugin root it delivered from" ok \
+  "$(DIR="$dir" OUT="$shared_out" python3 - <<'PY' 2>/dev/null
+import json, os
+ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
+want = "The plugin root is " + chr(96) + os.environ["DIR"] + chr(96)
+print("ok" if want in ctx else f"root not named: {ctx[-400:]!r}")
+PY
+)"
+
 # --- 5. the two payload files are disjoint ---
 # Both are injected into the same session, so anything in both is delivered
 # twice. The sentinels are the coarse form of the same check: each marks its
