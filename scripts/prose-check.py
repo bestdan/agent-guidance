@@ -26,12 +26,12 @@ EM_DASH = "—"
 # count that exceeds the cap of one however the dashes pair up.
 EM_DASH_FLOOR = 3
 
-_FENCE = re.compile(r"^\s*(?:```|~~~)")
+_FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 _SKIP_LINE = re.compile(r"^(?:#|\||>?\s*[-=]{3,}$|\[[^\]]+\]:\s)")
 _INLINE_CODE = re.compile(r"`[^`]*`")
 _LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 _BULLET = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
-_SENTENCE_END = re.compile(r"(?<=[.!?])[\"')\]]?\s+(?=[A-Z\"'(\[])")
+_SENTENCE_END = re.compile(r"(?<=[.!?])[\"')\]]?[*_~]*\s+(?=[*_~]*[A-Z\"'(\[])")
 _WORD = re.compile(r"[A-Za-z0-9]")
 
 # A sentence never ends here, whatever follows looks like a capital.
@@ -47,17 +47,24 @@ def paragraphs(text):
     one as a single paragraph charges a 50-bullet file one cap for the lot.
     """
     lines = text.split("\n")
-    in_fence = False
+    fence = None
     start = 0
     current = []
     for number, line in enumerate(lines, 1):
-        if _FENCE.match(line):
-            in_fence = not in_fence
+        match = _FENCE.match(line)
+        closes_fence = match and fence is not None and (
+            match.group(1)[0] == fence[0] and len(match.group(1)) >= fence[1]
+        )
+        if match and (fence is None or closes_fence):
+            if fence is None:
+                fence = (match.group(1)[0], len(match.group(1)))
+            else:
+                fence = None
             if current:
                 yield start, " ".join(current)
                 current = []
             continue
-        if in_fence:
+        if fence is not None:
             continue
         stripped = line.strip()
         if not stripped or _SKIP_LINE.match(stripped) or _BULLET.match(line):
@@ -87,6 +94,12 @@ def sentences(paragraph):
     return [part.strip() for part in out if part.strip()]
 
 
+def prose_text(paragraph):
+    """Remove markup that is not visible prose while retaining link labels."""
+    text = _INLINE_CODE.sub("CODE", paragraph)
+    return _LINK.sub(r"\1", text)
+
+
 def word_count(sentence):
     return sum(1 for token in sentence.split() if _WORD.search(token))
 
@@ -102,7 +115,7 @@ def measure(path):
     violations = []
     total = 0
     for line, paragraph in paragraphs(text):
-        dashes = paragraph.count(EM_DASH)
+        dashes = prose_text(paragraph).count(EM_DASH)
         if dashes >= EM_DASH_FLOOR:
             violations.append((line, dashes))
         for sentence in sentences(paragraph):
@@ -115,12 +128,11 @@ def measure(path):
 
 def tracked_markdown():
     result = subprocess.run(
-        ["git", "ls-files", "*.md"],
+        ["git", "ls-files", "-z", "*.md"],
         capture_output=True,
-        text=True,
         check=True,
     )
-    return [line for line in result.stdout.split("\n") if line]
+    return [path.decode("utf-8") for path in result.stdout.split(b"\0") if path]
 
 
 def main(argv):

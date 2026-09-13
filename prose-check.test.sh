@@ -91,26 +91,54 @@ check "a wrapped bullet is one paragraph" 1 \
   three ${em} four.")"
 
 # --- 7. code and tables are not prose ---
+tick='`'
 check "em-dashes inside a fence are ignored" 0 \
   "$(verdict fenced 'Prose.
 
 ```
 a — b — c — d
 ```')"
+mixed_fence="~~~
+${tick}${tick}${tick}
+three ${em} em-dashes ${em} in code ${em}
+~~~"
+check "a fence closes only with the opener marker" 0 \
+  "$(verdict mixed-fence "$mixed_fence")"
 check "em-dashes in a table row are ignored" 0 \
   "$(verdict table "| a | b |
 | --- | --- |
 | x ${em} y ${em} z ${em} w | q |")"
+check "em-dashes in inline code and link destinations are ignored" 0 \
+  "$(verdict markup "Code ${tick}a ${em} b ${em} c${tick}. [label](https://example.test/${em}/${em}/${em}).")"
+check "em-dashes in link labels are counted" 1 \
+  "$(verdict link-label "[one ${em} two ${em} three ${em}](https://example.test/ok).")"
 
 # --- 8. sentence length reports and never decides the exit code ---
-# The split is measured: when the check landed, 6% of the corpus broke the
-# em-dash cap and 23% of its sentences ran over 25 words, including the file
-# that states the rule. A cap the corpus breaks at that rate is wrong more often
+# The split is measured: before the rewrite, 194/641 sentences (30%) ran over
+# 25 words; the current result is 176/776 (23%), including the file that states
+# the rule. A cap the corpus breaks at that rate is wrong more often
 # than unheeded, so it reports until the rate says otherwise.
 long_sentence="$(python3 -c 'print("word " * 40 + "end.")')"
 check "a 41-word sentence exits 0" 0 "$(verdict long "$long_sentence")"
 check "the long sentence is counted in the report" ok \
   "$(grep -qE '^ +1/1 +100% +.*long\.md$' "$work/long.out" && echo ok || echo missing)"
+emphasis="One *sentence.* Another sentence."
+check "emphasis delimiters do not hide a sentence boundary" ok \
+  "$(verdict emphasis "$emphasis" >/dev/null 2>&1; grep -qE '^ +0/2 +0% +.*emphasis\.md$' "$work/emphasis.out" && echo ok || echo missing)"
+double_emphasis="First sentence. **Second sentence.**"
+check "opening emphasis delimiters allow a sentence boundary" ok \
+  "$(verdict double-emphasis "$double_emphasis" >/dev/null 2>&1; grep -qE '^ +0/2 +0% +.*double-emphasis\.md$' "$work/double-emphasis.out" && echo ok || echo missing)"
+
+tracked_fixture="$work/tracked-fixture"
+mkdir "$tracked_fixture"
+newline_path="$tracked_fixture/line
+break.md"
+printf 'A short sentence.\n' > "$newline_path"
+GIT_CONFIG_GLOBAL=/dev/null git -C "$tracked_fixture" init -q
+GIT_CONFIG_GLOBAL=/dev/null git -C "$tracked_fixture" add -- "$newline_path"
+(cd "$tracked_fixture" && python3 "$check_py" > "$work/newline.out" 2>&1)
+newline_status=$?
+check "tracked Markdown paths with newlines are handled" 0 "$newline_status"
 
 # --- 9. the repository's own markdown passes ---
 # The enforcing case. Everything above proves the check is right; this one makes
