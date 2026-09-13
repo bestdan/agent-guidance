@@ -6,6 +6,10 @@ convention: ../../dev_docs_layout.md
 
 # A date in the filename means a record; no date means a live file
 
+> [!NOTE] 2026-09-13: the shared checker named under Confirmation landed as
+> `scripts/dev-docs-layout.py`; see
+> `2026-09-13-layout-checker-runs-from-the-consumer-suite.md`.
+
 ## Context
 
 Four repos used `dev_docs/` with no shared rule for which files are kept

@@ -1,9 +1,8 @@
 # Review and authoring conventions
 
 How the reviewing and PR-authoring conventions are stored, delivered, and
-enforced, and the decisions that gave the system this shape. This is the live
-description. The `2026-09-12-*` records under `decisions/` carry the choices
-behind it; the `Decisions` section below is the working summary.
+enforced. This is the live description; the choices behind it are records
+under `decisions/`, listed at the end, and nothing here requires reading them.
 
 ## Architecture
 
@@ -57,104 +56,13 @@ one line. Until it lands, the bullets fail loud rather than silent: with no
 provenance section they say to ask for the path, not to write without the
 conventions.
 
-## Decisions
+## Checks
 
-### Two skills rather than one
-
-Each verb pays only for its half. A session reviewing a change loads
-`writing_about_code.md` plus `reviewing.md` and never the PR-body grammar; a
-session opening a PR loads the reverse. One combined skill would charge every
-session the half it is not doing. The split also preserves a distinction
-`dotfiles/agents/AGENTS.md` had already drawn between the two files: the prose
-register "applies without being read", the PR file is "read at PR time, not at
-session start".
-
-The cost is that two triggers can each fail to fire. The backstops below are
-what bound that.
-
-### Precedence: the repo wins on its own conventions
-
-`## Precedence` in `portable.md` splits a conflict between a repo's instructions
-and the guidance the user carries:
-
-- **Conventions about the work product** (commit format, PR title and body
-  shape, review style, code style, test layout): the repo's documented
-  convention wins. These rules are one developer's defaults, and a repo that
-  states its own is not asking for them.
-- **Rules about the session's own environment and workflow** (worktree
-  isolation, the Bash sandbox, which CLI tools to use, a local task runner):
-  hold regardless. A repo has no standing to say how someone else's machine
-  works, and one that appears to is describing its own CI.
-
-The split is what makes the rule safe to carry into a repo the author does not
-own. "The repo wins" without it would let any `AGENTS.md` override the sandbox
-and worktree rules, which are safety machinery rather than preferences.
-
-No mechanism enforces this. Both instruction sets land in the same context
-window and the model arbitrates, and the default leans the wrong way for the
-first half, because a user-level file arrives flagged as overriding and a repo
-file arrives as ordinary context. The section is a stated tiebreak, nothing
-more.
-
-### The co-review carrier is the assembled file, not stdin
-
-Four of the five reviewers are cut off from repo context by mechanism: `crush`
-pins `--cwd <NEUTRAL>`, `agy` trusts only its `--add-dir`, `devin` runs from a
-neutral cwd, `copilot` runs in GitHub's cloud. `codex` is the partial
-exception: `codex exec` runs in the repo and `~/.codex/AGENTS.md` carries
-`portable.md`, though it is unverified that a co-review dispatch loads it, and
-its pointer forbids exploring the filesystem in any case. The one artifact all
-five receive is the assembled `<INPUT>` file, so the conventions go into that
-file. Three reviewers get it piped on stdin, but `agy` opens `<INPUT>` by the
-path in its pointer and `devin` takes it with `--prompt-file`; a segment wired
-into the pipe reaches three of five and silently misses two.
-
-Two more details of the shape are load-bearing:
-
-- The paths are resolved once before dispatch and pasted into the assembling
-  `cat`, never computed by a script segment inside the dispatch line. `agy`'s
-  and `devin`'s assembly is chained with `&&`, where a non-zero exit would
-  cancel the dispatch instead of failing soft. The reviewer command tails are
-  byte-identical to before, so the exact-match allow rules still match.
-- It fails soft by exit code. `agent-guidance-dir.sh` exits `3` when the plugin
-  is not installed anywhere it looks (stdout empty), and
-  `coreview-conventions.sh` returns the same code when the installed copy ships
-  neither file; the dispatcher then drops the segment and records
-  `conventions: not attached — <reason>` on the run summary's Reviewers line.
-  Exit `1` (`AGENT_GUIDANCE_DIR` set but wrong) is surfaced, not swallowed.
-
-This is the only carrier that reads the files itself rather than instructing a
-model to read them, which makes it the load-bearing carrier for reviewing. Its
-cost is ongoing: measured at 10,509 bytes, about 2.6k tokens, per reviewer
-dispatch, so about 13k tokens across a five-reviewer run.
-
-### Two of the voice rules are a check, and only one of them blocks
-
-`scripts/prose-check.py` measures every tracked markdown file against the
-em-dash cap and the 25-word sentence cap. `prose-check.test.sh` runs it over the
-repository, so the em-dash cap fails CI. Sentence length prints a per-file rate
-and never decides the exit code.
-
-Issue #8 is why there is a check at all. Both rules are specific, and both were
-in force for a whole session that broke them continuously. A rewrite whose
-purpose was plainer prose then halved the sentence count and left the em-dash
-count untouched. The rule lives in `writing_about_code.md`, which is read on
-demand. The moment it is most needed is the moment an author is deepest in the
-writing and furthest from the rulebook.
-
-The split between blocking and reporting is measured, not a preference. On
-2026-09-13 the corpus broke the em-dash cap in 12 of 213 paragraphs and the word
-cap in 30% of sentences, `writing_about_code.md` itself included. Run the script
-to re-measure. A cap the corpus breaks at that rate is wrong more often than
-unheeded. `portable.md`'s check-over-prose bullet says what to do about that:
-report until the rate says otherwise. The 12 paragraphs were rewritten in the
-same change.
-
-The em-dash count is charitable by construction. One dash is an interruption,
-and so is a matched pair. A paragraph is therefore flagged only at three, where
-the cap is exceeded however the dashes pair up. A check that fires on a
-legitimate aside teaches people to ignore it, which is the failure this one
-exists to fix.
+`scripts/prose-check.py` measures every tracked markdown file against two rules
+from `writing_about_code.md`. `prose-check.test.sh` runs it over the
+repository, so the em-dash cap fails CI: a paragraph with three or more
+em-dashes is a failure. Sentence length prints a per-file rate and never
+decides the exit code. Run the script by hand to re-measure either.
 
 ## Gotchas
 
@@ -229,3 +137,18 @@ generator; the rule it served survives in `reviewing.md` as "check the change
 against the repo's documented patterns". The research on what Copilot reads,
 kept because it is the expensive part to redo, is in the design record's
 "Considered and dropped" section.
+
+## Decisions
+
+The choices behind this shape are one record each under `decisions/`, in the
+form `decisions/README.md` describes: context, decision, consequences, and
+what would reopen it.
+
+- `2026-09-12-two-skills-by-verb.md`: two skills split by verb rather than one
+  combined conventions skill.
+- `2026-09-12-repo-wins-on-work-product.md`: the repo wins on work-product
+  conventions; session rules hold regardless.
+- `2026-09-12-co-review-carrier-is-the-assembled-file.md`: the co-review
+  carrier is the assembled input file, not a stdin segment.
+- `2026-09-13-em-dash-cap-blocks-sentence-length-reports.md`: the em-dash cap
+  fails CI and sentence length is reported.

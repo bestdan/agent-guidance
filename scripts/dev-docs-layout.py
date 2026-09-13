@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""Checks a repo's dev_docs/ against the layout in dev_docs_layout.md.
+
+Run: scripts/dev-docs-layout.py [ROOT]
+
+ROOT is the repository root and defaults to the current directory. A ROOT with
+no dev_docs/ has nothing to check and passes. Every violation is one line on
+stdout, `path: what is wrong`, and the exit status is 1 when there is any.
+
+The checks, each one the Enforcement section of dev_docs_layout.md names:
+
+1. dev_docs/tasks/ holds only .task-config*.yml files, <name>_plan/
+   directories, and flat <slug>.md cards.
+2. No unchecked `- [ ]` under dev_docs/ outside dev_docs/tasks/*_plan/. Lines
+   inside a fenced code block are not counted, so a README's template can
+   show the syntax.
+3. Every file in a record or design directory, which is every directory under
+   dev_docs/ other than tasks/, is YYYY-MM-DD-<slug>.md or README.md. Slugs
+   are kebab-case, lowercase, ASCII.
+4. A record's `created` front-matter field equals its filename date.
+5. A decision record has a `## Revisit when` section.
+
+Subdirectories of research/ are skipped by checks 2 and 3: the research-spike
+skill owns those trees, keeps a question ledger with checkboxes in it, and
+validates them itself.
+
+Which files count. Inside a git repository the checks read what git sees:
+tracked files plus untracked files that .gitignore does not exclude, so a
+skill's ignored config directory and a locally ignored plan never fail a check
+that CI would pass. Outside a repository, or when git is not on PATH, the
+directory is walked as is. Check 1 always walks the filesystem: an ignored
+plan directory is legitimate content there, and a stray file is stray whether
+or not anyone committed it.
+"""
+
+import datetime
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
+CONVENTION = "dev_docs_layout.md in the agent-guidance plugin"
+
+RECORD_NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
+CHECKBOX = re.compile(r"^\s*[-*+] \[ \]")
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
+CREATED = re.compile(r"^created:\s*(.*?)\s*$")
+REVISIT = re.compile(r"^## Revisit when\s*$")
+
+# macOS Finder writes this into any directory it displays, so it appears on a
+# clean checkout without anyone committing anything. Skipped by name.
+FINDER_NOISE = {".DS_Store"}
+
+
+def git_files(root: pathlib.Path):
+    """Paths under dev_docs/ that git sees, relative to root, or None if not a repo."""
+    try:
+        top = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    if not top:
+        return None
+    out = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others",
+         "--exclude-standard", "--", "dev_docs"],
+        capture_output=True,
+        check=True,
+    ).stdout
+    files = []
+    for raw in out.split(b"\0"):
+        if not raw:
+            continue
+        rel = pathlib.Path(os.fsdecode(raw))
+        # A tracked file deleted in the working tree is still listed.
+        if (root / rel).is_file() and rel.name not in FINDER_NOISE:
+            files.append(rel)
+    return files
+
+
+def walked_files(root: pathlib.Path):
+    files = []
+    for dirpath, _, names in os.walk(root / "dev_docs"):
+        for name in names:
+            if name in FINDER_NOISE:
+                continue
+            files.append(pathlib.Path(dirpath, name).relative_to(root))
+    return files
+
+
+def front_matter(text: str):
+    """The lines between the opening and closing --- fences, or None."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            return lines[1:i]
+    return None
+
+
+def created_value(text: str):
+    fm = front_matter(text)
+    if fm is None:
+        return None
+    for line in fm:
+        m = CREATED.match(line)
+        if m:
+            return m.group(1).strip("\"'")
+    return None
+
+
+def in_plan_dir(rel: pathlib.Path) -> bool:
+    parts = rel.parts
+    return len(parts) > 3 and parts[1] == "tasks" and parts[2].endswith("_plan")
+
+
+def in_research_spike(rel: pathlib.Path) -> bool:
+    """A file inside a subdirectory of dev_docs/research/, which the
+    research-spike skill owns and validates itself."""
+    parts = rel.parts
+    return len(parts) > 3 and parts[1] == "research"
+
+
+def check_tasks(root: pathlib.Path, report):
+    tasks = root / "dev_docs" / "tasks"
+    if not tasks.is_dir():
+        return
+    for entry in sorted(tasks.iterdir()):
+        name = entry.name
+        if name in FINDER_NOISE:
+            continue
+        rel = entry.relative_to(root)
+        if entry.is_dir():
+            if not name.endswith("_plan"):
+                report(rel, "only <name>_plan/ directories belong under dev_docs/tasks/")
+        elif name.startswith(".task-config") and name.endswith(".yml"):
+            continue
+        elif name.endswith(".md") and not name.startswith("."):
+            continue
+        else:
+            report(rel, "only .task-config*.yml and <slug>.md cards belong loose under dev_docs/tasks/")
+
+
+def check_checkboxes(root: pathlib.Path, files, report):
+    for rel in files:
+        if rel.suffix != ".md" or in_plan_dir(rel) or in_research_spike(rel):
+            continue
+        fence = None
+        try:
+            lines = (root / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError as e:
+            report(rel, f"unreadable: {e}")
+            continue
+        for n, line in enumerate(lines, 1):
+            m = FENCE.match(line)
+            if m:
+                marker = m.group(1)
+                if fence is None:
+                    fence = marker
+                elif marker[0] == fence[0] and len(marker) >= len(fence):
+                    fence = None
+                continue
+            if fence is None and CHECKBOX.match(line):
+                report(rel, f"line {n}: unchecked checkbox outside dev_docs/tasks/*_plan/; a backlog is not a dev_doc")
+
+
+def check_records(root: pathlib.Path, files, report):
+    for rel in files:
+        parts = rel.parts
+        if len(parts) < 3 or parts[1] == "tasks":
+            continue
+        directory = parts[1]
+        if len(parts) > 3:
+            if in_research_spike(rel):
+                continue
+            report(rel, f"a subdirectory is not allowed under dev_docs/{directory}/")
+            continue
+        name = parts[2]
+        if name == "README.md":
+            continue
+        m = RECORD_NAME.match(name)
+        if not m:
+            report(rel, f"not YYYY-MM-DD-<slug>.md (kebab-case, lowercase) or README.md; dev_docs/{directory}/ holds records")
+            continue
+        date = m.group(1)
+        try:
+            datetime.date.fromisoformat(date)
+        except ValueError:
+            report(rel, f"{date} is not a calendar date")
+            continue
+        try:
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            report(rel, f"unreadable: {e}")
+            continue
+        created = created_value(text)
+        if created is None:
+            report(rel, "no `created:` in the front matter; every record carries one")
+        elif created != date:
+            report(rel, f"created: {created} does not match the filename date {date}")
+        if directory == "decisions" and not any(REVISIT.match(l) for l in text.splitlines()):
+            report(rel, "no `## Revisit when` section; a decision says what would reopen it")
+
+
+def main(argv):
+    if len(argv) > 2 or argv[1:] in (["-h"], ["--help"]):
+        print(__doc__.strip().splitlines()[0])
+        print("Run: scripts/dev-docs-layout.py [ROOT]")
+        return 0 if argv[1:] else 2
+    root = pathlib.Path(argv[1] if len(argv) == 2 else ".").resolve()
+    if not (root / "dev_docs").is_dir():
+        print(f"{root}: no dev_docs/, nothing to check")
+        return 0
+
+    violations = []
+
+    def report(rel, message):
+        violations.append(f"{rel.as_posix()}: {message}")
+
+    files = git_files(root)
+    if files is None:
+        files = walked_files(root)
+    files.sort()
+
+    check_tasks(root, report)
+    check_checkboxes(root, files, report)
+    check_records(root, files, report)
+
+    for v in violations:
+        print(v)
+    if violations:
+        print(f"{len(violations)} layout violation(s); see {CONVENTION}")
+        return 1
+    print(f"dev_docs/ layout ok ({len(files)} files)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
