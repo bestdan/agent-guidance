@@ -19,16 +19,17 @@ rather than as a placeholder.
 
 ## What it ships
 
-| File                     | Reaches                              | Carries                                                                    |
-| ------------------------ | ------------------------------------ | -------------------------------------------------------------------------- |
-| `portable.md`            | every harness                        | preferences any coding agent can act on                                    |
-| `portable-claude.md`     | Claude Code only                     | preferences that name Claude Code machinery                                |
-| `inject.sh`              | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
-| `codex/hooks.json`       | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
-| `skills/plugin-delivery` | Claude Code, on demand               | why a release may not have reached the session reading it, and what to do  |
-| `skills/authoring`       | Claude Code, at PR time              | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
-| `skills/reviewing`       | Claude Code, when reviewing a change | reads `writing_about_code.md` and `reviewing.md`                           |
-| `dev_docs_layout.md`     | every harness, by name               | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
+| File                         | Reaches                              | Carries                                                                    |
+| ---------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| `portable.md`                | every harness                        | preferences any coding agent can act on                                    |
+| `portable-claude.md`         | Claude Code only                     | preferences that name Claude Code machinery                                |
+| `inject.sh`                  | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
+| `codex/hooks.json`           | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
+| `skills/plugin-delivery`     | Claude Code, on demand               | why a release may not have reached the session reading it, and what to do  |
+| `skills/authoring`           | Claude Code, at PR time              | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
+| `skills/reviewing`           | Claude Code, when reviewing a change | reads `writing_about_code.md` and `reviewing.md`                           |
+| `dev_docs_layout.md`         | every harness, by name               | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
+| `scripts/dev-docs-layout.py` | any repo's check suite               | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`; the root `plugin.json` follows the
@@ -138,3 +139,8 @@ paragraph carrying more than one em-dash interruption, which is a rule from
 `writing_about_code.md` that prose alone did not hold. The same script reports
 how many sentences run over the 25-word cap, and that half never fails. Why the
 two rules are treated differently is in `dev_docs/conventions.md`.
+
+`dev-docs-layout.test.sh` checks content too. It pins each rule of
+`scripts/dev-docs-layout.py` at its boundary on fixtures, then runs the checker
+over this repo's own `dev_docs/`, so a file that breaks `dev_docs_layout.md`
+fails CI here the way it will in any repo that wires the checker in.

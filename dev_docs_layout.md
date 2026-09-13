@@ -139,15 +139,37 @@ this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
 
 ## Enforcement
 
-1. **A layout test in the repo**, run by its check suite. Minimum checks:
-   `dev_docs/tasks/` holds only what its section allows; no unchecked
-   checkbox outside `dev_docs/tasks/*_plan/`; every file in a record or design
-   directory is `YYYY-MM-DD-<slug>.md` or `README.md`, skipping subdirectories
-   of `dev_docs/research/`, which the `research-spike` skill owns and validates
-   itself; a record's `created`
-   matches its filename date. `bestdan/dotfiles`'
-   `scripts/dev_docs_layout.test.sh` is the reference for the first two; a
-   shared checker in the plugin is the follow-up.
+1. **The shared checker, `scripts/dev-docs-layout.py` at the plugin root**,
+   run by each repo's check suite. It checks that `dev_docs/tasks/` holds only
+   what its section allows; that no unchecked checkbox sits outside
+   `dev_docs/tasks/*_plan/`; that every file in a record or design directory
+   is `YYYY-MM-DD-<slug>.md` or `README.md`; that a record's `created` matches
+   its filename date; and that a decision has a `## Revisit when` section.
+   Subdirectories of `dev_docs/research/` are skipped, because the
+   `research-spike` skill owns and validates those. Inside a repository it
+   reads what git sees, so an ignored skill directory or plan never fails
+   locally what CI would pass. The `dev_docs/tasks/` check is the exception
+   and always reads the filesystem: an ignored plan directory is legitimate
+   content there, and a stray file is stray whether or not anyone committed
+   it.
+
+   A repo calls it as one entry in the suite it already has, a `*.test.sh` or
+   a line in `check.sh`, and resolves the plugin root before the call:
+   `AGENT_GUIDANCE_DIR` when set, else the repo's own resolver
+   (`agents/agent-guidance-dir.sh` in `dotfiles`,
+   `scripts/agent-guidance-dir.sh` in `workflow-skills`). A root that cannot be
+   resolved, or an installed copy too old to ship the script, fails the entry
+   rather than skipping it; a skipped check is green while checking nothing.
+   CI that has no plugin install clones `bestdan/agent-guidance` and exports
+   `AGENT_GUIDANCE_DIR`.
+
+   ```sh
+   root="${AGENT_GUIDANCE_DIR:-$(scripts/agent-guidance-dir.sh)}" || exit 1
+   python3 "$root/scripts/dev-docs-layout.py" "$(git rev-parse --show-toplevel)"
+   ```
+
+   `dev-docs-layout.test.sh` in this repo pins each check at its boundary and
+   runs the checker over this repo's own `dev_docs/`.
 2. **This file**, reached by name from `portable.md`.
 3. **Review.** A reviewer who sees a dated file rewritten, an undated record,
    or a design still present after its change landed says so.

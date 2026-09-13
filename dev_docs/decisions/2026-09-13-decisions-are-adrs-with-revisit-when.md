@@ -45,6 +45,9 @@ superseded, deprecated, or annotated with a dated callout.
 Review against `decisions/README.md`. A checker could require the section
 heading; that is part of the shared-checker follow-up.
 
+> [!NOTE] 2026-09-13: `scripts/dev-docs-layout.py` now requires the
+> `## Revisit when` heading on every file under `decisions/`.
+
 ## Alternatives
 
 - **MADR `NNNN-` numbering:** a second sequence beside the date.

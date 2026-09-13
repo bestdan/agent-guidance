@@ -6,6 +6,10 @@ convention: ../../dev_docs_layout.md
 
 # Date first, kebab-case, no type suffix, front matter on every record
 
+> [!NOTE] 2026-09-13: the shared checker named under Confirmation landed as
+> `scripts/dev-docs-layout.py`; see
+> `2026-09-13-layout-checker-runs-from-the-consumer-suite.md`.
+
 ## Context
 
 The survey found prefix dates in most directories and suffix dates in one,

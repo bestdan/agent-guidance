@@ -1,7 +1,7 @@
 ---
 created: 2026-09-12
 purpose: conventions for this directory
-source: copied from bestdan/dotfiles dev_docs/.handoffs/README.md
+source: bestdan/agent-guidance dev_docs/.handoffs/README.md
 ---
 
 # Handoffs
@@ -35,9 +35,9 @@ enough that a tracker issue would cost more than it returns, including a local
 `dev_docs/tasks/<name>_plan/` that is deliberately never pushed — a handoff is
 what carries that between sessions.
 
-`dotfiles`' `dev_docs/designs/2026-08-01-state-locality-design.md` still holds
-in general: state belongs where its owner keeps it, and a handoff is a poor
-tracker for anything that outlives a few sessions. Overriding that is allowed,
+The state-locality rule in `portable.md` still holds in general: state belongs
+where its owner keeps it, and a handoff is a poor tracker for anything that
+outlives a few sessions. Overriding that is allowed,
 and it works because it is deliberate — say in the file that you are doing it
 and why, so the next session inherits a decision instead of guessing at an
 accident.
@@ -99,12 +99,18 @@ searching for one.
 
 `.gitignore` keeps handoffs out of `git status` and out of commits.
 `dprint.json` excludes them separately, and that entry is not redundant —
-verified in this repo 2026-09-12 by dropping an unformatted file into this
-directory and running `dprint check`, which found it. This repo's `includes` is
-`**/*.{md,json,jsonc}`, and that matches dot-prefixed paths, so without the
-exclude every handoff has to be dprint-clean or the format check fails. Without
-the gitignore entry dprint sees these files again; without the dprint entry the
-formatting protection is an invisible side effect of the gitignore. Keep both.
+verified 2026-09-12 in `bestdan/agent-guidance` by dropping an unformatted
+file into this directory and running `dprint check`, which found it. A dprint
+`includes` of `**/*.{md,json,jsonc}` matches dot-prefixed paths, so without
+the exclude every handoff has to be dprint-clean or the format check fails.
+Without the gitignore entry dprint sees these files again; without the dprint
+entry the formatting protection is an invisible side effect of the gitignore.
+Keep both.
+
+The layout checker, `scripts/dev-docs-layout.py` in the plugin, reads what
+git sees, so it never checks a handoff: an unchecked `- [ ]` here will not
+fail the stray-checkbox rule. That is a consequence of the ignore, not a
+licence to keep a backlog here.
 
 ## Why this one file is tracked
 
@@ -123,15 +129,10 @@ a tracked file's modifications are not subject to the ignore rules. Reach for
 Every other file here stays untracked, and that asymmetry is the point: the
 conventions are shared, the handoffs are not.
 
-## Divergence from the `dotfiles` original
+## Copies
 
-This file was copied from `bestdan/dotfiles`. Two passages were adapted rather
-than carried verbatim, because they named things this repo does not have:
-
-- The state-locality design doc lives in `dotfiles`, and is cited above as
-  living there rather than as a local path.
-- `dotfiles`' paragraph about `scripts/dev_docs_layout.test.sh` not seeing this
-  directory was dropped — there is no such test here.
-
-Keep the two copies in sync on the conventions themselves; the two notes above
-are the only places they are meant to differ.
+This is the canonical copy, as `dev_docs_layout.md` says of every directory
+README here. A repo that uses `.handoffs/` copies this file, keeps the
+`source:` line, and puts anything specific to that repo in its own
+`dev_docs/README.md` rather than in the copy. The conventions above are what
+the copies are meant to share; when one changes, change it here first.
