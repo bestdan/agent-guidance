@@ -62,16 +62,16 @@ def git_files(root: pathlib.Path):
             text=True,
             check=True,
         ).stdout.strip()
+        if not top:
+            return None
+        out = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others",
+             "--exclude-standard", "--", "dev_docs"],
+            capture_output=True,
+            check=True,
+        ).stdout
     except (OSError, subprocess.CalledProcessError):
         return None
-    if not top:
-        return None
-    out = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others",
-         "--exclude-standard", "--", "dev_docs"],
-        capture_output=True,
-        check=True,
-    ).stdout
     files = []
     for raw in out.split(b"\0"):
         if not raw:
@@ -212,7 +212,7 @@ def main(argv):
     if len(argv) > 2 or argv[1:] in (["-h"], ["--help"]):
         print(__doc__.strip().splitlines()[0])
         print("Run: scripts/dev-docs-layout.py [ROOT]")
-        return 0 if argv[1:] else 2
+        return 0 if argv[1:] in (["-h"], ["--help"]) else 2
     root = pathlib.Path(argv[1] if len(argv) == 2 else ".").resolve()
     if not (root / "dev_docs").is_dir():
         print(f"{root}: no dev_docs/, nothing to check")

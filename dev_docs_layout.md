@@ -148,7 +148,10 @@ this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
    Subdirectories of `dev_docs/research/` are skipped, because the
    `research-spike` skill owns and validates those. Inside a repository it
    reads what git sees, so an ignored skill directory or plan never fails
-   locally what CI would pass.
+   locally what CI would pass. The `dev_docs/tasks/` check is the exception
+   and always reads the filesystem: an ignored plan directory is legitimate
+   content there, and a stray file is stray whether or not anyone committed
+   it.
 
    A repo calls it as one entry in the suite it already has, a `*.test.sh` or
    a line in `check.sh`, and resolves the plugin root before the call:

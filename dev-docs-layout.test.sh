@@ -53,10 +53,14 @@ record() {
   printf -- '---\ncreated: %s\n---\n\n# Title\n\n%s\n' "$created" "$body" > "$dir/$name"
 }
 
-# --- 0. nothing to check ---
+# --- 0. nothing to check, and the usage contract ---
 empty="$work/empty"
 mkdir -p "$empty"
 check "a root with no dev_docs/ passes" 0 "$(verdict "$empty")"
+python3 "$check_py" --help > /dev/null 2>&1
+check "--help exits 0" 0 $?
+python3 "$check_py" "$empty" "$empty" > /dev/null 2>&1
+check "two positional arguments exit 2, not a passing 0" 2 $?
 
 # --- 1. dev_docs/tasks/ contents ---
 fx="$(fixture tasks-ok)"
