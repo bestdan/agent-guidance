@@ -8,7 +8,7 @@ The reviewing and PR-authoring conventions move out of `bestdan/dotfiles` and in
 
 Nothing enforces reviewing conventions anywhere.
 
-- **This plugin carries none.** `rg -i review portable.md portable-claude.md` returns five lines; four are coding rules mentioning review in passing, one routes technical-correctness questions to agent review. None says how to review or how to write a finding.
+- **This plugin carries none.** `rg -i review portable.md portable-claude.md` returns five lines at `87e76fd`; four are coding rules mentioning review in passing, one routes technical-correctness questions to agent review. None says how to review or how to write a finding.
 - **The conventions exist, in the wrong place.** `dotfiles/agents/writing_about_code.md` holds "One point per comment", "Say whether it blocks", "Comment on the code, not the author", plus the verified-versus-inferred and absence-claim rules. That file is private and machine-local. It reaches a Claude Code session on a synced machine and nothing else.
 - **Four of five co-review reviewers get nothing.** Each is dispatched with rubric plus diff and cut off from repo context by design: `crush` pins `--cwd <NEUTRAL>` specifically to take the repo's context files off the discovery path, `agy`'s `--add-dir` trusts only the input directory, `devin` uses a neutral cwd, `copilot` runs in GitHub's cloud. The rubric names "Project conventions" as a focus area with no conventions behind it.
 - **No precedence rule exists.** Grepped `portable.md`, `portable-claude.md`, `dotfiles/agents/AGENTS.md`, and `writing_about_code.md`: the only precedence language in the corpus is the owner table for draft-versus-ready, and `authoring_pull_requests.md`'s rule about PR _body_ templates. Nothing says what happens when a repo's conventions disagree with these. The default leans the wrong way — user-level `CLAUDE.md` arrives flagged as overriding, repo `AGENTS.md` arrives as ordinary context.
@@ -71,7 +71,7 @@ This is the only enforcement path that does not depend on a skill firing, which 
 | `codex`, `crush`, `copilot` CLI, `devin`, `agy` | reviewing | co-review's assembled `<INPUT>`                    | no — `workflow-skills` change |
 | Codex sessions generally                        | both      | one pointer line per skill in `~/.codex/AGENTS.md` | no — `sync_codex.sh`          |
 
-All four already reach every machine and harness today, including a repo owned by someone else. Verified: `sync_codex.sh:61` resolves the **installed plugin** through `agent-guidance-dir.sh` and concatenates its `portable.md` with `dotfiles/agents/AGENTS.md` at shell startup; the Claude Code side comes from this plugin's own `SessionStart` hook. Neither asks the repo for anything.
+All four **routes** already reach every machine and harness today, including a repo owned by someone else — what each must still gain is the content, per the fourth column. Verified: `sync_codex.sh:61` resolves the **installed plugin** through `agent-guidance-dir.sh` and concatenates its `portable.md` with `dotfiles/agents/AGENTS.md` at shell startup; the Claude Code side comes from this plugin's own `SessionStart` hook. Neither asks the repo for anything.
 
 ## Considered and dropped — the GitHub Copilot review path
 
@@ -101,9 +101,9 @@ No line budget is needed now that nothing is generated into a size-capped file.
 
 ## Sequencing against issue #10
 
-Issue #10 is a contradiction problem — `portable.md`, `dotfiles`, and `workflow-skills` each state a different PR-title rule, and the one that actually writes the titles is not the SOT. This design is a distribution problem — the rules exist and reach nobody. They share one step, the file move in decision 1, which this design owns. Issue #10's remaining steps stay there: the `portable.md` title grammar, the four `workflow-skills` handler templates, and the `guard_pr_body.py` title check.
+Issue #10 is a contradiction problem — `portable.md`, `dotfiles`, and `workflow-skills` each state a different PR-title rule, and the one that actually writes the titles is not the SOT. This design is a distribution problem — the rules exist and reach nobody. They share one step, the file move in decision 1, which this design owns. Issue #10's remaining steps stay there: the four `workflow-skills` handler templates and the `guard_pr_body.py` title check. The `portable.md` title grammar is the exception — it comes here, as issue #11, because `skills/authoring/SKILL.md` cites it.
 
-One ordering constraint runs the other way. **Issue #10 step 1 — the title grammar in `portable.md` — must land before `skills/authoring/SKILL.md` cites it.** The skill points at the conventions; if it ships while `portable.md` is still silent on the ticket key, it points at a rule set missing the most-violated convention in issue #10's measured data. One line, no shared code, no merged PR — but a real dependency edge.
+One ordering constraint runs inside that scope. **The title grammar must land in `portable.md` before `skills/authoring/SKILL.md` cites it.** The skill points at the conventions; if it ships while `portable.md` is still silent on the ticket key, it points at a rule set missing the most-violated convention in issue #10's measured data. One line, no shared code, no merged PR — but a real dependency edge.
 
 ## Scope
 
