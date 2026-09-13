@@ -35,10 +35,28 @@ repo:
 3. **The Codex pointer.** `sync_codex.sh` in `bestdan/dotfiles` concatenates the
    installed plugin's `portable.md` into `~/.codex/AGENTS.md`, and the two
    `Rules` bullets in `portable.md` tell any harness without skills to read the
-   files by name.
+   files from the plugin root.
 
 `portable.md` also carries the two rules every session needs without loading a
 skill: the PR title grammar in its `Git:` bullet, and `## Precedence`.
+
+## Who resolves the plugin root
+
+Carrier 3 names three files by filename alone, so something has to say which
+directory holds them. `inject.sh` does it: the `## Provenance of this guidance`
+section it appends to every payload names the directory it delivered from,
+and `portable.md` defines the plugin root as that directory. Carriers 1 and 2
+never need it — the skills expand `${CLAUDE_PLUGIN_ROOT}` and co-review pastes
+absolute paths before dispatch.
+
+That covers both hook registrations, `hooks/hooks.json` and `codex/hooks.json`.
+It does not cover the other Codex route: `sync_codex.sh` runs `cat` over
+`portable.md` itself rather than the hook, so the generated `~/.codex/AGENTS.md`
+carries no provenance section and no root. The script resolves the directory
+already, in `_codex_guidance_msg`, so closing the gap is a `dotfiles` change of
+one line. Until it lands, the bullets fail loud rather than silent: with no
+provenance section they say to ask for the path, not to write without the
+conventions.
 
 ## Decisions
 
