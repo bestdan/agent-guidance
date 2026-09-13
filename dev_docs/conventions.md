@@ -2,10 +2,8 @@
 
 How the reviewing and PR-authoring conventions are stored, delivered, and
 enforced, and the decisions that gave the system this shape. This is the live
-description. The design that proposed it landed in PR #24 and was deleted
-once implemented, as `dev_docs_layout.md` requires; its choices are the three
-`2026-09-12-*` records under `decisions/`, and the `Decisions` section below
-is the working summary of them.
+description. The `2026-09-12-*` records under `decisions/` carry the choices
+behind it; the `Decisions` section below is the working summary.
 
 ## Architecture
 

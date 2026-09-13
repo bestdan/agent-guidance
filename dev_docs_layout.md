@@ -9,10 +9,8 @@ rules and template for that directory's files, because how to write a design
 is not how to write a decision. The canonical copies of those READMEs are in
 `bestdan/agent-guidance` under `dev_docs/`; a repo copies the ones it uses.
 
-The design that proposed this layout is
-`dev_docs/designs/2026-09-13-dev-docs-layout.md` in `bestdan/agent-guidance`
-until it graduates; the decisions behind it will be under `dev_docs/decisions/`
-there.
+The decisions behind this layout are the `2026-09-13-*` records under
+`dev_docs/decisions/` in `bestdan/agent-guidance`.
 
 ## The one rule everything else follows from
 
@@ -21,8 +19,9 @@ is live.**
 
 - A **record** describes a moment: a decision as taken, research as gathered,
   a handoff as written, a report as measured. It is allowed to go stale
-  forever, because the date in its name says when it was true, and it is never
-  rewritten: its directory's README says how it is amended, superseded, or
+  forever, because the date in its name says when it was true. Its body is
+  never rewritten; only the lifecycle fields and dated callouts its directory's
+  README allows may change, and that README says how it is superseded or
   deleted.
 - A **live** file describes the present and is kept current. When a live file
   and a record disagree, the live file wins.

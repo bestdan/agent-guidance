@@ -1,7 +1,7 @@
 ---
 created: 2026-09-13
 question: "How is dev_docs/ actually laid out across the four repos that use it, and where do they disagree?"
-feeds: ../designs/2026-09-13-dev-docs-layout.md
+feeds: ../decisions/2026-09-13-date-in-filename-means-record.md
 ---
 
 # Survey of `dev_docs/` across four repos
@@ -131,4 +131,4 @@ tier-2 rule landed in `agents/AGENTS.md`; the rule is now in
 
 ## Feeds
 
-`../designs/2026-09-13-dev-docs-layout.md`.
+`../decisions/2026-09-13-date-in-filename-means-record.md`.

@@ -1,7 +1,7 @@
 ---
 created: 2026-09-13
 question: "What do the established ADR and design-proposal formats prescribe, and which parts transfer to dev_docs/?"
-feeds: ../designs/2026-09-13-dev-docs-layout.md
+feeds: ../decisions/2026-09-13-decisions-are-adrs-with-revisit-when.md
 ---
 
 # ADR and design-proposal templates
@@ -116,5 +116,5 @@ change it, and no surveyed format has one.
 
 ## Feeds
 
-`../designs/2026-09-13-dev-docs-layout.md`, and the templates in
+`../decisions/2026-09-13-decisions-are-adrs-with-revisit-when.md`, and the templates in
 `../decisions/README.md` and `../designs/README.md`.

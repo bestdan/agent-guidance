@@ -1,7 +1,7 @@
 ---
 created: 2026-09-13
 purpose: conventions for this directory
-source: canonical copy in bestdan/agent-guidance dev_docs/decisions/README.md
+source: bestdan/agent-guidance dev_docs/decisions/README.md
 ---
 
 # Decisions
