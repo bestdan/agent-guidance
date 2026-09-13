@@ -27,10 +27,10 @@ is broken, and that is worth two lines in every session.
 
 ## Precedence
 
-A repo's own instructions — its `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, a PR template — can disagree with this file. When they do, split the conflict in two:
+A repo's own instructions — its `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, a PR template — can disagree with the guidance you carry as the user: this file, and the machine-local half it names. When they do, split the conflict in two:
 
 - **Conventions about the work product** — commit format, PR title and body shape, review style, code style, test layout — the repo's documented convention wins. The rules here are one developer's defaults, and a repo that states its own convention is not asking for them.
-- **Rules about the session's own environment and workflow** — worktree isolation, the Bash sandbox, `dli`, `op`, which CLI tools to reach for — hold regardless. A repo has no standing to say how someone else's machine works. A repo that appears to is describing its own CI, not the reader's session.
+- **Rules about the session's own environment and workflow** — worktree isolation, the Bash sandbox, which CLI tools to reach for, a local task runner — hold regardless, whichever of those files carries them. A repo has no standing to say how someone else's machine works. A repo that appears to is describing its own CI, not the reader's session.
 
 Nothing enforces this split. Both instruction sets land in the same context window, and the model arbitrates. The default leans the wrong way for the first half: a user-level file arrives flagged as overriding default behaviour, and a repo file arrives as ordinary context. Read this section as the tiebreak, not as a harness feature.
 
