@@ -44,9 +44,10 @@ skill the harness loads when the symptom shows up. Guidance needed at one
 mechanical moment rides a `PreToolUse` hook, which the harness fires on the
 event rather than offering to the model: `hooks/dev-docs-context.sh` names the
 `dev_docs/` layout before the first write under that directory.
-`dev_docs/designs/2026-09-16-dev-docs-write-hook.md` carries why, including the
-skill mechanism that was measured and abandoned. The one cost is in
-[Versioning](#versioning): the payload and the skills can skew.
+The skill mechanism that was measured and abandoned first is recorded in
+`dev_docs/research/2026-09-16-paths-frontmatter-on-plugin-skills.md`. The one
+cost is in [Versioning](#versioning): the payload, the skills and the hook can
+skew.
 
 ## Install
 
