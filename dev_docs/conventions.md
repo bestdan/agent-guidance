@@ -38,6 +38,20 @@ repo:
 `portable.md` also carries the two rules every session needs without loading a
 skill: the PR title grammar in its `Git:` bullet, and `## Precedence`.
 
+Another carrier shape exists and carries none of this content yet: a
+`PreToolUse` hook, which the harness fires on a tool call rather than offering
+to the model. `hooks/dev-docs-context.sh` is the one instance, naming
+`dev_docs_layout.md` before a write under `dev_docs/`. It is the shape for
+guidance whose trigger is mechanical rather than a judgment. It requires an
+`if` condition in `hooks/hooks.json` per tool, and costs one process spawn per
+matching call.
+
+The hook itself reaches Claude Code only, since Codex registers `SessionStart`
+alone. Codex is not left without the layout: the `Writing anything under
+dev_docs/` bullet in `portable.md` names the same file, and carrier 3 above
+delivers it. The hook is an upgrade on a route both harnesses have, not the
+only route. The choices behind it are the `2026-09-16-` records listed below.
+
 ## Who resolves the plugin root
 
 Carrier 3 names three files by filename alone, so something has to say which
@@ -152,3 +166,17 @@ what would reopen it.
   carrier is the assembled input file, not a stdin segment.
 - `2026-09-13-em-dash-cap-blocks-sentence-length-reports.md`: the em-dash cap
   fails CI and sentence length is reported.
+- `2026-09-16-conditional-guidance-rides-a-pretooluse-hook.md`: guidance with a
+  mechanical trigger rides a `PreToolUse` hook rather than a skill.
+- `2026-09-16-dev-docs-hook-emits-a-pointer.md`: the hook names
+  `dev_docs_layout.md` rather than inlining it.
+- `2026-09-16-dev-docs-pointer-fires-once-per-session.md`: a marker keyed on the
+  session id holds the pointer to one copy.
+- `2026-09-16-dev-docs-hook-never-denies-the-write.md`: the hook advises and
+  exits 0 on every path; the checker is the tier that says no.
+- `2026-09-16-if-narrows-dispatch-and-the-script-tests-the-path.md`: `if`
+  decides whether the script runs, the script decides whether it speaks.
+- `2026-09-16-two-handlers-because-if-takes-one-rule.md`: two handlers on the
+  matcher, because an alternation in `if` matches nothing.
+- `2026-09-16-dev-docs-hook-matches-write-and-edit-not-read.md`: `Write|Edit`
+  rather than `Read`.

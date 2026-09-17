@@ -1,7 +1,7 @@
 ---
 created: 2026-09-16
 question: "does a skill's paths: frontmatter load that skill when a plugin ships it, and does it fire before or after the write that matches"
-feeds: ../designs/2026-09-16-dev-docs-write-hook.md
+feeds: ../decisions/2026-09-16-conditional-guidance-rides-a-pretooluse-hook.md
 ---
 
 # `paths:` frontmatter on a plugin-shipped skill
@@ -89,6 +89,7 @@ matches `packages/x/dev_docs/`. Read from the bundle, not measured.
 
 ## Feeds
 
-`../designs/2026-09-16-dev-docs-write-hook.md`, which abandoned the
-`paths:`-scoped skill on the strength of the first finding and proposes a
-`PreToolUse` hook instead.
+`../decisions/2026-09-16-conditional-guidance-rides-a-pretooluse-hook.md`,
+which abandoned the `paths:`-scoped skill on the strength of the first finding
+and carries a `PreToolUse` hook instead. It was argued first in the design
+`designs/2026-09-16-dev-docs-write-hook.md`, deleted on graduation.
