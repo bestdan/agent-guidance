@@ -177,9 +177,15 @@ for e in entries:
             if tool not in m:
                 problems.append("matcher %r does not cover %s" % (m, tool))
 conditions = [h.get("if") for h in handlers]
-for want in ("Write(dev_docs/**)", "Edit(dev_docs/**)"):
+for want in ("Write(**/dev_docs/**)", "Edit(**/dev_docs/**)"):
     if want not in conditions:
         problems.append("no handler carries if=%s" % want)
+# The leading **/ is load-bearing: `dev_docs/**` anchors at the project root
+# and misses packages/x/dev_docs/, which the script path test would have caught
+# before `if` started gating whether the script runs at all.
+for cond in conditions:
+    if cond and "dev_docs" in cond and "**/dev_docs/**" not in cond:
+        problems.append("if %r is anchored at the root and misses a nested dev_docs" % cond)
 for cond in conditions:
     if cond and "|" in cond:
         problems.append("if %r uses an alternation, which matches nothing" % cond)

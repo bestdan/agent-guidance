@@ -16,12 +16,12 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Write(dev_docs/**)",
+            "if": "Write(**/dev_docs/**)",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/dev-docs-context.sh"
           },
           {
             "type": "command",
-            "if": "Edit(dev_docs/**)",
+            "if": "Edit(**/dev_docs/**)",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/dev-docs-context.sh"
           }
         ]

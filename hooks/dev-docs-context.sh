@@ -35,6 +35,12 @@
 # 1. hooks.json therefore registers two handlers, one per tool, rather than one
 # handler with an alternation.
 #
+# The glob is `**/dev_docs/**`, and the leading `**/` is load-bearing.
+# `dev_docs/**` anchors at the project root: measured, it fires for
+# dev_docs/x.md and not for packages/x/dev_docs/x.md. The path test below has
+# never had that limit, so before `if` gated the spawn it covered any depth;
+# the narrowing is what made the anchor matter.
+#
 # It emits a pointer, never the layout itself. dev_docs_layout.md is ~2,400
 # tokens and a second copy here would drift from the file the checker names in
 # its own failure output.

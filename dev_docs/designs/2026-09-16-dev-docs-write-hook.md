@@ -138,6 +138,17 @@ registers two handlers on the same matcher, one per tool.
 because a single `if` reads as the tidier config and would be the natural
 thing for a later editor to collapse it back to.
 
+### The glob carries a leading `**/`
+
+`Write(dev_docs/**)` anchors at the project root. Measured: it fires for
+`dev_docs/x.md` and not for `packages/x/dev_docs/x.md`. `Write(**/dev_docs/**)`
+fires for both, and still does not fire for a write under `src/`.
+
+The script's own path test never had that limit, so the anchor only started
+mattering once `if` decided whether the script runs. That is the cost of
+narrowing at dispatch, and it is why the test pins the leading `**/` rather
+than just the presence of a condition.
+
 ### `Write|Edit`, not `Read`
 
 `Read` also matches paths and fires far more often. A session reading an
