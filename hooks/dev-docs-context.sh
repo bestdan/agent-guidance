@@ -14,13 +14,14 @@
 # than a trigger: the skill is withheld until a matching path is touched, and
 # activation lands AFTER the write that triggered it, which is the wrong side
 # of the one event this guidance exists for.
-# `dev_docs/research/2026-09-16-paths-frontmatter-is-inert-for-plugin-skills.md`
+# `dev_docs/research/2026-09-16-paths-frontmatter-on-plugin-skills.md`
 # is the measurement.
 #
 # A PreToolUse hook has neither problem. It is harness-driven, so no judgment
 # decides whether it fires; it runs BEFORE the tool call, so the layout is in
-# context while the file is still being written rather than after; and it costs
-# nothing in a session that never touches the directory.
+# context while the file is still being written rather than after; and a session
+# that never touches the directory pays one process spawn per file edit and
+# nothing else: no tokens, no context.
 #
 # It emits a pointer, never the layout itself. dev_docs_layout.md is ~2,400
 # tokens and a second copy here would drift from the file the checker names in
