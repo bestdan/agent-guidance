@@ -19,27 +19,34 @@ rather than as a placeholder.
 
 ## What it ships
 
-| File                         | Reaches                              | Carries                                                                    |
-| ---------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
-| `portable.md`                | every harness                        | preferences any coding agent can act on                                    |
-| `portable-claude.md`         | Claude Code only                     | preferences that name Claude Code machinery                                |
-| `inject.sh`                  | Claude Code and Codex `SessionStart` | prints the hook's JSON contract for the files it is given; both by default |
-| `codex/hooks.json`           | Codex CLI                            | registers `inject.sh` with `portable.md` only                              |
-| `skills/plugin-delivery`     | Claude Code, on demand               | why a release may not have reached the session reading it, and what to do  |
-| `skills/authoring`           | Claude Code, at PR time              | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
-| `skills/reviewing`           | Claude Code, when reviewing a change | reads `writing_about_code.md` and `reviewing.md`                           |
-| `dev_docs_layout.md`         | every harness, by name               | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
-| `scripts/dev-docs-layout.py` | any repo's check suite               | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
+| File                         | Reaches                                 | Carries                                                                    |
+| ---------------------------- | --------------------------------------- | -------------------------------------------------------------------------- |
+| `portable.md`                | every harness                           | preferences any coding agent can act on                                    |
+| `portable-claude.md`         | Claude Code only                        | preferences that name Claude Code machinery                                |
+| `inject.sh`                  | Claude Code and Codex `SessionStart`    | prints the hook's JSON contract for the files it is given; both by default |
+| `codex/hooks.json`           | Codex CLI                               | registers `inject.sh` with `portable.md` only                              |
+| `skills/plugin-delivery`     | Claude Code, on demand                  | why a release may not have reached the session reading it, and what to do  |
+| `skills/authoring`           | Claude Code, at PR time                 | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
+| `skills/reviewing`           | Claude Code, when reviewing a change    | reads `writing_about_code.md` and `reviewing.md`                           |
+| `hooks/dev-docs-context.sh`  | Claude Code, before a `dev_docs/` write | names `dev_docs_layout.md` and the directory's `README.md`, once a session |
+| `dev_docs_layout.md`         | every harness, by name                  | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
+| `scripts/dev-docs-layout.py` | any repo's check suite                  | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
-Claude Code's `SessionStart`; the root `plugin.json` follows the
+Claude Code's `SessionStart` and `hooks/dev-docs-context.sh` on `PreToolUse`;
+the root `plugin.json` follows the
 [Agent Plugins](https://agent-plugins.org) layout for harnesses that read it.
 
-The payload and the skill load by different routes on purpose. Preferences have
-to be in context from the first turn, so they ride the always-on hook.
-Troubleshooting nobody needs until a symptom appears would only be noise there,
-so it is a skill the harness loads when the symptom shows up. The one cost is
-in [Versioning](#versioning): the two can skew.
+Three routes, chosen by when the guidance is needed. Preferences have to be in
+context from the first turn, so they ride the always-on hook. Troubleshooting
+nobody needs until a symptom appears would only be noise there, so it is a
+skill the harness loads when the symptom shows up. Guidance needed at one
+mechanical moment rides a `PreToolUse` hook, which the harness fires on the
+event rather than offering to the model: `hooks/dev-docs-context.sh` names the
+`dev_docs/` layout before the first write under that directory.
+`dev_docs/designs/2026-09-16-dev-docs-write-hook.md` carries why, including the
+skill mechanism that was measured and abandoned. The one cost is in
+[Versioning](#versioning): the payload and the skills can skew.
 
 ## Install
 

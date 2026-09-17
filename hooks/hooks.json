@@ -9,6 +9,23 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Write(dev_docs/**)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/dev-docs-context.sh"
+          },
+          {
+            "type": "command",
+            "if": "Edit(dev_docs/**)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/dev-docs-context.sh"
+          }
+        ]
+      }
     ]
   }
 }
