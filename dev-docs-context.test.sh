@@ -125,13 +125,28 @@ out = body.get("hookSpecificOutput") or {}
 print("ok" if out.get("hookEventName") == "PreToolUse" else repr(out.get("hookEventName")))
 ' 2>/dev/null)"
 
-# --- 9. the pointer names the file it exists to name ---
-# The only content assertion in this suite. A pointer that does not name
+# --- 9. the pointer names the files it exists to name ---
+# The only content assertions in this suite. A pointer that does not name
 # dev_docs_layout.md is a paragraph of prose with nothing to follow.
 check "the pointer names dev_docs_layout.md" ok \
   "$(printf '{"session_id":"s9","scratchpad_dir":"%s","tool_input":{"file_path":"/r/dev_docs/x.md"}}' "$work/s9" \
     | bash "$hook" 2>/dev/null \
     | grep -q 'dev_docs_layout.md' && echo ok || echo missing)"
+
+# The repo's own dev_docs/README.md carries that repo's exceptions, and the
+# pointer says those exceptions win. It said so once while telling the reader to
+# open only the layout and the immediate directory README -- naming a file as
+# authoritative and then leaving it out of the reading.
+#
+# Matching the file name alone would NOT catch that: the broken version named
+# dev_docs/README.md too, in the sentence about precedence. What has to be
+# pinned is the file's place in the READ SEQUENCE, so the phrase is matched
+# rather than the name.
+check "the pointer reads the repo dev_docs/README.md in sequence" ok \
+  "$(printf '{"session_id":"s9b","scratchpad_dir":"%s","tool_input":{"file_path":"/r/dev_docs/designs/x.md"}}' "$work/s9b" \
+    | bash "$hook" 2>/dev/null \
+    | grep -q 'then the dev_docs/README.md at the repo root, then the README.md of the directory' \
+    && echo ok || echo missing)"
 
 # --- 10. the hook is registered, on the events that carry a file_path ---
 # The script can be perfect and never run. hooks.json is the wiring, and a

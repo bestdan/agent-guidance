@@ -93,13 +93,14 @@ except OSError:
 root = os.environ["GUIDANCE_ROOT"]
 context = (
     "This writes a file under dev_docs/. Before continuing, read "
-    + root + "/dev_docs_layout.md, then the README.md of the directory you are "
-    "writing into. The layout fixes which directory holds what, and the naming "
-    "rule that decides the filename: a date in the name means a record that may "
-    "go stale, no date means a live file kept current. Each directory README "
-    "carries the front matter and template for its own files. Each repo lists "
-    "its exceptions in its own dev_docs/README.md, which wins over both. The "
-    "check that enforces this is " + root + "/scripts/dev-docs-layout.py."
+    + root + "/dev_docs_layout.md, then the dev_docs/README.md at the repo "
+    "root, then the README.md of the directory you are writing into. The "
+    "layout fixes which directory holds what, and the naming rule that decides "
+    "the filename: a date in the name means a record that may go stale, no "
+    "date means a live file kept current. Each directory README carries the "
+    "front matter and template for its own files. The dev_docs/README.md at "
+    "the repo root lists the exceptions that repo makes, which win over both. "
+    "The check that enforces this is " + root + "/scripts/dev-docs-layout.py."
 )
 
 json.dump({
