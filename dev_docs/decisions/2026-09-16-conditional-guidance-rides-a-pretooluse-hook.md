@@ -38,7 +38,7 @@ rather than being offered to the model.
 - Good, because no session's always-on payload grows: `portable.md` and
   `inject.sh` are unchanged, and a session that never writes under `dev_docs/`
   never runs the script.
-- Bad, because a third carrier is a third thing that can skew from the payload
+- Bad, because another carrier is another thing that can skew from the payload
   and the skills, which the README's Versioning section already describes.
 - Bad, because the route is Claude Code only. Codex registers `SessionStart`
   alone, so the `portable.md` bullet remains its route there and the backstop
@@ -64,3 +64,8 @@ write.
   field is inert for a plugin skill, and where it works it fires late.
 - **The `portable.md` bullet alone:** what existed before; it costs nothing at
   dispatch but leaves the trigger to the model's judgment.
+- **A `SessionStart` hook that writes rule files into the consumer repo:**
+  rejected, and it is the option the `.claude/rules/` limit above invites.
+  Every carrier here delivers content without committing anything to a
+  consumer repo, and a hook that materialises `.claude/rules/` leaves
+  untracked files in a repo that never asked for them.

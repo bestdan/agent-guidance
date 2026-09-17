@@ -38,14 +38,19 @@ repo:
 `portable.md` also carries the two rules every session needs without loading a
 skill: the PR title grammar in its `Git:` bullet, and `## Precedence`.
 
-A fourth carrier shape exists and carries none of this content yet: a
+Another carrier shape exists and carries none of this content yet: a
 `PreToolUse` hook, which the harness fires on a tool call rather than offering
 to the model. `hooks/dev-docs-context.sh` is the one instance, naming
 `dev_docs_layout.md` before a write under `dev_docs/`. It is the shape for
-guidance whose trigger is mechanical rather than a judgment, and it costs an
-`if` condition in `hooks/hooks.json` per tool, one process spawn per matching
-call, and reaches Claude Code only, since Codex registers `SessionStart` alone. The
-choices behind it are the `2026-09-16-` records listed below.
+guidance whose trigger is mechanical rather than a judgment. It requires an
+`if` condition in `hooks/hooks.json` per tool, and costs one process spawn per
+matching call.
+
+The hook itself reaches Claude Code only, since Codex registers `SessionStart`
+alone. Codex is not left without the layout: the `Writing anything under
+dev_docs/` bullet in `portable.md` names the same file, and carrier 3 above
+delivers it. The hook is an upgrade on a route both harnesses have, not the
+only route. The choices behind it are the `2026-09-16-` records listed below.
 
 ## Who resolves the plugin root
 
