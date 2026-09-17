@@ -20,8 +20,20 @@
 # A PreToolUse hook has neither problem. It is harness-driven, so no judgment
 # decides whether it fires; it runs BEFORE the tool call, so the layout is in
 # context while the file is still being written rather than after; and a session
-# that never touches the directory pays one process spawn per file edit and
-# nothing else: no tokens, no context.
+# that never touches the directory never runs this script at all.
+#
+# That last part is the handler's `if` field in hooks.json, not this script.
+# Registered on the bare `Write|Edit` matcher, the script spawned on every edit
+# and discarded the payload after the fact: measured at 3 spawns for 3 writes
+# under src/. With `if`, the same probe spawns 0. The path test below stays as
+# the tested layer and as defence in depth, because `if` is a condition this
+# repo's suite cannot exercise.
+#
+# `if` takes ONE rule. `Write(dev_docs/**)|Edit(dev_docs/**)` is accepted and
+# then matches nothing, silently: measured at 0 spawns for a write directly
+# under dev_docs/, where the same probe with `Write(dev_docs/**)` alone spawns
+# 1. hooks.json therefore registers two handlers, one per tool, rather than one
+# handler with an alternation.
 #
 # It emits a pointer, never the layout itself. dev_docs_layout.md is ~2,400
 # tokens and a second copy here would drift from the file the checker names in

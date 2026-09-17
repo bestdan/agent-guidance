@@ -151,23 +151,38 @@ check "the pointer reads the repo dev_docs/README.md in sequence" ok \
 # --- 10. the hook is registered, on the events that carry a file_path ---
 # The script can be perfect and never run. hooks.json is the wiring, and a
 # matcher that lost Write or Edit is the failure this catches.
-check "hooks.json registers the hook on Write and Edit" ok \
+#
+# The `if` conditions are checked here too, for a reason the suite cannot
+# otherwise reach. `if` is what stops the script spawning on every edit in the
+# repo, and it takes ONE rule: `Write(dev_docs/**)|Edit(dev_docs/**)` is
+# accepted and matches nothing, silently, so an alternation reads as correct
+# config while the hook never fires. Only a live session can prove the
+# narrowing works; what this pins is the shape that was measured, so the
+# alternation cannot come back by looking tidier.
+check "hooks.json registers the hook on Write and Edit, narrowed to dev_docs" ok \
   "$(DIR="$self" python3 -c '
 import json, os
 with open(os.path.join(os.environ["DIR"], "hooks", "hooks.json")) as f:
     cfg = json.load(f)
 entries = (cfg.get("hooks") or {}).get("PreToolUse") or []
 problems = []
-matched = [e for e in entries
-           if any("dev-docs-context.sh" in h.get("command", "")
-                  for h in (e.get("hooks") or []))]
-if not matched:
+handlers = [h for e in entries for h in (e.get("hooks") or [])
+            if "dev-docs-context.sh" in h.get("command", "")]
+if not handlers:
     problems.append("no PreToolUse entry runs dev-docs-context.sh")
-for e in matched:
-    m = e.get("matcher", "")
-    for tool in ("Write", "Edit"):
-        if tool not in m:
-            problems.append("matcher %r does not cover %s" % (m, tool))
+for e in entries:
+    if any("dev-docs-context.sh" in h.get("command", "") for h in (e.get("hooks") or [])):
+        m = e.get("matcher", "")
+        for tool in ("Write", "Edit"):
+            if tool not in m:
+                problems.append("matcher %r does not cover %s" % (m, tool))
+conditions = [h.get("if") for h in handlers]
+for want in ("Write(dev_docs/**)", "Edit(dev_docs/**)"):
+    if want not in conditions:
+        problems.append("no handler carries if=%s" % want)
+for cond in conditions:
+    if cond and "|" in cond:
+        problems.append("if %r uses an alternation, which matches nothing" % cond)
 print("; ".join(problems) if problems else "ok")
 ' 2>/dev/null)"
 

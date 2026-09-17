@@ -65,8 +65,8 @@ What the rest of the system sees:
 - `portable.md` is unchanged, and remains the route for Codex and the backstop
   here.
 - `inject.sh` is unchanged, and no session's always-on payload grows.
-- A session that never writes under `dev_docs/` pays one process spawn per
-  file edit and nothing else.
+- A session that never writes under `dev_docs/` never runs the script: the
+  handlers carry an `if` condition, so the narrowing happens at dispatch.
 - `dev-docs-context.test.sh` pins the boundaries, including the wiring in
   `hooks/hooks.json`, and runs from `scripts/run-tests.sh` with the rest.
 
@@ -107,16 +107,36 @@ the write that fixes a violation. For the same reason the script exits 0 on
 every path, including a payload it cannot parse: a nonzero exit from a
 `PreToolUse` hook blocks the tool call.
 
-### The path test is on segments, and the decision lives in the script
+### The narrowing is in `if`, and the path test in the script backs it up
 
-`dev_docs` must be a path segment, and must not be the last one. A substring
-test fires on `dev_docs_layout.md` at a repo root, which is this plugin every
-time someone edits the convention itself.
+The handler's `if` field takes permission-rule syntax, and it is what stops the
+script running on every edit in the repo. Measured against 2.1.274 with the
+script instrumented to log each spawn: on the bare `Write|Edit` matcher, three
+writes under `src/` produced three spawns; with `if`, the same probe produced
+none, and a write under `dev_docs/` still produced one.
 
-The handler's `if` field takes permission-rule syntax and could carry the same
-narrowing, at one fewer process spawn. It is not used, because a condition
-expressed there cannot be exercised by `dev-docs-context.test.sh`, and this
-repo's convention is that a claim about behaviour has a test at its boundary.
+An earlier revision of this design rejected `if` on the grounds that a
+condition expressed there cannot be exercised by `dev-docs-context.test.sh`.
+That reason was too strong. The condition cannot be unit-tested, but it can be
+measured in a live session, and it costs nothing to keep the script's own path
+test as the tested layer underneath it. Both are kept: `if` decides whether the
+process starts, the script decides whether it speaks.
+
+The script's own test is on segments, and `dev_docs` must not be the last one.
+A substring test fires on `dev_docs_layout.md` at a repo root, which is this
+plugin every time someone edits the convention itself.
+
+### Two handlers, because `if` takes one rule
+
+`Write(dev_docs/**)|Edit(dev_docs/**)` is accepted and matches nothing. It is
+not a parse error and nothing is logged; the hook simply never fires. Measured
+the same way: that alternation produced zero spawns for a write directly under
+`dev_docs/`, where `Write(dev_docs/**)` alone produced one. So the entry
+registers two handlers on the same matcher, one per tool.
+
+`dev-docs-context.test.sh` pins both conditions and fails an alternation,
+because a single `if` reads as the tidier config and would be the natural
+thing for a later editor to collapse it back to.
 
 ### `Write|Edit`, not `Read`
 
@@ -142,7 +162,7 @@ The measurement this design needed has been made and is recorded in
 waits on evidence. Delete this design in the PR after the one that lands it.
 
 - Decision records, one each: hook rather than skill; pointer not payload;
-  once per session; never denies; segment test in the script rather than `if`;
-  `Write|Edit` rather than `Read`.
+  once per session; never denies; `if` narrows and the script backs it up; two
+  handlers because `if` takes one rule; `Write|Edit` rather than `Read`.
 - Conventions: the README ships table, and a line in `dev_docs/conventions.md`
   naming the hook as a carrier shape and what it costs.
