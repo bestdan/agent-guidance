@@ -7,6 +7,10 @@ status update.
 It is about the communication, not the work. It does not govern the code, the identifiers, the file paths, or quoted
 output.
 
+Code comments are in scope, and they are the highest-stakes case. A comment is prose about code written for a reader,
+so every rule here governs it — and unlike a PR description, it ships with the code and is read by everyone who touches
+the line afterwards. How much comment a change should carry is set by the Code section of `portable.md`.
+
 ## Lead with the answer
 
 Bottom line up front. The first sentence carries the answer, the recommendation, or the verdict. Evidence, detail,
@@ -34,6 +38,20 @@ answer was yes has been made to do your work.
 Skip whatever a reader fluent in the language or framework reads at a glance. Spend the words on the trade-off, the
 workaround, the constraint that is not visible in the code, the reason for this shape instead of the obvious one. That
 is the highest-value content in anything written about code, and it is the only content the code cannot supply itself.
+
+## Code comments
+
+Everything above applies. Two rules bind hardest inside a source file:
+
+- **A comment says the thing itself.** No ticket key, no PR number, no "see the commit message". A reader with no
+  tracker access and no network has the whole explanation, or the comment has failed at the one job a comment has. A
+  `TODO` is the exception, because there the key names outstanding work rather than citing a source.
+- **A comment does not repeat the commit body or the PR description.** Those carry the story of the change; a comment
+  carries the constraint that outlives it. A comment that has started restating the PR is telling you its content
+  belongs to the PR alone.
+
+"Explain the non-obvious, not the obvious" does the rest. A comment that survives both rules is short because little is
+left to say, not because a line count stopped it.
 
 ## Name things precisely
 

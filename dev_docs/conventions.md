@@ -180,3 +180,7 @@ what would reopen it.
   matcher, because an alternation in `if` matches nothing.
 - `2026-09-16-dev-docs-hook-matches-write-and-edit-not-read.md`: `Write|Edit`
   rather than `Read`.
+- `2026-09-19-code-comments-are-in-scope.md`: code comments are governed by
+  `writing_about_code.md`; `portable.md` keeps the quantity rule and a pointer.
+- `2026-09-19-comment-key-check-belongs-here.md`: a convention's enforcement is
+  built in the repo that owns the convention.
