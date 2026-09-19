@@ -76,7 +76,7 @@ upstream bug can need two or three lines.
 
 Nothing mechanical holds the split in place. `scripts/prose-check.py` measures
 the new text for the em-dash cap like any other prose here. The ticket-key half
-has a check filed as bestdan/dotfiles#857; the register half rests on review.
+has a check filed as #50; the register half rests on review.
 
 ## Alternatives
 

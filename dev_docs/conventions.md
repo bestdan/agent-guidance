@@ -182,5 +182,5 @@ what would reopen it.
   rather than `Read`.
 - `2026-09-19-code-comments-are-in-scope.md`: code comments are governed by
   `writing_about_code.md`; `portable.md` keeps the quantity rule and a pointer.
-- `2026-09-19-comment-key-check-belongs-in-dotfiles.md`: the ticket-key comment
-  check is built in `bestdan/dotfiles`, and the prose here keeps its rationale.
+- `2026-09-19-comment-key-check-belongs-here.md`: a convention's enforcement is
+  built in the repo that owns the convention.
