@@ -38,6 +38,16 @@ and matches `created`. A research record is a snapshot. `feeds` is the one
 field set after writing, when the design or decision it supports exists;
 nothing else changes, and research done again later is a new record.
 
+A record that carries artifacts — the script that measured something, the
+capture it read, the numbers it produced — becomes `YYYY-MM-DD-<slug>/` with
+the record as its `README.md` and the artifacts under `references/`. The rules
+above are unchanged; the date moves to the directory. `dev_docs_layout.md` at
+the plugin root has the shape and what does not belong there.
+
+The fields are unchanged; a relative path inside one is not. It resolves from
+a file one level deeper, so the template's `feeds: ../designs/<name>.md`
+becomes `../../designs/<name>.md`.
+
 ```yaml
 ---
 created: 2026-09-13

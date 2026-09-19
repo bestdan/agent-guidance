@@ -58,6 +58,17 @@ and matches `created`. Dates rather than MADR's `NNNN-` numbers, because the
 date is the sort key everywhere else under `dev_docs/` and a number adds a
 second sequence to keep unique.
 
+A record that carries artifacts — the script that measured something, the
+capture it read, the numbers it produced — becomes `YYYY-MM-DD-<slug>/` with
+the decision as its `README.md` and the artifacts under `references/`. The rules
+above are unchanged; the date moves to the directory. `dev_docs_layout.md` at
+the plugin root has the shape and what does not belong there.
+
+The fields are unchanged; a relative path inside one is not. It resolves from
+a file one level deeper, so `convention: ../conventions.md` becomes
+`../../conventions.md`, and `supersedes:`/`superseded_by:`, which name a
+sibling record by bare filename, become `../<name>.md`.
+
 ```yaml
 ---
 created: 2026-09-13

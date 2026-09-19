@@ -14,15 +14,27 @@ The checks, each one the Enforcement section of dev_docs_layout.md names:
 2. No unchecked `- [ ]` under dev_docs/ outside dev_docs/tasks/*_plan/. Lines
    inside a fenced code block are not counted, so a README's template can
    show the syntax.
-3. Every file in a record or design directory, which is every directory under
-   dev_docs/ other than tasks/, is YYYY-MM-DD-<slug>.md or README.md. Slugs
-   are kebab-case, lowercase, ASCII.
-4. A record's `created` front-matter field equals its filename date.
-5. A decision record has a `## Revisit when` section.
+3. Every entry in a record or design directory, which is every directory under
+   dev_docs/ other than tasks/, is YYYY-MM-DD-<slug>.md, a YYYY-MM-DD-<slug>/
+   bundle directory, or README.md. Slugs are kebab-case, lowercase, ASCII.
+4. A bundle directory holds README.md, which is the record, and references/,
+   which holds its artifacts and is not inspected further. No flat
+   YYYY-MM-DD-<slug>.md sits beside a bundle of the same name: the directory
+   replaces the file, so both together are one date and slug naming two
+   records. The converse is not checked — a bundle whose artifacts are all
+   gitignored, or not added yet, is indistinguishable from one with none.
+5. A record's `created` front-matter field equals the date in its filename, or
+   in its bundle directory's name.
+6. A decision record has a `## Revisit when` section.
 
-Subdirectories of research/ are skipped by checks 2 and 3: the research-spike
-skill owns those trees, keeps a question ledger with checkboxes in it, and
-validates them itself.
+Undated subdirectories of research/ are skipped by checks 2 and 3: the
+research-spike skill owns those trees, keeps a question ledger with checkboxes
+in it, and validates them itself. A dated one is a record bundle and is
+checked, which is what the date distinguishes.
+
+Nothing under a references/ tree is checked at all. Its contents are evidence
+frozen with the record that cites them -- a probe script, a capture, a result
+table -- in whatever shape and nesting the evidence came in.
 
 Which files count. Inside a git repository the checks read what git sees:
 tracked files plus untracked files that .gitignore does not exclude, so a
@@ -42,7 +54,12 @@ import sys
 
 CONVENTION = "dev_docs_layout.md in the agent-guidance plugin"
 
-RECORD_NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
+SLUG = r"(\d{4}-\d{2}-\d{2})-(?:[a-z0-9]+(?:-[a-z0-9]+)*)"
+RECORD_NAME = re.compile(rf"^{SLUG}\.md$")
+# A record that carries artifacts is a directory with the same name, minus the
+# .md: README.md is the record and references/ holds the artifacts.
+BUNDLE_NAME = re.compile(rf"^{SLUG}$")
+REFERENCES = "references"
 CHECKBOX = re.compile(r"^\s*[-*+] \[ \]")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 CREATED = re.compile(r"^created:\s*(.*?)\s*$")
@@ -121,10 +138,27 @@ def in_plan_dir(rel: pathlib.Path) -> bool:
 
 
 def in_research_spike(rel: pathlib.Path) -> bool:
-    """A file inside a subdirectory of dev_docs/research/, which the
-    research-spike skill owns and validates itself."""
+    """A file inside an undated subdirectory of dev_docs/research/, which the
+    research-spike skill owns and validates itself. A dated subdirectory is a
+    record bundle, which this checker owns."""
     parts = rel.parts
-    return len(parts) > 3 and parts[1] == "research"
+    return (
+        len(parts) > 3
+        and parts[1] == "research"
+        and not BUNDLE_NAME.match(parts[2])
+    )
+
+
+def in_references(rel: pathlib.Path) -> bool:
+    """A file inside a record bundle's references/ tree: evidence frozen with
+    the record, in whatever shape it came in, at any depth."""
+    parts = rel.parts
+    return (
+        len(parts) > 4
+        and parts[1] != "tasks"
+        and bool(BUNDLE_NAME.match(parts[2]))
+        and parts[3] == REFERENCES
+    )
 
 
 def check_tasks(root: pathlib.Path, report):
@@ -149,7 +183,8 @@ def check_tasks(root: pathlib.Path, report):
 
 def check_checkboxes(root: pathlib.Path, files, report):
     for rel in files:
-        if rel.suffix != ".md" or in_plan_dir(rel) or in_research_spike(rel):
+        if (rel.suffix != ".md" or in_plan_dir(rel) or in_research_spike(rel)
+                or in_references(rel)):
             continue
         fence = None
         try:
@@ -170,42 +205,74 @@ def check_checkboxes(root: pathlib.Path, files, report):
                 report(rel, f"line {n}: unchecked checkbox outside dev_docs/tasks/*_plan/; a backlog is not a dev_doc")
 
 
+def check_record_body(root: pathlib.Path, rel: pathlib.Path, date: str,
+                      directory: str, report):
+    """The front matter and section rules, for a flat record or a bundle's
+    README.md. DATE is the date the filename or the bundle name carries."""
+    try:
+        datetime.date.fromisoformat(date)
+    except ValueError:
+        report(rel, f"{date} is not a calendar date")
+        return
+    try:
+        text = (root / rel).read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        report(rel, f"unreadable: {e}")
+        return
+    created = created_value(text)
+    if created is None:
+        report(rel, "no `created:` in the front matter; every record carries one")
+    elif created != date:
+        report(rel, f"created: {created} does not match the record's date {date}")
+    if directory == "decisions" and not any(REVISIT.match(l) for l in text.splitlines()):
+        report(rel, "no `## Revisit when` section; a decision says what would reopen it")
+
+
 def check_records(root: pathlib.Path, files, report):
+    # Bundle directories seen, and whether each one's README.md turned up: a
+    # bundle without its record is artifacts nothing explains.
+    bundles = {}
+    # Flat records, keyed by the path minus the .md, which is byte-identical to
+    # the key a bundle of the same name gets. Compared at the end rather than on
+    # encounter, because the flat file and the bundle's files interleave in the
+    # listing and the verdict must not depend on which came first.
+    flats = set()
     for rel in files:
         parts = rel.parts
         if len(parts) < 3 or parts[1] == "tasks":
             continue
         directory = parts[1]
+        name = parts[2]
+        bundle = BUNDLE_NAME.match(name)
         if len(parts) > 3:
+            if bundle:
+                bundle_dir = pathlib.Path(*parts[:3])
+                bundles.setdefault(bundle_dir, False)
+                if in_references(rel):
+                    continue
+                if len(parts) == 4 and parts[3] == "README.md":
+                    bundles[bundle_dir] = True
+                    check_record_body(root, rel, bundle.group(1), directory, report)
+                    continue
+                report(rel, f"a record bundle holds README.md and references/, nothing else; see {CONVENTION}")
+                continue
             if in_research_spike(rel):
                 continue
             report(rel, f"a subdirectory is not allowed under dev_docs/{directory}/")
             continue
-        name = parts[2]
         if name == "README.md":
             continue
         m = RECORD_NAME.match(name)
         if not m:
             report(rel, f"not YYYY-MM-DD-<slug>.md (kebab-case, lowercase) or README.md; dev_docs/{directory}/ holds records")
             continue
-        date = m.group(1)
-        try:
-            datetime.date.fromisoformat(date)
-        except ValueError:
-            report(rel, f"{date} is not a calendar date")
-            continue
-        try:
-            text = (root / rel).read_text(encoding="utf-8", errors="replace")
-        except OSError as e:
-            report(rel, f"unreadable: {e}")
-            continue
-        created = created_value(text)
-        if created is None:
-            report(rel, "no `created:` in the front matter; every record carries one")
-        elif created != date:
-            report(rel, f"created: {created} does not match the filename date {date}")
-        if directory == "decisions" and not any(REVISIT.match(l) for l in text.splitlines()):
-            report(rel, "no `## Revisit when` section; a decision says what would reopen it")
+        flats.add(rel.with_suffix(""))
+        check_record_body(root, rel, m.group(1), directory, report)
+    for bundle, has_readme in sorted(bundles.items()):
+        if not has_readme:
+            report(bundle, "a record bundle's README.md is the record; this one has artifacts and no record")
+        if bundle in flats:
+            report(bundle, f"also exists as {bundle.name}.md; a record is a flat file or a bundle, never both; see {CONVENTION}")
 
 
 def main(argv):
