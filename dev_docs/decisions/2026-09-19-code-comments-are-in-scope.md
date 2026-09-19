@@ -13,12 +13,11 @@ code-comments section in `writing_about_code.md`. Issue #45 proposed the
 opposite: that the file name code comments as out of scope, because its opening
 already disclaims "the code, the identifiers, the file paths, or quoted output".
 
-The first attempt took #45's side and was wrong. That exclusion list is a list
-of artifacts nobody composed as prose: a token, an address, a machine's bytes.
-A comment is a sentence written for a reader. Appending it to that list claims a
-property the list is not built on, and the file's own opening sentence — "it is
-about the communication, not the work" — puts a comment on the communication
-side.
+#45's reading does not hold. That exclusion list names artifacts nobody composed
+as prose: a token, an address, a machine's bytes. A comment is a sentence written
+for a reader. Appending it to that list claims a property the list is not built
+on, and the file's own opening sentence — "it is about the communication, not the
+work" — puts a comment on the communication side.
 
 The register rules settle it from the other direction. Lead with the answer,
 explain the non-obvious rather than the obvious, name things precisely, report a
@@ -27,10 +26,10 @@ a comment good. A file that excludes comments has excluded the case where those
 rules matter most, because a comment ships with the code and is read by everyone
 who touches the line afterwards.
 
-What remains true is narrower than the first attempt claimed. Two questions
-were fused: **what the words say** once a comment is written, and **how much
-comment a change carries** before the content belongs to the commit body
-instead. Only the second is a code-level decision.
+A narrower split does hold. Two questions sit behind the one: **what the words
+say** once a comment is written, and **how much comment a change carries**
+before the content belongs to the commit body instead. Only the second is a
+code-level decision.
 
 The files are delivered differently, which decides where the second question is
 answered. `inject.sh` injects `portable.md` and `portable-claude.md` at
@@ -81,10 +80,9 @@ has a check filed as bestdan/dotfiles#857; the register half rests on review.
 
 ## Alternatives
 
-- **Comments out of scope, rules in `portable.md`:** shipped in PR #47 and
-  rejected in review by the repo owner and two independent reviewers. The scope
-  claim was a category error, and the moved text reworded the "Explain the
-  non-obvious" section into a second file.
+- **Comments out of scope, rules in `portable.md`:** rejected; the scope claim
+  is a category error, and the moved text rewords the "Explain the non-obvious"
+  section into a second file.
 - **All comment rules in `writing_about_code.md`, nothing in `portable.md`:**
   rejected; it removes the rule from the only file a session writing code has in
   context.
