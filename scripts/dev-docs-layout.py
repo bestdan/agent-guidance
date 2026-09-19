@@ -18,7 +18,11 @@ The checks, each one the Enforcement section of dev_docs_layout.md names:
    dev_docs/ other than tasks/, is YYYY-MM-DD-<slug>.md, a YYYY-MM-DD-<slug>/
    bundle directory, or README.md. Slugs are kebab-case, lowercase, ASCII.
 4. A bundle directory holds README.md, which is the record, and references/,
-   which holds its artifacts and is not inspected further.
+   which holds its artifacts and is not inspected further. No flat
+   YYYY-MM-DD-<slug>.md sits beside a bundle of the same name: the directory
+   replaces the file, so both together are one date and slug naming two
+   records. The converse is not checked — a bundle whose artifacts are all
+   gitignored, or not added yet, is indistinguishable from one with none.
 5. A record's `created` front-matter field equals the date in its filename, or
    in its bundle directory's name.
 6. A decision record has a `## Revisit when` section.
@@ -228,6 +232,11 @@ def check_records(root: pathlib.Path, files, report):
     # Bundle directories seen, and whether each one's README.md turned up: a
     # bundle without its record is artifacts nothing explains.
     bundles = {}
+    # Flat records, keyed by the path minus the .md, which is byte-identical to
+    # the key a bundle of the same name gets. Compared at the end rather than on
+    # encounter, because the flat file and the bundle's files interleave in the
+    # listing and the verdict must not depend on which came first.
+    flats = set()
     for rel in files:
         parts = rel.parts
         if len(parts) < 3 or parts[1] == "tasks":
@@ -257,10 +266,13 @@ def check_records(root: pathlib.Path, files, report):
         if not m:
             report(rel, f"not YYYY-MM-DD-<slug>.md (kebab-case, lowercase) or README.md; dev_docs/{directory}/ holds records")
             continue
+        flats.add(rel.with_suffix(""))
         check_record_body(root, rel, m.group(1), directory, report)
     for bundle, has_readme in sorted(bundles.items()):
         if not has_readme:
             report(bundle, "a record bundle's README.md is the record; this one has artifacts and no record")
+        if bundle in flats:
+            report(bundle, f"also exists as {bundle.name}.md; a record is a flat file or a bundle, never both; see {CONVENTION}")
 
 
 def main(argv):

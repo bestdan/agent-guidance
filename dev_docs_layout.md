@@ -124,7 +124,10 @@ dev_docs/research/
 - **`README.md` is the record.** Same front matter, same rules, same directory
   README as the flat form; `created` matches the date on the directory. The
   file is a `README.md` so the tree renders the record when someone opens the
-  directory, rather than making them pick a file.
+  directory, rather than making them pick a file. The fields are unchanged,
+  but a relative path inside one resolves from a file one level deeper, so
+  every `../` in a template gains a second: `../conventions.md` becomes
+  `../../conventions.md`, and a sibling record becomes `../<its name>.md`.
 - **`references/` holds everything else**, at any depth and in any shape the
   evidence came in. Nothing under it is checked: not the names, not the
   suffixes, not a checkbox in a captured note. A frozen artifact is not a
@@ -132,7 +135,10 @@ dev_docs/research/
 
 Nothing else sits in the bundle. A second directory beside `references/`, or a
 loose script next to the `README.md`, fails the checker — one place to look,
-always the same one.
+always the same one. The flat file the directory replaced goes; leaving both is
+one date and slug naming two records, and the checker says so. The converse is
+not checked: an empty `references/` is invisible to git, so a bundle with no
+artifacts left passes and it is review that asks why it is not a file again.
 
 This applies to `research/`, `designs/` and `decisions/` alike. A design's
 bundle is transient like the design: the prototype is deleted with it when the
@@ -140,13 +146,16 @@ change lands, and anything worth keeping has become real code by then.
 
 **What does not belong in `references/`:** anything another thing imports,
 CI runs, or a person is expected to keep working. Those are code, and code
-lives where the repo keeps code. The bundle's name enforces this by accident
-and it is worth not fighting: a directory beginning with a digit and
-containing hyphens is not a valid module name in Python or JavaScript, so
-`references/` can never be imported as a package — only run by path, as a
-reader reproducing the record would run it. Keep each script standalone, with
-its invocation and its dependencies in a comment at the top, because the
-record is the only documentation it will ever get.
+lives where the repo keeps code. Nothing in a bundle is meant to be imported,
+and the bundle's name half-enforces that: a directory beginning with a digit
+and containing hyphens is not a Python identifier, so no dotted import can
+name it. JavaScript resolves a path rather than an identifier and reaches it
+fine, and Python still reaches it through `sys.path` or
+`importlib.util.spec_from_file_location` — so for everything but the dotted
+import this is convention, not mechanism. Run these by path, the way a reader
+reproducing the record would. Keep each script standalone, with its invocation
+and its dependencies in a comment at the top, because the record is the only
+documentation it will ever get.
 
 **Inside a research spike**, the same `references/` name works at the project
 or track level, and the `research-spike` skill's validator ignores it. It must
@@ -201,7 +210,8 @@ this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
    what its section allows; that no unchecked checkbox sits outside
    `dev_docs/tasks/*_plan/`; that every entry in a record or design directory
    is `YYYY-MM-DD-<slug>.md`, a `YYYY-MM-DD-<slug>/` bundle, or `README.md`;
-   that a bundle holds a `README.md` record and nothing outside `references/`;
+   that a bundle holds a `README.md` record and nothing outside `references/`,
+   with no flat `YYYY-MM-DD-<slug>.md` beside a bundle of the same name;
    that a record's `created` matches its date; and that a decision has a
    `## Revisit when` section. Undated subdirectories of `dev_docs/research/`
    are skipped, because the `research-spike` skill owns and validates those —

@@ -44,6 +44,10 @@ the record as its `README.md` and the artifacts under `references/`. The rules
 above are unchanged; the date moves to the directory. `dev_docs_layout.md` at
 the plugin root has the shape and what does not belong there.
 
+The fields are unchanged; a relative path inside one is not. It resolves from
+a file one level deeper, so the template's `feeds: ../designs/<name>.md`
+becomes `../../designs/<name>.md`.
+
 ```yaml
 ---
 created: 2026-09-13

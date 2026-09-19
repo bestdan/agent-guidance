@@ -40,10 +40,13 @@ and the skill owns it.
   citing it, and the "date means record" rule extends to a directory with no
   new concept.
 - Good, because `scripts/` stays what it claims to be: code the repo runs.
-- Good, because the bundle name — leading digit, hyphens — is not a valid
-  module name in Python or JavaScript, so `references/` cannot be imported as
-  a package and can only be run by path. Something that needs importing has
-  outgrown the bundle, and that shows up as an error rather than a habit.
+- Good, because the bundle name — leading digit, hyphens — is not a Python
+  identifier, so no dotted import can name it and the obvious way to depend on
+  a reference script fails. This is weaker than it first looks: JavaScript
+  resolves a path and reaches the file fine, and Python still reaches it
+  through `sys.path` or `importlib.util.spec_from_file_location`. So the rule
+  that a bundle is not importable is a convention with one mechanism behind
+  it, not a guarantee.
 - Bad, because a record that grows artifacts later has to be converted from a
   file to a directory, which is a rename plus a move.
 - Bad, because `research/` now holds two directory shapes with different
@@ -62,8 +65,11 @@ and the skill owns it.
 `scripts/dev-docs-layout.py` checks the bundle shape, and
 `dev-docs-layout.test.sh` pins each rule at its boundary: a bundle with no
 `README.md`, a loose file beside it, a subdirectory that is not `references/`,
-a `created` that does not match the directory's date, and a dated bundle
-coexisting with an undated spike.
+a `created` that does not match the directory's date, a flat record left beside
+a bundle of the same name, and a dated bundle coexisting with an undated spike.
+One fixture pins a non-rule: a bundle with no artifacts passes, because an
+empty `references/` is unobservable in both listing modes and the only
+implementable check would fail a bundle whose captures are gitignored.
 
 ## Alternatives
 

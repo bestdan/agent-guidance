@@ -54,6 +54,10 @@ the design as its `README.md` and the artifacts under `references/`. The rules
 above are unchanged; the date moves to the directory. `dev_docs_layout.md` at
 the plugin root has the shape and what does not belong there.
 
+The fields are unchanged; a relative path inside one is not. It resolves from
+a file one level deeper, so a link to `../research/<name>.md` becomes
+`../../research/<name>.md`, and so does every other `../` in the body.
+
 A design's artifacts are as transient as the design: the prototype that proved
 the shape is deleted with it, and anything worth keeping has graduated into
 real code by then.

@@ -159,6 +159,31 @@ printf -- '- [ ] a checkbox in a captured note\n' \
 : > "$fx/dev_docs/research/2026-09-13-a-survey/references/Undated_Thing.TXT"
 check "references/ is not inspected: any name, any suffix, checkboxes and all" 0 "$(verdict "$fx")"
 
+fx="$(fixture bundle-readme-only)"
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+check "a bundle with no artifacts passes; their absence is not observable" 0 "$(verdict "$fx")"
+# Deliberate, and pinned so nobody tightens it later. An empty references/ is
+# invisible in both listing modes -- git tracks no empty directory and the walk
+# collects filenames -- so the only implementable rule is "has at least one
+# artifact git sees", which fails a bundle whose captures are gitignored and one
+# mid-conversion. Review owns "this should have been a flat file".
+
+fx="$(fixture bundle-beside-flat)"
+record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/research/2026-09-13-a-survey/references"
+: > "$fx/dev_docs/research/2026-09-13-a-survey/references/probe.py"
+check "a flat record beside a bundle of the same name fails" 1 "$(verdict "$fx")"
+check "the failure names the flat file" ok \
+  "$(grep -q 'also exists as 2026-09-13-a-survey.md' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture bundle-flat-other-dir)"
+record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13
+record "$fx/dev_docs/designs/2026-09-13-a-survey" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/designs/2026-09-13-a-survey/references"
+: > "$fx/dev_docs/designs/2026-09-13-a-survey/references/probe.py"
+check "the same stem in two directories is two records, not a collision" 0 "$(verdict "$fx")"
+
 fx="$(fixture bundle-no-record)"
 mkdir -p "$fx/dev_docs/research/2026-09-13-a-survey/references"
 : > "$fx/dev_docs/research/2026-09-13-a-survey/references/probe.py"
