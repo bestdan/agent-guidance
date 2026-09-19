@@ -7,6 +7,9 @@ status update.
 It is about the communication, not the work. It does not govern the code, the identifiers, the file paths, or quoted
 output.
 
+Source comments are code, not communication. A comment lives inside the file it describes and ships with it, so its
+budget is set by the Code section of `portable.md`, not by this file.
+
 ## Lead with the answer
 
 Bottom line up front. The first sentence carries the answer, the recommendation, or the verdict. Evidence, detail,
@@ -34,6 +37,10 @@ answer was yes has been made to do your work.
 Skip whatever a reader fluent in the language or framework reads at a glance. Spend the words on the trade-off, the
 workaround, the constraint that is not visible in the code, the reason for this shape instead of the obvious one. That
 is the highest-value content in anything written about code, and it is the only content the code cannot supply itself.
+
+That content goes in the PR description, the commit body, a design doc, or a review comment. It does not go in a source
+comment: the code carries at most a one-line pointer to it. Read this section as a rule about where the words are spent,
+never as a reason to write the explanation beside the line it explains.
 
 ## Name things precisely
 
