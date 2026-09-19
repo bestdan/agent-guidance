@@ -180,7 +180,7 @@ what would reopen it.
   matcher, because an alternation in `if` matches nothing.
 - `2026-09-16-dev-docs-hook-matches-write-and-edit-not-read.md`: `Write|Edit`
   rather than `Read`.
-- `2026-09-19-source-comment-rules-live-in-portable.md`: source-comment rules
-  sit in `portable.md`; `writing_about_code.md` disclaims them.
+- `2026-09-19-code-comments-are-in-scope.md`: code comments are governed by
+  `writing_about_code.md`; `portable.md` keeps the quantity rule and a pointer.
 - `2026-09-19-comment-key-check-belongs-in-dotfiles.md`: the ticket-key comment
   check is built in `bestdan/dotfiles`, and the prose here keeps its rationale.
