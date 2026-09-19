@@ -47,17 +47,17 @@ session's state to the next one. Neither is guidance.
 
 ## Directories
 
-| Path                  | Holds                                                      | Kind      | Rules in                                     |
-| --------------------- | ---------------------------------------------------------- | --------- | -------------------------------------------- |
-| `dev_docs/README.md`  | the index: which directories this repo has, and exceptions | live      | this file, below                             |
-| `dev_docs/<topic>.md` | conventions and runbooks                                   | live      | this file, below                             |
-| `dev_docs/designs/`   | proposals for changes not yet made                         | transient | `designs/README.md`                          |
-| `dev_docs/decisions/` | why a choice was made and what would reopen it             | record    | `decisions/README.md`                        |
-| `dev_docs/research/`  | evidence gathered to answer a question                     | record    | `research/README.md`                         |
-| `dev_docs/.handoffs/` | notes from one session to the next; gitignored             | record    | `.handoffs/README.md`                        |
-| `dev_docs/tasks/`     | tracker config and `/plan-with-docs` scaffolding           | transient | `workflow-skills` (`task`, `plan-with-docs`) |
-| `dev_docs/<skill>/`   | one skill's machine-local config, gitignored               | local     | the skill                                    |
-| `dev_docs/<kind>/`    | a class of dated reports the repo produces repeatedly      | record    | this file, below                             |
+| Path                   | Holds                                                      | Kind      | Rules in                                     |
+| ---------------------- | ---------------------------------------------------------- | --------- | -------------------------------------------- |
+| `dev_docs/README.md`   | the index: which directories this repo has, and exceptions | live      | this file, below                             |
+| `dev_docs/<topic>.md`  | conventions and runbooks                                   | live      | this file, below                             |
+| `dev_docs/designs/`    | proposals for changes not yet made                         | transient | `designs/README.md`                          |
+| `dev_docs/decisions/`  | why a choice was made and what would reopen it             | record    | `decisions/README.md`                        |
+| `dev_docs/research/`   | evidence gathered to answer a question                     | record    | `research/README.md`                         |
+| `dev_docs/.handoffs/`  | notes from one session to the next; gitignored             | record    | `.handoffs/README.md`                        |
+| `dev_docs/tasks/`      | tracker config and `/plan-with-docs` scaffolding           | transient | `workflow-skills` (`task`, `plan-with-docs`) |
+| `dev_docs/<skill>/`    | one skill's machine-local config, gitignored               | local     | the skill                                    |
+| `dev_docs/<kind>/`     | a class of dated reports the repo produces repeatedly      | record    | this file, below                             |
 | `<record>/references/` | a record's own artifacts: probe scripts, captures, results | record    | this file, below                             |
 
 A repo has only the directories it uses. Every tracked directory that exists
