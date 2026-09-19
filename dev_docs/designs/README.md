@@ -48,6 +48,16 @@ leave it to the PR.
 `YYYY-MM-DD-<slug>.md`, kebab-case. The date is when the design was written
 and matches `created`.
 
+A record that carries artifacts — the script that measured something, the
+capture it read, the numbers it produced — becomes `YYYY-MM-DD-<slug>/` with
+the design as its `README.md` and the artifacts under `references/`. The rules
+above are unchanged; the date moves to the directory. `dev_docs_layout.md` at
+the plugin root has the shape and what does not belong there.
+
+A design's artifacts are as transient as the design: the prototype that proved
+the shape is deleted with it, and anything worth keeping has graduated into
+real code by then.
+
 ```yaml
 ---
 created: 2026-09-13

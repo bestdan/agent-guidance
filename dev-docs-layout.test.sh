@@ -134,14 +134,73 @@ check "a date that is not a calendar date fails" 1 "$(verdict "$fx")"
 
 fx="$(fixture records-nested)"
 record "$fx/dev_docs/designs/old" 2026-09-13-a-change.md 2026-09-13
-check "a subdirectory outside research/ fails" 1 "$(verdict "$fx")"
+check "an undated subdirectory outside research/ fails" 1 "$(verdict "$fx")"
+
+# --- 3b. record bundles: a dated directory carrying the record's artifacts ---
+# The shape exists so a research or design session's throwaway scripts have a
+# home that is not the repo's runtime scripts/ directory. The date on the
+# directory is what freezes the artifacts with the prose, and under research/
+# it is also what tells a bundle from a research-spike project.
+fx="$(fixture bundle-ok)"
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/research/2026-09-13-a-survey/references/raw"
+printf 'print(1)\n' > "$fx/dev_docs/research/2026-09-13-a-survey/references/probe.py"
+printf 'n,ms\n1,2\n' > "$fx/dev_docs/research/2026-09-13-a-survey/references/raw/run-1.csv"
+record "$fx/dev_docs/designs/2026-09-13-a-change" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/designs/2026-09-13-a-change/references"
+: > "$fx/dev_docs/designs/2026-09-13-a-change/references/bench.sh"
+check "a bundle with README.md and a nested references/ tree passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture bundle-anything-in-references)"
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/research/2026-09-13-a-survey/references"
+printf -- '- [ ] a checkbox in a captured note\n' \
+  > "$fx/dev_docs/research/2026-09-13-a-survey/references/capture.md"
+: > "$fx/dev_docs/research/2026-09-13-a-survey/references/Undated_Thing.TXT"
+check "references/ is not inspected: any name, any suffix, checkboxes and all" 0 "$(verdict "$fx")"
+
+fx="$(fixture bundle-no-record)"
+mkdir -p "$fx/dev_docs/research/2026-09-13-a-survey/references"
+: > "$fx/dev_docs/research/2026-09-13-a-survey/references/probe.py"
+check "artifacts with no README.md record fail" 1 "$(verdict "$fx")"
+
+fx="$(fixture bundle-loose-file)"
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+: > "$fx/dev_docs/research/2026-09-13-a-survey/probe.py"
+check "a file loose in a bundle, outside references/, fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture bundle-other-subdir)"
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/research/2026-09-13-a-survey/scripts"
+: > "$fx/dev_docs/research/2026-09-13-a-survey/scripts/probe.py"
+check "a subdirectory of a bundle other than references/ fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture bundle-created-mismatch)"
+record "$fx/dev_docs/decisions/2026-09-13-a-choice" README.md 2026-09-12 '## Revisit when'
+check "a bundle README's created must match the directory's date" 1 "$(verdict "$fx")"
+
+fx="$(fixture bundle-decision-no-revisit)"
+record "$fx/dev_docs/decisions/2026-09-13-a-choice" README.md 2026-09-13 '## Consequences'
+check "a decision bundle without a Revisit when section fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture bundle-vs-spike)"
+record "$fx/dev_docs/research/2026-09-13-a-survey" README.md 2026-09-13
+mkdir -p "$fx/dev_docs/research/spike/tracks/one"
+printf -- '- [ ] open question\n' > "$fx/dev_docs/research/spike/tracks/one/questions.md"
+: > "$fx/dev_docs/research/spike/LEDGER.md"
+check "a dated bundle and an undated spike project coexist under research/" 0 "$(verdict "$fx")"
+
+fx="$(fixture spike-still-skipped)"
+mkdir -p "$fx/dev_docs/research/spike"
+printf 'anything\n' > "$fx/dev_docs/research/spike/Not_A_Record.yml"
+check "an undated research subdirectory is still the spike skill's to validate" 0 "$(verdict "$fx")"
 
 # --- 4. created matches the filename date ---
 fx="$(fixture created-mismatch)"
 record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-12
 check "a created that differs from the filename date fails" 1 "$(verdict "$fx")"
 check "the failure names both dates" ok \
-  "$(grep -q 'created: 2026-09-12 does not match the filename date 2026-09-13' "$fx.out" && echo ok || echo missing)"
+  "$(grep -q "created: 2026-09-12 does not match the record's date 2026-09-13" "$fx.out" && echo ok || echo missing)"
 
 fx="$(fixture created-missing)"
 mkdir -p "$fx/dev_docs/research"

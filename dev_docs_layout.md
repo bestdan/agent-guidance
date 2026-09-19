@@ -58,6 +58,7 @@ session's state to the next one. Neither is guidance.
 | `dev_docs/tasks/`     | tracker config and `/plan-with-docs` scaffolding           | transient | `workflow-skills` (`task`, `plan-with-docs`) |
 | `dev_docs/<skill>/`   | one skill's machine-local config, gitignored               | local     | the skill                                    |
 | `dev_docs/<kind>/`    | a class of dated reports the repo produces repeatedly      | record    | this file, below                             |
+| `<record>/references/` | a record's own artifacts: probe scripts, captures, results | record    | this file, below                             |
 
 A repo has only the directories it uses. Every tracked directory that exists
 is a row in that repo's `dev_docs/README.md`. Nothing else goes under
@@ -98,6 +99,60 @@ this class: it travels with the repo, so a fresh clone knows the directory is
 local before anything writes to it. An ignored directory needs no row in
 `dev_docs/README.md`.
 
+### `YYYY-MM-DD-<slug>/`: a record with artifacts
+
+A research or design session often produces something that is not prose: the
+script that measured the thing, the capture it read, the table it produced.
+That is evidence, and it belongs to the record that cites it — not in the
+repo's `scripts/` or `src/`, where a reader has to guess that it is nobody's
+runtime code and a maintainer has to keep it working forever.
+
+**A record that has artifacts is a directory instead of a file, named the same
+way minus the `.md`.** It holds exactly two things:
+
+```text
+dev_docs/research/
+  2026-09-13-dev-docs-survey.md   # no artifacts: still a file
+  2026-09-19-io-latency/          # has artifacts: a directory
+    README.md                     # the record, front matter and all
+    references/
+      probe-fsync.py
+      raw/2026-09-19-run-1.csv
+  uid-migration/                  # a research spike (undated); different rules
+```
+
+- **`README.md` is the record.** Same front matter, same rules, same directory
+  README as the flat form; `created` matches the date on the directory. The
+  file is a `README.md` so the tree renders the record when someone opens the
+  directory, rather than making them pick a file.
+- **`references/` holds everything else**, at any depth and in any shape the
+  evidence came in. Nothing under it is checked: not the names, not the
+  suffixes, not a checkbox in a captured note. A frozen artifact is not a
+  backlog and not a record, so the naming rules do not reach it.
+
+Nothing else sits in the bundle. A second directory beside `references/`, or a
+loose script next to the `README.md`, fails the checker — one place to look,
+always the same one.
+
+This applies to `research/`, `designs/` and `decisions/` alike. A design's
+bundle is transient like the design: the prototype is deleted with it when the
+change lands, and anything worth keeping has become real code by then.
+
+**What does not belong in `references/`:** anything another thing imports,
+CI runs, or a person is expected to keep working. Those are code, and code
+lives where the repo keeps code. The bundle's name enforces this by accident
+and it is worth not fighting: a directory beginning with a digit and
+containing hyphens is not a valid module name in Python or JavaScript, so
+`references/` can never be imported as a package — only run by path, as a
+reader reproducing the record would run it. Keep each script standalone, with
+its invocation and its dependencies in a comment at the top, because the
+record is the only documentation it will ever get.
+
+**Inside a research spike**, the same `references/` name works at the project
+or track level, and the `research-spike` skill's validator ignores it. It must
+not go inside `obligations/` or `contracts/`, which reject every non-`.md`
+file by design.
+
 ### `dev_docs/<kind>/`: repeated reports
 
 A repo that produces the same kind of dated report more than once
@@ -108,7 +163,9 @@ report is a snapshot and is never amended; a later run is a new file.
 ## Naming
 
 - **Records and designs:** `YYYY-MM-DD-<slug>.md`. The date is when the file
-  was written and matches `created` in its front matter.
+  was written and matches `created` in its front matter. One that carries
+  artifacts is `YYYY-MM-DD-<slug>/` instead, holding `README.md` and
+  `references/`.
 - **Live files:** `<slug>.md`, no date.
 - **Slugs:** kebab-case, lowercase, ASCII. No type suffix: the directory says
   the file is a design, so `-design` on the name repeats it.
@@ -142,11 +199,14 @@ this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
 1. **The shared checker, `scripts/dev-docs-layout.py` at the plugin root**,
    run by each repo's check suite. It checks that `dev_docs/tasks/` holds only
    what its section allows; that no unchecked checkbox sits outside
-   `dev_docs/tasks/*_plan/`; that every file in a record or design directory
-   is `YYYY-MM-DD-<slug>.md` or `README.md`; that a record's `created` matches
-   its filename date; and that a decision has a `## Revisit when` section.
-   Subdirectories of `dev_docs/research/` are skipped, because the
-   `research-spike` skill owns and validates those. Inside a repository it
+   `dev_docs/tasks/*_plan/`; that every entry in a record or design directory
+   is `YYYY-MM-DD-<slug>.md`, a `YYYY-MM-DD-<slug>/` bundle, or `README.md`;
+   that a bundle holds a `README.md` record and nothing outside `references/`;
+   that a record's `created` matches its date; and that a decision has a
+   `## Revisit when` section. Undated subdirectories of `dev_docs/research/`
+   are skipped, because the `research-spike` skill owns and validates those —
+   the date is what tells a bundle from a spike. Nothing under a `references/`
+   tree is checked. Inside a repository it
    reads what git sees, so an ignored skill directory or plan never fails
    locally what CI would pass. The `dev_docs/tasks/` check is the exception
    and always reads the filesystem: an ignored plan directory is legitimate
