@@ -184,3 +184,7 @@ what would reopen it.
   `writing_about_code.md`; `portable.md` keeps the quantity rule and a pointer.
 - `2026-09-19-comment-key-check-belongs-here.md`: a convention's enforcement is
   built in the repo that owns the convention.
+- `2026-09-19-a-safety-guard-denies-and-has-no-hatch.md`: a safety rule blocks
+  the call and offers no override; guidance still only advises.
+- `2026-09-19-the-body-guard-takes-the-bare-bash-matcher.md`: no `if`, because
+  `gh` can sit anywhere in a command.
