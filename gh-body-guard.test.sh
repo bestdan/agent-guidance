@@ -171,6 +171,34 @@ check("-t joined to its value",
 check("--title under a command the -t table does not list",
       "deny", run("gh project create --owner @me --title \"`id`\""))
 
+# The remaining prose flags. All three read no file, so they take the quoting
+# remedy, and all three are long-form only --- -d is --draft on the commands
+# that have one.
+check("--description double-quoted backtick",
+      "deny", run("gh repo edit --description \"a `date` b\""))
+
+check("--desc= joined form on gist create",
+      "deny", run("gh gist create f.txt --desc=\"a `id` b\""))
+
+check("--readme with an unquoted substitution",
+      "deny", run("gh project edit 1 --readme $(cat readme.md)"))
+
+# --desc is a prefix of --description, so an exact-or-`=` match is what keeps
+# the longer flag from being read as the shorter one with a stray value.
+check("--description= is not read as --desc",
+      "deny", run("gh repo create x --description=\"a `id` b\""))
+
+check("--subject on gh pr merge",
+      "deny", run("gh pr merge 1 --squash --subject \"fix: `date` handling\""))
+
+# -t is --subject on gh pr merge, not --title, so the shorthand is left alone
+# there rather than denied under a flag name gh never received.
+check("-t on gh pr merge is left to the long form",
+      "allow", run("gh pr merge 1 --squash -t \"$(cat subject)\""))
+
+check("-d stays --draft, not --description",
+      "allow", run("gh release create v1 -d \"$(cat notes)\" --notes-file n.md"))
+
 check("--notes double-quoted backtick",
       "deny", run("gh release create v1 --notes \"built `date`\""))
 
@@ -190,11 +218,27 @@ check("-n joined to its value",
 # of these would be a hard stop with no way past it if the shorthand were
 # matched on its own.
 
+# A value-taking flag before the subcommand puts a non-flag word in front of it.
+# Reading the leading non-flag words gave (o/r, pr) here, which matches nothing,
+# so the shorthand went unguarded --- and for -b that was a deny main already
+# made. The path is anchored on the command word instead.
+check("-R before the subcommand does not hide --body",
+      "deny", run("gh -R o/r pr comment 1 -b \"`date`\""))
+
+check("-R before the subcommand does not hide --title",
+      "deny", run("gh -R o/r pr create -t \"`date`\" --body-file b.md"))
+
+check("--repo before the subcommand does not hide --notes",
+      "deny", run("gh --repo o/r release create v1 -n \"`date`\""))
+
 check("-t is a Go output template on gh api",
       "allow", run("gh api repos/a/b -t \"$(cat fmt.tmpl)\""))
 
 check("-t is a Go output template on gh project create",
       "allow", run("gh project create --owner @me -t \"$(cat fmt.tmpl)\""))
+
+check("-t is a Go output template on gh project edit",
+      "allow", run("gh project edit 1 --owner @me -t \"$(cat fmt.tmpl)\""))
 
 check("-t is a Go output template on a list command",
       "allow", run("gh pr list -t \"$(cat fmt.tmpl)\""))
@@ -211,6 +255,14 @@ check("--notes-file untouched",
 
 check("--notes-start-tag is not --notes",
       "allow", run("gh release create v1 --notes-start-tag \"$(cat tag)\" --notes-file n.md"))
+
+# A pflag cluster whose guarded flag is not first passes, deliberately. The
+# decision record argues it: the table that would close it is one of boolean
+# shorthands per command, and that table going stale refuses a correct command
+# rather than missing a deny. Pinned as a case so a later widening has to change
+# it on purpose.
+check("a shorthand cluster passes, per the 2026-09-20 record",
+      "allow", run("gh release create v1 -dt \"`date`\" --notes-file n.md"))
 
 check("single-quoted title is literal",
       "allow", run("gh pr create --title " + chr(39) + "fix `date` handling" + chr(39) + " --body-file b.md"))

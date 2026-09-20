@@ -93,7 +93,20 @@ LONG = {
     "--body": "--body-file",
     "--title": None,
     "--notes": "--notes-file",
+    "--description": None,
+    "--desc": None,
+    "--readme": None,
+    "--subject": None,
 }
+
+# The last four take no shorthand entry, deliberately. -d is --description on
+# gh repo create and gh repo edit and --desc on gh gist create, but it is
+# --draft on gh pr create and gh release create and --delete-branch on
+# gh pr merge, so the letter says nothing on its own. -t is --subject on
+# gh pr merge, which is why that command is absent from the -t path list above:
+# a shorthand there would deny under the wrong flag name. The long forms carry
+# the whole coverage for these four; the class in portable.md is what a session
+# reads, and a shorthand adds a table for no case anyone writes.
 
 # Shorthands do need it. gh reuses single letters across subcommands, so a
 # shorthand names a prose flag only under the commands that spell it that way.
@@ -270,23 +283,31 @@ def substitution_in(token):
     return None
 
 
-def command_path(words):
-    """The gh subcommand path: the leading non-flag words after gh.
+# The gh top-level commands SHORT names. The path is anchored on one of these
+# rather than read off the leading non-flag words, because a flag that takes a
+# value puts a non-flag word in front of the subcommand: gh accepts
+# `gh -R owner/repo pr comment 1 -b ...`, and reading the first two non-flag
+# words there gives (owner/repo, pr), which matches nothing and lets the
+# shorthand through. Anchoring cannot be fooled that way, since a repo argument
+# is owner/name and never equals a bare command word.
+ROOTS = ("pr", "issue", "release")
 
-    Only used to disambiguate a shorthand. A flag that takes a value can put a
-    non-flag word here that is not a subcommand --- `gh -R owner/repo pr view`
-    reads as (owner/repo, pr) --- and the effect is that the path matches no
-    entry in SHORT, so the shorthand is not treated as a prose flag. That is the
-    same direction the stale-table note above chooses.
+
+def command_path(words):
+    """The gh subcommand path: a ROOTS word and the next non-flag word after it.
+
+    Only used to disambiguate a shorthand. A command whose root is not in ROOTS
+    yields the empty path, which matches no SHORT entry, so the shorthand is not
+    treated as a prose flag --- the same direction the stale-table note above
+    chooses.
     """
-    path = []
-    for word in words:
-        if word.startswith("-"):
-            continue
-        path.append(word)
-        if len(path) == 2:
-            break
-    return tuple(path)
+    for i, word in enumerate(words):
+        if word in ROOTS:
+            for later in words[i + 1:]:
+                if not later.startswith("-"):
+                    return (word, later)
+            return (word,)
+    return ()
 
 
 def spells(paths, path):
@@ -355,7 +376,8 @@ remedy = LONG[flag]
 reason = (
     "Refusing this command: the " + typed + " argument contains " + hit
     + ", which the shell runs before gh ever sees it. gh would post the "
-    "output of that substitution in place of the code span, exit 0, and "
+    "output of that substitution in place of the " + hit
+    + " expression, exit 0, and "
     "report nothing. portable.md: \"Never pass prose containing backticks "
     "to a free-text gh flag.\"\n\n"
 )
@@ -375,7 +397,7 @@ else:
         "  gh ... " + flag + " \x27fix(scope): handle a bare tilde\x27\n\n"
         "Quoting is the answer here rather than a file because this flag has no "
         "file-reading counterpart, and a one-line value rarely carries an "
-        "apostrophe. If this one does, drop the code span."
+        "apostrophe. If this one does, drop the " + hit + " expression."
     )
 
 json.dump({
