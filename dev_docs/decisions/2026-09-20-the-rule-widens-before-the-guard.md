@@ -109,6 +109,22 @@ cluster is pinned the same way so the gap above cannot close by accident. Three
 cases assert the denial text: that `--title` is not sent to `--body-file`, that
 `--notes` is sent to `--notes-file`, and that the quoted rule names the class.
 
+A live headless session confirmed the registration on 2026-09-20, the way the
+#51 record did, because every case in the suite feeds the script directly and so
+passes on a hook the harness never runs. `claude -p --plugin-dir` against this
+worktree, from `/tmp/claude/gh-guard-probe`, which is not a repository: a
+`--title` and a `--description` each carrying a backtick were refused with the
+reason verbatim, and neither reached `gh`. The probe named a repository that
+does not exist and substituted `date`, so a guard that had failed to fire would
+have errored on resolution rather than posting anything.
+
+The negative control took two runs. The first used a real `gh` subcommand and
+proved nothing: this machine's `sandbox-network-guard.sh` refused it first, so
+the body guard never weighed in. Every `gh` subcommand worth testing needs
+network, so the control moved to commands that do not — a `--body` substitution
+on a non-`gh` command, and `gh --version` — and both ran unrefused. That is what
+pins selectivity live; a guard that denied either would be over-firing.
+
 ## Alternatives
 
 - **Widen the guard and leave the rule naming `--body`:** rejected; it is the
