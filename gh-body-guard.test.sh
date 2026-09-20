@@ -143,6 +143,78 @@ check("ordinary multi-line continuation",
 check("gh nested in a substitution",
       "deny", run("echo $(gh pr comment 1 --body " + chr(34) + "`date`" + chr(34) + ")"))
 
+# --- denied: the other free-text flags --------------------------------------
+#
+# --title is the one that will actually bite. A PR title routinely carries a
+# code span, and it is the field the Git: bullet in portable.md gives a grammar
+# for. Each flag repeats the four spellings --body is pinned on, because the
+# resolution path differs per spelling and a shorthand differs again per
+# command.
+
+check("--title double-quoted backtick",
+      "deny", run("gh pr create --title \"fix `date` handling\" --body-file b.md"))
+
+check("--title= joined form",
+      "deny", run("gh issue create --title=\"a `id` b\" --body-file b.md"))
+
+check("--title with an unquoted substitution",
+      "deny", run("gh pr edit 3 --title $(cat subject)"))
+
+check("-t shorthand under a command that spells it --title",
+      "deny", run("gh release edit v1 -t \"`date`\""))
+
+check("-t joined to its value",
+      "deny", run("gh issue edit 5 -t\"`id`\""))
+
+# --title is a long flag, so it needs no command to vouch for it: no gh command
+# gives that name to anything but prose.
+check("--title under a command the -t table does not list",
+      "deny", run("gh project create --owner @me --title \"`id`\""))
+
+check("--notes double-quoted backtick",
+      "deny", run("gh release create v1 --notes \"built `date`\""))
+
+check("--notes= joined form",
+      "deny", run("gh release edit v1 --notes=\"a `id` b\""))
+
+check("-n shorthand under a command that spells it --notes",
+      "deny", run("gh release create v1 -n \"`date`\""))
+
+check("-n joined to its value",
+      "deny", run("gh release create v1 -n\"`date`\""))
+
+# --- allowed: a shorthand that means something else under this command ------
+#
+# gh reuses single letters across subcommands, which is why the shorthand table
+# is keyed on the command path. Surveyed against gh 2.98.0 on 2026-09-20. Each
+# of these would be a hard stop with no way past it if the shorthand were
+# matched on its own.
+
+check("-t is a Go output template on gh api",
+      "allow", run("gh api repos/a/b -t \"$(cat fmt.tmpl)\""))
+
+check("-t is a Go output template on gh project create",
+      "allow", run("gh project create --owner @me -t \"$(cat fmt.tmpl)\""))
+
+check("-t is a Go output template on a list command",
+      "allow", run("gh pr list -t \"$(cat fmt.tmpl)\""))
+
+check("-b is --base on gh issue develop",
+      "allow", run("gh issue develop 5 -b \"$(cat base)\""))
+
+check("-n is --name on gh issue develop",
+      "allow", run("gh issue develop 5 -n \"$(cat name)\""))
+
+# --notes-file is the remedy for --notes, exactly as --body-file is for --body.
+check("--notes-file untouched",
+      "allow", run("gh release create v1 --notes-file /tmp/notes.md"))
+
+check("--notes-start-tag is not --notes",
+      "allow", run("gh release create v1 --notes-start-tag \"$(cat tag)\" --notes-file n.md"))
+
+check("single-quoted title is literal",
+      "allow", run("gh pr create --title " + chr(39) + "fix `date` handling" + chr(39) + " --body-file b.md"))
+
 # --- allowed: inert, or the remedy itself -----------------------------------
 
 # A body flag belongs to the command it sits in. These were denied by the
@@ -205,6 +277,24 @@ check("empty quoted body, danger in a later argument",
 # pinned that: the harness above checks a reason exists, not what it says.
 check("the denial names --body-file",
       True, "--body-file" in reason("gh pr comment 1 --body \"`date`\""))
+
+# The remedy has to exist for the flag the guard fired on. --title reads no
+# file, so a denial that recommended --body-file would be sending the session to
+# a flag gh will reject --- and with no hatch, that is a dead end rather than a
+# detour.
+title_reason = reason("gh pr create --title \"`date`\" --body-file b.md")
+check("the --title denial does not recommend --body-file",
+      False, "--body-file" in title_reason)
+check("the --title denial offers quoting instead",
+      True, "single-quote" in title_reason)
+
+check("the --notes denial names --notes-file",
+      True, "--notes-file" in reason("gh release create v1 --notes \"`date`\""))
+
+# The denial quotes the rule it enforces, so the quote has to be the widened
+# rule rather than the one that named a single flag.
+check("the denial quotes the rule as a class",
+      True, "free-text gh flag" in reason("gh pr comment 1 --body \"`date`\""))
 
 check("payload with no command field",
       "allow", run(None, raw=json.dumps({
