@@ -67,14 +67,14 @@ which is the failure this whole record exists to avoid.
 - Bad, because the joined-shorthand branch reads only the first character after
   the dash, so a pflag cluster whose guarded flag comes second passes:
   `gh release create -dt "$(cat title)"` is `--draft` plus `--title`, and gh
-  accepts it. Closing it needs a second table, of which shorthands are *boolean*
+  accepts it. Closing it needs a second table, of which shorthands are _boolean_
   on each guarded command, and that table's staleness fails the wrong way. Let
   gh promote a boolean `-X` on `gh pr create` to a valued one and
   `gh pr create -Xt "$(cat f)"` becomes `--X=t` with the substitution
   positional, never reaching a free-text flag — while the stale table still
   reads `t` as `--title` and refuses. That is the unpredictable refusal this
   record exists to avoid, arriving through the back door. Aborting the walk on
-  an unknown character covers gh *adding* a flag, not *changing* one, and it is
+  an unknown character covers gh _adding_ a flag, not _changing_ one, and it is
   the change that bites. The population this guard defends is an agent writing
   `--draft --title`; a shorthand cluster is a human golf idiom that gh's own
   help never shows.
@@ -103,7 +103,7 @@ which is the failure this whole record exists to avoid.
 value as separate words, `--flag=value`, the shorthand, and the shorthand joined
 to its value. The four long-only flags carry the two spellings that reach them,
 plus a case pinning that their letter stays with the flag that owns it. The
-shorthand collisions are pinned as *allowed* cases, one per command, so a future
+shorthand collisions are pinned as _allowed_ cases, one per command, so a future
 widening that drops the command-path check fails the suite, and the shorthand
 cluster is pinned the same way so the gap above cannot close by accident. Three
 cases assert the denial text: that `--title` is not sent to `--body-file`, that
