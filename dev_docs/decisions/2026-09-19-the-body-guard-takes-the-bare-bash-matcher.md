@@ -32,10 +32,20 @@ dispatch cost down inside the script instead. Two `case` tests in the shell
 exit before `python3` is started, so a Bash call with no `gh` and no `--body`
 costs one short-lived shell and nothing more.
 
+Both tests are plain substring globs, and they short-circuit less than that
+sentence suggests: `gh` matches "through" and "highlight", and `-b` matches any
+path carrying those two characters. Tightening them is not the answer, because a
+narrower test reintroduces the blind spot the bare matcher exists to avoid. The
+honest statement is that the ceiling on the cost is one short-lived shell, and
+how often python starts behind it has not been measured.
+
 ## Consequences
 
 - Good, because every form of the dangerous command is seen, including the
   compound ones a refused session would try next.
+- Good, because seeing the whole command is what makes the segment split
+  possible, and the split is what keeps a `--body` in one command from being
+  charged to a `gh` in another.
 - Good, because the cost is bounded by a string test rather than by the
   harness's matcher, so it can be tuned without changing the registration.
 - Bad, because a shell process starts on every Bash tool call in every session

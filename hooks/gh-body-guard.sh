@@ -33,14 +33,20 @@
 # for when a simple one was refused. A guard that is correct on the easy case
 # and blind on the hard one is worse than no guard, because it earns trust it
 # has not got. The cost is paid down in the shell below rather than by
-# narrowing the matcher: the two `case` tests exit before python is spawned, so
-# a Bash call with no `gh` and no `--body` in it costs one short-lived shell.
+# narrowing the matcher: the two `case` tests exit before python is spawned.
+# Both tests are plain substring globs, so they short-circuit fewer calls than
+# that reads --- `gh` matches "through" and "highlight", and `-b` matches any
+# path carrying it. Nothing here has been timed.
 #
 # Detection is a raw-text scan, not a tokenizer. `shlex` in posix mode discards
 # the quoting, which is the only thing separating the dangerous form from the
 # safe one --- after tokenizing, `--body "see `date`"` and `--body 'see `date`'`
 # are the same two strings. So the scanner below walks the command character by
 # character and keeps each character's quote state alongside it.
+#
+# It also splits the command into segments, because a `--body` belongs to the
+# command it sits in. Without that, `curl -b "$(cat jar)" && gh pr view 1` is
+# refused for a flag gh never receives --- and a deny here has no way past it.
 #
 # Exit 0 on every path that is not a deny, including a payload it cannot parse.
 # A PreToolUse hook that exits nonzero blocks the tool call, and failing a
@@ -78,23 +84,50 @@ OUT, SQ, DQ, ESC = "OUT", "SQ", "DQ", "ESC"
 
 
 def scan(text):
-    """Split into tokens, keeping every character next to its quote state.
+    """Split into segments of tokens, each character kept with its quote state.
 
-    A token is a list of (char, state) pairs. ESC marks a character that a
-    backslash made literal, so a `\\`` inside double quotes cannot be read as
-    the start of a substitution.
+    A token is a list of (char, state) pairs. ESC marks a character a backslash
+    made literal, so a backslash-escaped backtick inside double quotes is not
+    read as opening a substitution.
+
+    A segment is a run of tokens the shell hands to one command. The split is
+    what stops a --body in one command being attributed to a gh in another.
+
+    An unquoted $( or backtick ends a segment but keeps its own characters in
+    the token being built. That order is load-bearing in both directions: the
+    characters must stay so the value of --body $(cat x) still reads as a
+    substitution, and the break must happen so the gh inside echo $(gh ...)
+    starts a command of its own.
     """
-    tokens, cur, state, i = [], [], OUT, 0
+    segments, tokens, cur, state, i = [], [], [], OUT, 0
+    # `started` is what makes an empty quoted word a word. bash passes "" as a
+    # real, empty argument, so a scanner that emits no token for it shifts every
+    # later argument left by one and reads the wrong one as the body value.
+    started = False
+
+    def flush():
+        nonlocal cur, started
+        if cur or started:
+            tokens.append(cur)
+            cur = []
+            started = False
+
+    def cut():
+        nonlocal tokens
+        flush()
+        if tokens:
+            segments.append(tokens)
+            tokens = []
+
     while i < len(text):
         c = text[i]
         if state == OUT:
-            if c == "\x27":
-                state, i = SQ, i + 1
-                cur = cur or []
-                continue
-            if c == chr(34):
-                state, i = DQ, i + 1
-                cur = cur or []
+            if c == chr(92) and i + 1 < len(text) and text[i + 1] == chr(10):
+                # A line continuation: bash removes both characters. Treating
+                # the newline as an escaped literal instead would leave
+                # --bo\<newline>dy as a word that matches no flag, so the body
+                # it introduces would go unchecked.
+                i += 2
                 continue
             if c == chr(92):
                 if i + 1 < len(text):
@@ -103,10 +136,41 @@ def scan(text):
                     continue
                 i += 1
                 continue
+            if c == "\x27":
+                state, i = SQ, i + 1
+                started = True
+                continue
+            if c == chr(34):
+                state, i = DQ, i + 1
+                started = True
+                continue
+            if c == "$" and i + 1 < len(text) and text[i + 1] == "(":
+                cur.append((c, OUT))
+                cur.append(("(", OUT))
+                i += 2
+                cut()
+                continue
+            if c == "`":
+                cur.append((c, OUT))
+                i += 1
+                cut()
+                continue
+            if c == "#" and not cur and not started:
+                # bash starts a comment at a word boundary, so nothing after it
+                # on this line runs. Without this a trailing comment reads as a
+                # live body argument.
+                nl = text.find(chr(10), i)
+                if nl == -1:
+                    break
+                i = nl + 1
+                cut()
+                continue
+            if c in ";&|()" + chr(10):
+                i += 1
+                cut()
+                continue
             if c.isspace():
-                if cur:
-                    tokens.append(cur)
-                    cur = []
+                flush()
                 i += 1
                 continue
             cur.append((c, OUT))
@@ -121,15 +185,17 @@ def scan(text):
             if c == chr(34):
                 state, i = OUT, i + 1
                 continue
-            if c == chr(92) and i + 1 < len(text) and text[i + 1] in (chr(34), chr(92), "$", "`", "\n"):
+            if c == chr(92) and i + 1 < len(text) and text[i + 1] == chr(10):
+                i += 2
+                continue
+            if c == chr(92) and i + 1 < len(text) and text[i + 1] in (chr(34), chr(92), "$", "`"):
                 cur.append((text[i + 1], ESC))
                 i += 2
                 continue
             cur.append((c, DQ))
             i += 1
-    if cur:
-        tokens.append(cur)
-    return tokens
+    cut()
+    return segments
 
 
 def text_of(token):
@@ -142,7 +208,10 @@ def substitution_in(token):
     Single-quoted and backslash-escaped characters are inert, so only OUT and
     DQ states count. Parameter expansion (${...}) is left alone: the rule in
     portable.md names backticks and $(, and widening a deny guard past its
-    written rule is how false positives start.
+    written rule is how false positives start. Arithmetic expansion, $((, is
+    left alone for the opposite reason --- it runs no command, but a body
+    carrying it is shell code either way, and the branch that told the two
+    apart would have to decide an ambiguity bash itself resolves by trying.
     """
     for j, (ch, st) in enumerate(token):
         if st in (SQ, ESC):
@@ -156,34 +225,42 @@ def substitution_in(token):
     return None
 
 
-tokens = scan(command)
-words = [text_of(t) for t in tokens]
-
-# Require a gh invocation. Without it a --body flag belongs to some other tool
-# and this guard has no rule to enforce.
-if not any(w == "gh" or w.endswith("/gh") for w in words):
-    sys.exit(0)
-
 found = None
-for idx, word in enumerate(words):
-    value = None
-    # --body-file is the remedy, not the hazard, and it starts with --body.
-    # Match the flag exactly, or as --body=<value>.
-    if word in ("--body", "-b"):
-        if idx + 1 < len(tokens):
-            value = tokens[idx + 1]
-    elif word.startswith("--body="):
-        value = tokens[idx][len("--body="):]
-    elif len(word) > 2 and word[0] == "-" and word[1] == "b":
-        # pflag accepts a shorthand joined to its value, so `-b$(date)` is a
-        # real spelling gh honours. `--body` cannot reach here: its second
-        # character is a dash.
-        value = tokens[idx][2:]
-    if value is None:
+for tokens in scan(command):
+    words = [text_of(t) for t in tokens]
+
+    # A gh anywhere in the segment, not only at its head, so that a leading
+    # env assignment or a wrapper still resolves to the same command.
+    gh_at = None
+    for k, word in enumerate(words):
+        if word == "gh" or word.endswith("/gh"):
+            gh_at = k
+            break
+    if gh_at is None:
         continue
-    hit = substitution_in(value)
-    if hit:
-        found = (word, hit)
+
+    for idx in range(gh_at + 1, len(words)):
+        word = words[idx]
+        value = None
+        # --body-file is the remedy, not the hazard, and it starts with --body.
+        # Match the flag exactly, or as --body=<value>.
+        if word in ("--body", "-b"):
+            if idx + 1 < len(tokens):
+                value = tokens[idx + 1]
+        elif word.startswith("--body="):
+            value = tokens[idx][len("--body="):]
+        elif len(word) > 2 and word[0] == "-" and word[1] == "b":
+            # pflag accepts a shorthand joined to its value, so -b$(date) is a
+            # real spelling gh honours. --body cannot reach here: its second
+            # character is a dash.
+            value = tokens[idx][2:]
+        if value is None:
+            continue
+        hit = substitution_in(value)
+        if hit:
+            found = (word, hit)
+            break
+    if found:
         break
 
 if not found:

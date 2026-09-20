@@ -62,6 +62,27 @@ def run(command, *, raw=None):
     return "allow"
 
 
+def reason(command):
+    """The denial reason text, or "" when the command was allowed."""
+    payload = json.dumps({
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "session_id": "test",
+        "tool_input": {"command": command},
+    })
+    proc = subprocess.run(
+        ["bash", guard], input=payload, capture_output=True, text=True
+    )
+    out = proc.stdout.strip()
+    if not out:
+        return ""
+    try:
+        body = json.loads(out)
+    except ValueError:
+        return ""
+    return ((body.get("hookSpecificOutput") or {}).get("permissionDecisionReason")) or ""
+
+
 def check(desc, want, got):
     global fails
     if want == got:
@@ -108,7 +129,35 @@ check("gh after ;",
 check("gh by absolute path",
       "deny", run("/opt/homebrew/bin/gh pr comment 1 --body \"`id`\""))
 
+# A line continuation inside the flag word is the one spelling that bypassed the
+# guard: bash removes the backslash-newline and gh receives --body, while a
+# scanner treating the newline as an escaped literal matches no flag at all.
+check("line continuation inside the flag word",
+      "deny", run("gh pr comment 1 --bo" + chr(92) + chr(10) + "dy " + chr(34) + "`date`" + chr(34)))
+
+check("ordinary multi-line continuation",
+      "deny", run("gh pr comment 1 " + chr(92) + chr(10) + "  --body " + chr(34) + "`date`" + chr(34)))
+
+# gh inside a substitution is a command of its own. The segment break after an
+# unquoted $( is what lets the scanner see it.
+check("gh nested in a substitution",
+      "deny", run("echo $(gh pr comment 1 --body " + chr(34) + "`date`" + chr(34) + ")"))
+
 # --- allowed: inert, or the remedy itself -----------------------------------
+
+# A body flag belongs to the command it sits in. These were denied by the
+# whole-command scan, and they are ordinary shell rather than exotica.
+check("-b belongs to the other command in the compound",
+      "allow", run("sort -b " + chr(34) + "$(cat list)" + chr(34) + " && gh pr view 1"))
+
+check("--body belongs to the other command in the compound",
+      "allow", run("printf --body " + chr(34) + "$(id)" + chr(34) + " && gh pr view 1"))
+
+check("body flag before gh, separated by a semicolon",
+      "allow", run("echo --body " + chr(34) + "`date`" + chr(34) + "; gh pr view 1"))
+
+check("trailing comment is not live text",
+      "allow", run("gh pr view 1 # --body " + chr(34) + "`date`" + chr(34)))
 
 check("single-quoted backtick is literal",
       "allow", run("gh pr comment 1 --body " + chr(39) + "see `date` here" + chr(39)))
@@ -146,6 +195,16 @@ check("malformed payload exits 0 and stays silent",
 
 check("empty payload exits 0 and stays silent",
       "allow", run(None, raw=""))
+
+# An empty quoted argument is a real argument to bash, so a scanner that drops it
+# reads the NEXT argument as the body and refuses a correct command.
+check("empty quoted body, danger in a later argument",
+      "allow", run("gh pr comment 1 --body \"\" \"$(date)\""))
+
+# The deny is only defensible because it names the spelling that works. Nothing
+# pinned that: the harness above checks a reason exists, not what it says.
+check("the denial names --body-file",
+      True, "--body-file" in reason("gh pr comment 1 --body \"`date`\""))
 
 check("payload with no command field",
       "allow", run(None, raw=json.dumps({
