@@ -6,6 +6,10 @@ convention: ../conventions.md
 
 # Enforcement of a convention lives in the repo that owns the convention
 
+> [!NOTE] 2026-09-20: the check landed. `hooks/comment-key-context.sh` is the
+> handler this record anticipated, pinned by `comment-key-context.test.sh`; the
+> Confirmation section below is the state before it did.
+
 ## Context
 
 `portable.md` says a code comment carries no ticket key unless it is a `TODO`.
