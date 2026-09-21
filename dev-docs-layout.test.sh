@@ -75,8 +75,12 @@ check "config files, a _plan/ directory, a flat card, and Finder noise pass" 0 "
 # from, so .claude/ appears under tasks/ without anyone authoring it there.
 # The set of such tools is open, so the rule is the leading dot rather than the
 # name — the .DS_Store above is the same rule, not a separate exemption.
+# The directory carries a file, because an empty one passes whatever the
+# checker does: check 1 skips the entry and the other checks find nothing to
+# read. A checkbox is what catches check 2 descending into it.
 fx="$(fixture tasks-harness-dir)"
 mkdir -p "$fx/dev_docs/tasks/foo_plan" "$fx/dev_docs/tasks/.claude/.cc-writes"
+printf -- '- [ ] pending write\n' > "$fx/dev_docs/tasks/.claude/.cc-writes/log.md"
 check "a harness's dot-directory under tasks/ passes" 0 "$(verdict "$fx")"
 
 # The other half of that rule: the config is RECOGNISED, not merely tolerated,
