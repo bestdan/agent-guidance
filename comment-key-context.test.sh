@@ -94,6 +94,18 @@ x = 1")"
 check "an added // comment carrying a key is reported" context \
   "$(edit "$work/a.js" "const x = 1;" "// ENG-42 asked for this
 const x = 1;")"
+# The two markers with a carve-out of their own: `--` is taken only with a
+# space after it, and `*` only as the first thing on the line. Both are live
+# paths in comment_at(), and neither was exercised by the cases around them.
+check "an added -- comment carrying a key is reported" context \
+  "$(edit "$work/a.sql" "select 1;" "-- PRE-4 wanted this column
+select 1;")"
+check "an added javadoc continuation carrying a key is reported" context \
+  "$(edit "$work/A.java" "int x = 1;" " * PRE-5 asked for the cast
+int x = 1;")"
+# The carve-out itself: a --flag is not a comment marker.
+check "a --flag in a shell line is silent" silent \
+  "$(edit "$work/a.sh" "x=1" 'run --project PRE-6 --now')"
 
 # --- 2. TODO is the exception the rule names ---
 # There the key names outstanding work rather than citing a source, so a guard
@@ -101,6 +113,18 @@ const x = 1;")"
 check "a TODO carrying a key is silent" silent \
   "$(edit "$work/a.py" "x = 1" "# TODO(PRE-999): drop this once the migration lands
 x = 1")"
+# The bare spelling is the same exception. portable.md writes the exception as
+# `TODO(PRE-999):`, but its reason -- the key names outstanding work rather
+# than citing a source -- holds for this one too, and a guard that reported it
+# would be firing on a comment the rule tolerates.
+check "a bare TODO carrying a key is silent" silent \
+  "$(edit "$work/a.py" "x = 1" "# TODO: fix per PRE-999
+x = 1")"
+# The exemption counts only inside the comment. A TODO in the code says
+# nothing about the comment beside it, and testing the whole line let a string
+# exempt a real violation.
+check "a TODO in code does not exempt the comment" context \
+  "$(edit "$work/a.py" "x = 1" 'x = "TODO"  # per PRE-999')"
 
 # --- 3. code is not a comment ---
 # A key in a string, a variable or a branch name is not the thing the rule is
@@ -110,6 +134,13 @@ check "a key in a string literal is silent" silent \
   "$(edit "$work/a.py" "x = 1" 'ticket = "PRE-999"')"
 check "a key in a URL in code is silent" silent \
   "$(edit "$work/a.py" "x = 1" 'url = "https://example.com/ABC-123"')"
+# A URL fragment's # is not a comment marker: it has a non-space before it.
+check "a key in a URL fragment is silent" silent \
+  "$(edit "$work/a.py" "x = 1" 'url = "https://example.com/x/#ABC-123"')"
+# But the scan walks past that # rather than stopping at it, so a real comment
+# later on the same line is still found. A one-shot find() fails this case.
+check "a comment after a # literal is still read" context \
+  "$(edit "$work/a.css" "a { color: red; }" 'color = "#FFF";  # per PRE-999')"
 
 # --- 4. added lines only ---
 # The whole design question. A key that pre-dates the rule is not a finding,

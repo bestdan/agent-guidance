@@ -27,7 +27,7 @@
 #            already carries on the first unrelated write to it.
 #
 # A line is added when it does not appear, stripped, anywhere in the old text.
-# That is a line-multiset difference rather than a diff: a key-bearing comment
+# That is a line-set difference rather than a diff: a key-bearing comment
 # that MOVES is not reported, which is a missed finding in the safe direction.
 # `dev_docs/decisions/2026-09-20-added-lines-are-the-new-text-minus-the-old.md`
 # has the reasoning and the cases it gives up.
@@ -126,7 +126,20 @@ def comment_at(line):
     A marker scan rather than a parser. The alternative is a per-language
     tokenizer, and this hook runs in every repo a session touches, so the
     language is whatever the extension says and often nothing this script has
-    heard of. The scan costs the cases below, all of which fail toward silence.
+    heard of. Three known cases it gives up, two of them toward silence:
+
+      - A block comment whose body carries no leading `*`. The key line
+        between `/*` and `*/` holds no marker of its own, so it is missed.
+        Tracking the state across lines is not available: `new` is a
+        fragment, and a tracker that guessed at its opening state would
+        report keys on ordinary code.
+      - A comment marker with nothing before it, such as `x=1;#note`. The
+        `#` scan below requires whitespace or line start, which is what buys
+        the URL-fragment case.
+      - A marker inside a string literal, which fails the other way and
+        reports: `s = "tag #ABC-123"` reads as a comment, because the `#` has
+        whitespace before it like any other. Telling the two apart needs the
+        parser this function does without.
     """
     best = None
 
@@ -146,7 +159,20 @@ def comment_at(line):
             break
         start = i + 2
 
-    for marker in ("#", "/*", "<!--"):
+    # A `#` with a non-space before it is a URL fragment, a CSS colour or an
+    # HTML anchor rather than a comment. The walk continues past one rather
+    # than stopping, so the `# note` after a `"#FFF"` literal is still found.
+    start = 0
+    while True:
+        i = line.find("#", start)
+        if i == -1:
+            break
+        if i == 0 or line[i - 1].isspace():
+            best = note(i)
+            break
+        start = i + 1
+
+    for marker in ("/*", "<!--"):
         i = line.find(marker)
         if i != -1:
             best = note(i)
@@ -171,10 +197,19 @@ findings = []
 for n, line in enumerate(new.splitlines(), 1):
     if line.strip() in existing:
         continue
-    if "TODO" in line:
-        continue
     at = comment_at(line)
     if at is None:
+        continue
+    # `TODO` is the exception the rule names, and it counts only inside the
+    # comment: a `"TODO"` string in the code says nothing about the comment
+    # beside it. The test is the word rather than `TODO(KEY):`, because
+    # `# TODO: fix per PRE-999` is the same exception spelled differently and
+    # the reason the rule gives for it -- the key names outstanding work
+    # rather than citing a source -- holds there too.
+    #
+    # No apostrophe in this block, or anywhere else inside it: the whole
+    # program is a single-quoted shell argument, and one apostrophe ends it.
+    if "TODO" in line[at:]:
         continue
     for match in KEY.finditer(line[at:]):
         if match.group(1) in NOT_TRACKERS:

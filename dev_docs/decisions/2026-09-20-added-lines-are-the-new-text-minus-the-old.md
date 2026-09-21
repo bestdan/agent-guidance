@@ -51,7 +51,7 @@ is silence on the case the guard exists for.
   in the payload or on disk.
 - Good, because a whole-file `Write` to a legacy file is silent, which is the
   write that would otherwise make the hook unusable in an old codebase.
-- Bad, because it is a line-multiset difference, not a diff. A key-bearing
+- Bad, because it is a line-set difference, not a diff. A key-bearing
   comment that _moves_ — a block reindented by a different amount is a
   different string, but a block relocated intact is not — is not reported. That
   is a missed finding, which is the safe direction for an advisory hook.
