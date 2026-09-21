@@ -50,8 +50,9 @@ keeps only what has to be shell: reading the payload, the `case` prefilter where
 there is one, the environment it passes, and `exit 0`. A python linter runs over
 the repo from `scripts/run-tests.sh` and from a `lint` job in CI, reporting SKIP
 locally when absent in the shape the runner already uses for shellcheck and
-dprint, with the rule set pinned in `ruff.toml` so a laptop and CI check the
-same thing.
+dprint. `ruff.toml` pins the rule selection and the CI job pins the version it
+installs; nothing pins the local version, so a release that changes a rule
+inside the selection reaches a laptop before it reaches CI.
 
 The wrapper still discards the program's stderr and still exits 0 on every path,
 so a missing, unreadable or unparsable `.py` file fails exactly as quietly as
@@ -140,7 +141,25 @@ tripwire had never been able to fire. Unmuted, it fired at once, on one mutation
 the helper reading `hooks/hooks.json` indexed `["SessionStart"]` and raised when
 the mutation deleted it, so the suite reported which file it was reading rather
 than what was wrong with it. Both registration helpers now use `.get` and print a
-verdict, and the tripwire is live for the first time.
+verdict, and the tripwire is live for the first time. The mutation is still
+rejected, which is the half a green selftest does not show: run by hand against
+the same fixture, the suite exits 1 with twenty `ok` lines and
+`FAIL hooks.json registers inject.sh on SessionStart (want ok, got no
+SessionStart entry in hooks/hooks.json)`. Before the fix that line read
+`want ok, got` with the cause on a discarded stream.
+
+A live headless session confirmed the registration on 2026-09-20, as the sibling
+records did, because every case in the three suites feeds a wrapper directly and
+so passes on a hook the harness never runs. `claude -p --plugin-dir` against this
+worktree, in `/tmp/claude/hook-probe-60`, which is not a repository: all three
+hooks fired with their programs in files. The comment-key hook quoted its finding
+with the line number, the `dev_docs/` hook emitted the pointer with the plugin
+root resolved to the worktree, and the `gh` guard refused a `gh pr comment`
+whose double-quoted `--body` carried a backtick substitution, with the full
+reason. The two writes still landed, which is the advise-never-deny half.
+One thing the probe settles that no suite can: the refusal held under
+`--permission-mode acceptEdits` with `Bash(gh:*)` allowed, so a hook's deny
+outranks a permission allow rather than racing it.
 
 Two measurements are the record's own, both on 2026-09-20 against this worktree.
 The wrapper resolves its program from `BASH_SOURCE` rather than the cwd: fed a
