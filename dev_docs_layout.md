@@ -84,6 +84,16 @@ tracker handler; `<name>_plan/` directories are `/plan-with-docs` output in
 the task schema; `<slug>.md` flat cards are what the `repo-pr` handler files.
 Nothing else: no designs, no notes.
 
+The rule is about what an agent _authors_ here, so a dot-prefixed entry sits
+outside it: a leading dot means the entry belongs to a tool, and a harness or
+editor drops its directory into whatever cwd it was launched from. That set is
+open, so the checker skips on the dot rather than naming `.claude/`,
+`.DS_Store` and their successors one at a time. `.task-config*.yml` is the one
+dot-entry it recognises rather than merely tolerates, so a near miss like
+`.task-config.yaml` is still reported. Git cannot decide this: under every
+handler but `repo-pr` the ignore policy below puts the whole directory out of
+git's sight, which is why the check walks the filesystem.
+
 Ignore policy follows the handler. Under `repo-pr` the cards are the tracker
 and are tracked. Under any other handler the tracker owns the state, so
 `.gitignore` carries `dev_docs/tasks/*` and `!dev_docs/tasks/.task-config.yml`

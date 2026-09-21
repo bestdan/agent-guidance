@@ -10,7 +10,10 @@ stdout, `path: what is wrong`, and the exit status is 1 when there is any.
 The checks, each one the Enforcement section of dev_docs_layout.md names:
 
 1. dev_docs/tasks/ holds only .task-config*.yml files, <name>_plan/
-   directories, and flat <slug>.md cards.
+   directories, and flat <slug>.md cards. A dot-prefixed entry belongs to a
+   tool rather than to an agent, so it is skipped; .task-config* is matched
+   ahead of that skip, so a near miss like .task-config.yaml is still
+   reported.
 2. No unchecked `- [ ]` under dev_docs/ outside dev_docs/tasks/*_plan/. Lines
    inside a fenced code block are not counted, so a README's template can
    show the syntax.
@@ -42,7 +45,9 @@ skill's ignored config directory and a locally ignored plan never fail a check
 that CI would pass. Outside a repository, or when git is not on PATH, the
 directory is walked as is. Check 1 always walks the filesystem: an ignored
 plan directory is legitimate content there, and a stray file is stray whether
-or not anyone committed it.
+or not anyone committed it. Neither reader descends into a dot-prefixed entry
+under tasks/: that entry belongs to a tool, so its contents are no check's to
+judge, and outside a repository nothing else would filter them out.
 """
 
 import datetime
@@ -95,7 +100,8 @@ def git_files(root: pathlib.Path):
             continue
         rel = pathlib.Path(os.fsdecode(raw))
         # A tracked file deleted in the working tree is still listed.
-        if (root / rel).is_file() and rel.name not in FINDER_NOISE:
+        if (root / rel).is_file() and rel.name not in FINDER_NOISE \
+                and not in_tool_entry(rel):
             files.append(rel)
     return files
 
@@ -106,7 +112,10 @@ def walked_files(root: pathlib.Path):
         for name in names:
             if name in FINDER_NOISE:
                 continue
-            files.append(pathlib.Path(dirpath, name).relative_to(root))
+            rel = pathlib.Path(dirpath, name).relative_to(root)
+            if in_tool_entry(rel):
+                continue
+            files.append(rel)
     return files
 
 
@@ -130,6 +139,20 @@ def created_value(text: str):
         if m:
             return m.group(1).strip("\"'")
     return None
+
+
+def in_tool_entry(rel: pathlib.Path) -> bool:
+    """A file under a dot-prefixed entry in dev_docs/tasks/, which check_tasks
+    skips for the same reason: the entry belongs to a tool, not to an agent,
+    so its contents are no check's to judge. It is filtered where the file
+    list is built rather than inside one check, because the checks that read
+    that list inherit whatever it admits — check_checkboxes is the only one
+    that reaches in today, and the next one would be silent about it.
+
+    Scoped to tasks/ deliberately. A .claude/ under a record directory is a
+    genuine violation and check 3 should keep reporting it."""
+    parts = rel.parts
+    return len(parts) > 2 and parts[1] == "tasks" and parts[2].startswith(".")
 
 
 def in_plan_dir(rel: pathlib.Path) -> bool:
@@ -167,15 +190,30 @@ def check_tasks(root: pathlib.Path, report):
         return
     for entry in sorted(tasks.iterdir()):
         name = entry.name
-        if name in FINDER_NOISE:
-            continue
         rel = entry.relative_to(root)
+        # A leading dot means the entry belongs to a tool, and this check is
+        # about what an agent authors here. Harness and editor directories
+        # (.claude/, .codex/, .idea/) land in whatever cwd they were launched
+        # from, and that set is open, so naming them one at a time accumulates
+        # an arm per tool forever. Asking git instead is worse: under every
+        # handler but repo-pr this convention has .gitignore carry
+        # dev_docs/tasks/*, so "skip what git ignores" would check nothing at
+        # all in the one directory this rule is for — which is why check 1
+        # walks the filesystem, and why the suite pins that with a fixture.
+        #
+        # .task-config*.yml is the one dot-entry the checker RECOGNISES rather
+        # than merely tolerates, so it is matched ahead of the skip: a near
+        # miss like .task-config.yaml is reported, not swallowed as tooling.
+        if name.startswith(".task-config"):
+            if entry.is_dir() or not name.endswith(".yml"):
+                report(rel, "only .task-config*.yml and <slug>.md cards belong loose under dev_docs/tasks/")
+            continue
+        if name.startswith("."):
+            continue
         if entry.is_dir():
             if not name.endswith("_plan"):
                 report(rel, "only <name>_plan/ directories belong under dev_docs/tasks/")
-        elif name.startswith(".task-config") and name.endswith(".yml"):
-            continue
-        elif name.endswith(".md") and not name.startswith("."):
+        elif name.endswith(".md"):
             continue
         else:
             report(rel, "only .task-config*.yml and <slug>.md cards belong loose under dev_docs/tasks/")
