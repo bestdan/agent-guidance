@@ -167,15 +167,30 @@ def check_tasks(root: pathlib.Path, report):
         return
     for entry in sorted(tasks.iterdir()):
         name = entry.name
-        if name in FINDER_NOISE:
-            continue
         rel = entry.relative_to(root)
+        # A leading dot means the entry belongs to a tool, and this check is
+        # about what an agent authors here. Harness and editor directories
+        # (.claude/, .codex/, .idea/) land in whatever cwd they were launched
+        # from, and that set is open, so naming them one at a time accumulates
+        # an arm per tool forever. Asking git instead is worse: under every
+        # handler but repo-pr this convention has .gitignore carry
+        # dev_docs/tasks/*, so "skip what git ignores" would check nothing at
+        # all in the one directory this rule is for — which is why check 1
+        # walks the filesystem, and why the suite pins that with a fixture.
+        #
+        # .task-config*.yml is the one dot-entry the checker RECOGNISES rather
+        # than merely tolerates, so it is matched ahead of the skip: a near
+        # miss like .task-config.yaml is reported, not swallowed as tooling.
+        if name.startswith(".task-config"):
+            if entry.is_dir() or not name.endswith(".yml"):
+                report(rel, "only .task-config*.yml and <slug>.md cards belong loose under dev_docs/tasks/")
+            continue
+        if name.startswith("."):
+            continue
         if entry.is_dir():
             if not name.endswith("_plan"):
                 report(rel, "only <name>_plan/ directories belong under dev_docs/tasks/")
-        elif name.startswith(".task-config") and name.endswith(".yml"):
-            continue
-        elif name.endswith(".md") and not name.startswith("."):
+        elif name.endswith(".md"):
             continue
         else:
             report(rel, "only .task-config*.yml and <slug>.md cards belong loose under dev_docs/tasks/")

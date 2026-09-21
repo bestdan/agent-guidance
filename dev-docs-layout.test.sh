@@ -71,6 +71,21 @@ mkdir -p "$fx/dev_docs/tasks/foo_plan"
 : > "$fx/dev_docs/tasks/.DS_Store"
 check "config files, a _plan/ directory, a flat card, and Finder noise pass" 0 "$(verdict "$fx")"
 
+# A harness writes its working directory into whatever cwd it was launched
+# from, so .claude/ appears under tasks/ without anyone authoring it there.
+# The set of such tools is open, so the rule is the leading dot rather than the
+# name — the .DS_Store above is the same rule, not a separate exemption.
+fx="$(fixture tasks-harness-dir)"
+mkdir -p "$fx/dev_docs/tasks/foo_plan" "$fx/dev_docs/tasks/.claude/.cc-writes"
+check "a harness's dot-directory under tasks/ passes" 0 "$(verdict "$fx")"
+
+# The other half of that rule: the config is RECOGNISED, not merely tolerated,
+# so a near miss is reported rather than swallowed by the dot skip.
+fx="$(fixture tasks-config-near-miss)"
+mkdir -p "$fx/dev_docs/tasks"
+: > "$fx/dev_docs/tasks/.task-config.yaml"
+check "a .task-config file with the wrong extension still fails" 1 "$(verdict "$fx")"
+
 fx="$(fixture tasks-stray-dir)"
 mkdir -p "$fx/dev_docs/tasks/notes"
 check "a non-_plan directory under tasks/ fails" 1 "$(verdict "$fx")"
