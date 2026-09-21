@@ -262,7 +262,7 @@ def check_record_body(root: pathlib.Path, rel: pathlib.Path, date: str,
         report(rel, "no `created:` in the front matter; every record carries one")
     elif created != date:
         report(rel, f"created: {created} does not match the record's date {date}")
-    if directory == "decisions" and not any(REVISIT.match(l) for l in text.splitlines()):
+    if directory == "decisions" and not any(REVISIT.match(ln) for ln in text.splitlines()):
         report(rel, "no `## Revisit when` section; a decision says what would reopen it")
 
 

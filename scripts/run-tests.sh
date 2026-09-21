@@ -4,9 +4,9 @@
 # Run: scripts/run-tests.sh
 #
 # The suites alone were never the CI contract. The `tests` job runs this script,
-# but `fmt` and `shellcheck` are jobs of their own, so a run reporting "all
-# passed" on the suites said nothing about either --- and a formatting break CI
-# rejects read as green here. That is not hypothetical: #53 failed `fmt` on
+# but `fmt`, `shellcheck` and `lint` are jobs of their own, so a run reporting
+# "all passed" on the suites said nothing about any of them --- and a formatting
+# break CI rejects read as green here. That is not hypothetical: #53 failed `fmt` on
 # three consecutive pushes while this script reported all passed each time.
 #
 # They run after the suites because they are the cheap ones to fix, so a real
@@ -63,6 +63,26 @@ if command -v shellcheck > /dev/null 2>&1; then
 else
   skipped=$((skipped + 1))
   printf 'SKIP shellcheck (not installed here; CI still runs it)\n'
+fi
+
+# ruff, which has no CI-versus-local difference to note: it discovers python the
+# same way dprint discovers markdown, by reading the tree rather than asking git,
+# so it already covers a file that is new and untracked. The rule set is pinned
+# in ruff.toml so this reports the same thing here as in CI; without that file
+# ruff would read a config from somewhere above the repo.
+#
+# It is here because three PreToolUse hooks run a python program, and until they
+# were files no checker could open them. A syntax error in one is a hook that
+# says nothing on every payload and exits 0, which is indistinguishable from a
+# hook with nothing to say
+# (`dev_docs/decisions/2026-09-20-hook-python-lives-in-a-file-beside-the-shell.md`).
+if command -v ruff > /dev/null 2>&1; then
+  checks=$((checks + 1))
+  ruff check > "$out" 2>&1
+  report ruff "$?"
+else
+  skipped=$((skipped + 1))
+  printf 'SKIP ruff (not installed here; CI still runs it)\n'
 fi
 
 if command -v dprint > /dev/null 2>&1; then

@@ -375,6 +375,22 @@ check("no handler carries an if that would narrow it", True,
       all(h.get("if") is None for _, h in mine))
 check("the guard script is executable", True, os.access(guard, os.X_OK))
 
+# The program the wrapper runs, by path and with its stderr discarded. Missing,
+# unreadable or a syntax error is a guard that denies nothing, which is the
+# failure this suite exists for -- and the one direction of it that nothing else
+# reports. A `.py` file cannot be ended by an apostrophe the way the old
+# `python3 -c` argument could, so that hazard is gone; these two lines cover
+# what is left.
+program = os.path.join(root, "hooks", "gh-body-guard.py")
+check("the program sits beside the wrapper", True, os.path.isfile(program))
+try:
+    with open(program) as f:
+        compile(f.read(), program, "exec")
+except (OSError, SyntaxError) as e:
+    check("the program parses", "ok", "%s" % e)
+else:
+    check("the program parses", "ok", "ok")
+
 print("%d failures" % fails)
 sys.exit(1 if fails else 0)
 '

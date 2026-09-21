@@ -166,6 +166,19 @@ second hook shape in the repo, so a new hook picks a shape rather than copying
 the nearest one
 (`decisions/2026-09-19-the-body-guard-takes-the-bare-bash-matcher.md`).
 
+**A hook's program is a `.py` file beside its wrapper, and the shell keeps the
+prefilter and nothing else.** A `python3 -c` argument is parsed by nothing:
+shellcheck sees one opaque string and a python checker sees no file to open, so
+a truncated program is a hook that says nothing on every payload while exiting 0
+as the never-block rule requires. That is indistinguishable from a hook with
+nothing to say, and it has happened: an apostrophe in a code comment ended the
+enclosing quote and every positive case in `comment-key-context.test.sh` went
+silent at once. Extracting does not make the failure louder, because the
+redirect and the `exit 0` stay: a missing or unparsable file is just as quiet.
+It makes the failure findable, by ruff in `scripts/run-tests.sh` and by a case
+in each hook suite that compiles the file and names the line
+(`decisions/2026-09-20-hook-python-lives-in-a-file-beside-the-shell.md`).
+
 **A hook about what a write adds compares the new text to the old text
 itself.** Neither payload hands it over: `Edit`'s `new_string` carries the
 lines an edit quotes for context, and `Write`'s `content` is the whole file. So
@@ -243,6 +256,19 @@ is what makes a firing a finding rather than a prompt to disable the check. The
 word cap stays reported because the corpus broke it in 30% of sentences when it
 was measured. A check the corpus fails teaches everyone to ignore it
 (`decisions/2026-09-13-em-dash-cap-blocks-sentence-length-reports.md`).
+
+`ruff check` reads the python: the two checkers under `scripts/` and the three
+hook programs under `hooks/`. `ruff.toml` pins the rule set, because without a
+config in the repo ruff takes whichever one it finds above it and the check then
+differs per machine. The selection is the pycodestyle-error and pyflakes set,
+which is what a hook wanted a checker for: a syntax error and an undefined name
+on a branch no test reaches. Formatting is not checked, and `ruff format` would
+be its own decision.
+
+All three checks run from `scripts/run-tests.sh` and as CI jobs of their own,
+and the runner reports SKIP rather than a pass when a tool is absent locally. A
+green run that checked less than it did yesterday, with nothing saying so, is
+the failure that shape exists to prevent.
 
 ## Gotchas
 

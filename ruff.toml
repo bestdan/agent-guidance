@@ -1,0 +1,18 @@
+# ruff settings for this repo's python: the two checkers under scripts/ and the
+# three hook programs under hooks/.
+#
+# The file exists mainly to pin the rule set. Without a config here, ruff walks
+# up from the repo and takes whatever pyproject.toml or ruff.toml it finds above
+# it, so the check would differ per machine and change without a commit. With
+# it, `ruff check` reads the same rules on a laptop and in CI.
+#
+# The selection is ruff's own default, written out. E9 and F are the ones this
+# repo wanted a python checker for: a syntax error and an undefined name are
+# exactly what the hooks used to fail on silently, and F catches the undefined
+# name on a branch no test reaches. E4 and E7 come along at no cost.
+#
+# Formatting is not checked. dprint handles markdown and JSON here and does not
+# read python, and `ruff format` on the existing files would be a diff nobody
+# asked for. Add it as its own decision if it is ever wanted.
+[lint]
+select = ["E4", "E7", "E9", "F"]

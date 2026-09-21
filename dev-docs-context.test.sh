@@ -199,4 +199,29 @@ print("; ".join(problems) if problems else "ok")
 check "the hook script is executable" ok \
   "$([ -x "$hook" ] && echo ok || echo "not executable")"
 
+# --- 12. the program sits beside the wrapper and parses ---
+# The wrapper runs dev-docs-context.py by path with its stderr discarded, so a
+# file that is missing, unreadable, or a syntax error is a hook that says
+# nothing on every payload and reports nothing. That is the same silent shape an
+# apostrophe inside the old `python3 -c` argument produced, which is the case
+# this one replaces: a `.py` file has no enclosing quote to end, so the
+# apostrophe hazard is gone, while the never-block rule keeps the other
+# failures quiet at runtime. This says which file and which line.
+check "the program sits beside the wrapper and parses" ok \
+  "$(PROG="$self/hooks/dev-docs-context.py" python3 -c '
+import os
+p = os.environ["PROG"]
+try:
+    src = open(p).read()
+except OSError as e:
+    print("cannot read %s: %s" % (p, e))
+else:
+    try:
+        compile(src, p, "exec")
+    except SyntaxError as e:
+        print("%s:%s: %s" % (p, e.lineno, e.msg))
+    else:
+        print("ok")
+')"
+
 exit "$fail"

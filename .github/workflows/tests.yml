@@ -19,6 +19,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dprint/check@7dc032d8874778fc024f6f9b4a7e6d896782c330 # v2.5
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The three PreToolUse hooks run a python program each, and a syntax error
+      # in one is a hook that says nothing on every payload and still exits 0.
+      # Nothing could open those programs while they were `python3 -c`
+      # arguments; ruff.toml pins which rules this runs.
+      - uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          args: check
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:
