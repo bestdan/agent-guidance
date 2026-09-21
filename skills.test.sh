@@ -66,7 +66,7 @@ check "plugin-delivery skill is at skills/<name>/SKILL.md" ok \
 # CI installs nothing, so a check that leaned on it would quietly degrade to no
 # check at all on most machines.
 check "every skills/*/SKILL.md front matter is valid and carries name+description" ok \
-  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" python3 - <<'PY'
 import os, sys
 
 try:
@@ -171,7 +171,7 @@ PY
 # enough on its own either: the check must require a `|`-leading line, or a
 # sentence inside the section would stand in for the row.
 check "README's ships table names every skill" ok \
-  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" python3 - <<'PY'
 import os, re, sys
 
 d = os.environ["DIR"]

@@ -239,7 +239,7 @@ import json, sys
 out = (json.load(sys.stdin).get("hookSpecificOutput") or {})
 extra = set(out) - {"hookEventName", "additionalContext"}
 print("ok" if not extra else "carries " + repr(sorted(extra)))
-' 2>/dev/null)"
+')"
 
 check "the finding carries hookEventName PreToolUse" ok \
   "$(PY_PATH="$work/a.py" python3 -c '
@@ -256,7 +256,7 @@ print(json.dumps({
 import json, sys
 out = (json.load(sys.stdin).get("hookSpecificOutput") or {})
 print("ok" if out.get("hookEventName") == "PreToolUse" else repr(out.get("hookEventName")))
-' 2>/dev/null)"
+')"
 
 # --- 9. a payload it cannot read never blocks the tool call ---
 printf 'not json at all' | bash "$hook" > "$work/bad" 2>/dev/null
@@ -304,7 +304,7 @@ for h in handlers:
     if h.get("if"):
         problems.append("handler carries if=%r, which narrows it to one path" % h["if"])
 print("; ".join(problems) if problems else "ok")
-' 2>/dev/null)"
+')"
 
 # --- 11. the program sits beside the wrapper and parses ---
 # The wrapper runs comment-key-context.py by path with its stderr discarded, so a
@@ -336,5 +336,22 @@ else:
 # every write, which the harness reports as a hook failure.
 check "the hook script is executable" ok \
   "$([ -x "$hook" ] && echo ok || echo "not executable")"
+
+# --- 13. a wrapper whose program is gone still exits 0 and says nothing ---
+# The new failure mode, and the only measurement holding up the never-block
+# claim for it. The wrapper runs its program by path with stderr discarded and
+# exits 0 unconditionally, so a missing or unparsable `.py` file is silent --
+# which is the cost the extraction accepts, not an accident. A wrapper that
+# propagated the program's exit status instead would report a finding as a blocked write.
+# The copy carries the wrapper alone, so `$here` holds no program to find.
+lone="$work/lone"
+mkdir -p "$lone"
+cp "$hook" "$lone/comment-key-context.sh"
+# The payload has to clear the prefilter, or python is never reached and the
+# case would pass on a wrapper that had no program to run in the first place.
+lone_out="$(printf %s '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/nonexistent/x.py","content":"# added because PRE-999 asked for it"}}' | bash "$lone/comment-key-context.sh" 2>/dev/null)"
+lone_code=$?
+check "a wrapper with no program exits 0" 0 "$lone_code"
+check "a wrapper with no program says nothing" "" "$lone_out"
 
 exit "$fail"

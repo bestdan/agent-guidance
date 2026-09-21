@@ -1,10 +1,13 @@
-# ruff settings for this repo's python: the two checkers under scripts/ and the
-# three hook programs under hooks/.
+# ruff settings for this repo's python: the two checkers under scripts/, the
+# three hook programs under hooks/, and gh-body-guard.test.py.
 #
 # The file exists mainly to pin the rule set. Without a config here, ruff walks
 # up from the repo and takes whatever pyproject.toml or ruff.toml it finds above
 # it, so the check would differ per machine and change without a commit. With
-# it, `ruff check` reads the same rules on a laptop and in CI.
+# it, a laptop and CI run the same selection. Which ruff runs is a separate
+# question this file cannot settle: the CI job pins its own version, and nothing
+# pins the local one, so a release that changes a rule inside the selection
+# below still reaches a laptop before CI.
 #
 # The selection is ruff's own default, written out. E9 and F are the ones this
 # repo wanted a python checker for: a syntax error and an undefined name are

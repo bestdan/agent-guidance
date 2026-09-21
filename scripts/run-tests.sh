@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs every *.test.sh in the repo, plus the two checks CI runs beside them,
+# Runs every *.test.sh in the repo, plus the three checks CI runs beside them,
 # and reports one verdict.
 # Run: scripts/run-tests.sh
 #
@@ -47,12 +47,13 @@ while IFS= read -r suite; do
   report "$suite" "$?"
 done < <({ git ls-files '*.test.sh'; git ls-files --others --exclude-standard '*.test.sh'; } | sort -u)
 
-# The two checks CI runs as separate jobs, in one deliberate respect wider than
+# The three checks CI runs as separate jobs, in one deliberate respect wider than
 # the workflow: shellcheck also reads untracked files. CI cannot have any, but a
 # new script is untracked at exactly the moment it is worth checking, and this
 # is the same discovery the suite loop above already does. The difference only
-# ever checks more, so a local pass still implies the CI job passes. dprint
-# needs no such adjustment --- it globs the filesystem rather than asking git.
+# ever checks more, so a local pass still implies the CI job passes. dprint and
+# ruff need no such adjustment --- both glob the filesystem rather than asking
+# git, so both already read a file that is new and untracked.
 
 if command -v shellcheck > /dev/null 2>&1; then
   checks=$((checks + 1))
@@ -65,11 +66,13 @@ else
   printf 'SKIP shellcheck (not installed here; CI still runs it)\n'
 fi
 
-# ruff, which has no CI-versus-local difference to note: it discovers python the
-# same way dprint discovers markdown, by reading the tree rather than asking git,
-# so it already covers a file that is new and untracked. The rule set is pinned
-# in ruff.toml so this reports the same thing here as in CI; without that file
-# ruff would read a config from somewhere above the repo.
+# ruff. ruff.toml pins which rules run, so this reads the same selection as the
+# CI job, and the workflow pins the version it installs. Nothing pins the local
+# one, so a release that changes a rule inside E4/E7/E9/F reaches a laptop before
+# it reaches CI --- the remaining direction of a skew that started out both ways,
+# with the lint job resolving 0.16.8 against a local 0.16.1. Without ruff.toml it
+# would be wider still, since ruff would take a config from wherever it found one
+# above the repo.
 #
 # It is here because three PreToolUse hooks run a python program, and until they
 # were files no checker could open them. A syntax error in one is a hook that

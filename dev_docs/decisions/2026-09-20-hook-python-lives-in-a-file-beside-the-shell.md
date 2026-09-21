@@ -84,8 +84,10 @@ before they ship.
   apostrophe anywhere in the file is deleted.
 - Bad, because there is a new failure mode. The wrapper can be installed and
   current while the program beside it is missing or unreadable, which the
-  embedded form could not be, and it is silent as measured above. The three
-  suite cases are what make it findable.
+  embedded form could not be, and it is silent as measured above. Two suite
+  cases per hook divide that: one compiles the `.py` file so a broken program is
+  found before it ships, and one runs a wrapper-only copy so the silence itself
+  is pinned rather than only measured once by hand.
 - Bad, because a reader arriving from `hooks.json` now lands on the wrapper and
   has one hop to make. The reasoning stays in the wrapper, which is the file
   that is arrived at, and each program's docstring names the wrapper it belongs
@@ -93,10 +95,16 @@ before they ship.
 - Bad, because ruff is a fourth tool a contributor may not have installed. It
   reports SKIP rather than a pass, so a local run says what it did not check,
   and CI covers it either way.
-- Bad, because the python embedded in the `*.test.sh` suites is still parsed by
-  nothing, and `gh-body-guard.test.sh` is several hundred lines of it. The
-  difference is that a suite fails loudly when its own program breaks, so it is
-  not the failure this record is about.
+- Bad, because the python still embedded in the `*.test.sh` suites is parsed by
+  nothing. That is now the small helpers only: `gh-body-guard.test.py` took the
+  same move as the hooks, for a reason of its own rather than this record's. Its
+  subject is quoting, and inside a single-quoted shell argument it could not
+  write a quote, so its cases spelled `chr(39)`, `chr(34)` and `chr(92)` for the
+  characters they assert on. The helpers that stay are readers sitting beside the
+  assertion they feed, and a break in one is red rather than silent: the suite
+  compares an empty verdict against an expected one. Their `2>/dev/null` is gone
+  so the break also names its own line, which is what the other half of this was
+  about.
 
 ## Revisit when
 
@@ -113,9 +121,26 @@ before they ship.
 ## Confirmation
 
 `scripts/run-tests.sh` runs ruff over the repo and the three hook suites beside
-it. Each suite carries a case that opens the `.py` file next to its wrapper and
-compiles it, reporting the path and line on a syntax error and the read error on
-an unreadable file, which is what replaces the deleted apostrophe case.
+it. Each suite carries two cases in place of the deleted apostrophe one. The
+first opens the `.py` file next to its wrapper and compiles it, reporting the
+path and line on a syntax error and the read error on an unreadable file. The
+second copies the wrapper alone into a temp directory, feeds it a payload that
+clears the `case` prefilter, and asserts exit 0 with empty output, so the
+never-block guarantee holds on the new failure path and not only on the old
+ones. That case is not vacuous: the same copy with its trailing `exit 0` removed
+exits 2, because python is genuinely reached and genuinely fails to find the
+program.
+
+Dropping `2>/dev/null` from the python helpers had a side effect worth recording,
+because it says the redirect was hiding more than noise. `inject-selftest.test.sh`
+and `skills-selftest.test.sh` run their suite against deliberately broken copies
+of the plugin and treat a `Traceback` in the output as a crash rather than a
+verdict. With the redirect in place no traceback could ever reach them, so that
+tripwire had never been able to fire. Unmuted, it fired at once, on one mutation:
+the helper reading `hooks/hooks.json` indexed `["SessionStart"]` and raised when
+the mutation deleted it, so the suite reported which file it was reading rather
+than what was wrong with it. Both registration helpers now use `.get` and print a
+verdict, and the tripwire is live for the first time.
 
 Two measurements are the record's own, both on 2026-09-20 against this worktree.
 The wrapper resolves its program from `BASH_SOURCE` rather than the cwd: fed a

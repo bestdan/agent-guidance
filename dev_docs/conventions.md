@@ -170,10 +170,8 @@ the nearest one
 prefilter and nothing else.** A `python3 -c` argument is parsed by nothing:
 shellcheck sees one opaque string and a python checker sees no file to open, so
 a truncated program is a hook that says nothing on every payload while exiting 0
-as the never-block rule requires. That is indistinguishable from a hook with
-nothing to say, and it has happened: an apostrophe in a code comment ended the
-enclosing quote and every positive case in `comment-key-context.test.sh` went
-silent at once. Extracting does not make the failure louder, because the
+as the never-block rule requires, which is indistinguishable from a hook with
+nothing to say. Extracting does not make the failure louder, because the
 redirect and the `exit 0` stay: a missing or unparsable file is just as quiet.
 It makes the failure findable, by ruff in `scripts/run-tests.sh` and by a case
 in each hook suite that compiles the file and names the line

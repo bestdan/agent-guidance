@@ -43,11 +43,20 @@ check() {
 # Exact strings, not a suffix match: a registration pointing at a wrong subpath
 # or an unquoted root would otherwise pass while nothing ever runs.
 check "hooks.json registers inject.sh on SessionStart" ok \
-  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" python3 - <<'PY'
 import json, os
-h = json.load(open(os.path.join(os.environ["DIR"], "hooks/hooks.json")))["hooks"]["SessionStart"]
-cmds = [c["command"] for m in h for c in m["hooks"]]
-print("ok" if '"${CLAUDE_PLUGIN_ROOT}"/inject.sh' in cmds else cmds)
+# .get rather than [], so a hooks.json with the registration removed is judged
+# ("no SessionStart entry") instead of raising. The selftest treats a traceback
+# as a crash rather than a verdict, and it is right to: a suite that dies on the
+# mutation it exists to catch reports which file it was reading, not what was
+# wrong with it.
+hooks = json.load(open(os.path.join(os.environ["DIR"], "hooks/hooks.json")))["hooks"]
+h = hooks.get("SessionStart")
+if h is None:
+    print("no SessionStart entry in hooks/hooks.json")
+else:
+    cmds = [c["command"] for m in h for c in m["hooks"]]
+    print("ok" if '"${CLAUDE_PLUGIN_ROOT}"/inject.sh' in cmds else cmds)
 PY
 )"
 
@@ -55,17 +64,21 @@ PY
 # the script defaults to both files, and portable-claude.md names machinery
 # Codex does not have.
 check "codex/hooks.json registers inject.sh with portable.md only" ok \
-  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" python3 - <<'PY'
 import json, os
-h = json.load(open(os.path.join(os.environ["DIR"], "codex/hooks.json")))["hooks"]["SessionStart"]
-cmds = [c["command"] for c in h]
+hooks = json.load(open(os.path.join(os.environ["DIR"], "codex/hooks.json")))["hooks"]
+h = hooks.get("SessionStart")
 want = '"${PLUGIN_ROOT}"/inject.sh "${PLUGIN_ROOT}"/portable.md'
-print("ok" if cmds == [want] else cmds)
+if h is None:
+    print("no SessionStart entry in codex/hooks.json")
+else:
+    cmds = [c["command"] for c in h]
+    print("ok" if cmds == [want] else cmds)
 PY
 )"
 
 check "root plugin.json points Codex at codex/hooks.json" ./codex/hooks.json \
-  "$(DIR="$dir" python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["DIR"], "plugin.json")))["extensions"]["com.openai"]["hooks"])' 2>/dev/null)"
+  "$(DIR="$dir" python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["DIR"], "plugin.json")))["extensions"]["com.openai"]["hooks"])')"
 
 # --- 2. the hook runs and emits the documented contract ---
 out=$(printf '{"session_id":"t","cwd":"/tmp","hook_event_name":"SessionStart"}' \
@@ -74,17 +87,17 @@ rc=$?
 check "hook exits 0" 0 "$rc"
 
 check "stdout is valid JSON" ok \
-  "$(printf '%s' "$out" | python3 -c 'import json,sys; json.load(sys.stdin); print("ok")' 2>/dev/null)"
+  "$(printf '%s' "$out" | python3 -c 'import json,sys; json.load(sys.stdin); print("ok")')"
 
 check "hookEventName is SessionStart" SessionStart \
-  "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["hookSpecificOutput"]["hookEventName"])' 2>/dev/null)"
+  "$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["hookSpecificOutput"]["hookEventName"])')"
 
 # --- 3. both files reach the payload, in a fixed order ---
 # One file silently dropped is the exact loss the plugin exists to prevent, and
 # the order is fixed so that a diff of two sessions' context is a diff of the
 # files rather than of the hook.
 check "additionalContext carries both sentinels in file order" ok \
-  "$(OUT="$out" python3 - <<'PY' 2>/dev/null
+  "$(OUT="$out" python3 - <<'PY'
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 shared = ctx.find("GUIDANCE-SENTINEL-SHARED")
@@ -105,7 +118,7 @@ PY
 # must not; a hook that ignored its arguments would pass every check above.
 shared_out=$(printf '{"hook_event_name":"SessionStart"}' | "$dir/inject.sh" "$dir/portable.md" 2>/dev/null)
 check "inject.sh portable.md emits the shared sentinel only" ok \
-  "$(OUT="$shared_out" python3 - <<'PY' 2>/dev/null
+  "$(OUT="$shared_out" python3 - <<'PY'
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 if "GUIDANCE-SENTINEL-SHARED" not in ctx:
@@ -145,14 +158,14 @@ PY
 
 hostile_out=$(printf '{"hook_event_name":"SessionStart"}' | "$work/inject.sh" 2>/dev/null)
 check "adversarial payload is still valid JSON" ok \
-  "$(printf '%s' "$hostile_out" | python3 -c 'import json,sys; json.load(sys.stdin); print("ok")' 2>/dev/null)"
+  "$(printf '%s' "$hostile_out" | python3 -c 'import json,sys; json.load(sys.stdin); print("ok")')"
 
 # The payload is the whole context MINUS the provenance block the hook appends.
 # Splitting on that block rather than dropping the assertion keeps the mangling
 # check exact: everything before the marker must still be byte-identical to the
 # files, so a backslash or backtick eaten anywhere in the payload still fails.
 check "adversarial payload round-trips byte-for-byte" ok \
-  "$(OUT="$hostile_out" WORK="$work" python3 - <<'PY' 2>/dev/null
+  "$(OUT="$hostile_out" WORK="$work" python3 - <<'PY'
 import json, os
 got = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 parts = []
@@ -188,7 +201,7 @@ printf 'payload two\n' > "$sha_root/portable-claude.md"
 touch -t 202001010000 "$sha_root/portable.md"
 sha_out=$(printf '{"hook_event_name":"SessionStart"}' | "$sha_root/inject.sh" 2>/dev/null)
 check "an installed copy reports its commit" ok \
-  "$(OUT="$sha_out" python3 - <<'PY' 2>/dev/null
+  "$(OUT="$sha_out" python3 - <<'PY'
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 if "commit `87e76fd2bf12`" not in ctx:
@@ -220,7 +233,7 @@ for shape in directory file; do
   printf 'payload two\n' > "$git_root/portable-claude.md"
   git_out=$(printf '{"hook_event_name":"SessionStart"}' | "$git_root/inject.sh" 2>/dev/null)
   check "a working checkout (.git $shape) says so instead of naming a commit" ok \
-    "$(OUT="$git_out" python3 - <<'PY' 2>/dev/null
+    "$(OUT="$git_out" python3 - <<'PY'
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 if "working checkout" not in ctx:
@@ -241,7 +254,7 @@ done
 # path too — it is the path on which a stale copy is hardest to notice, because
 # the generated ~/.codex/AGENTS.md looks the same however old it is.
 check "the single-file (Codex) path still carries provenance" ok \
-  "$(OUT="$shared_out" python3 - <<'PY' 2>/dev/null
+  "$(OUT="$shared_out" python3 - <<'PY'
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 print("ok" if "## Provenance of this guidance" in ctx else "provenance missing")
@@ -254,7 +267,7 @@ PY
 # being present is not enough — it has to be the copy that ran — so the
 # assertion compares it against the directory under test.
 check "the provenance names the plugin root it delivered from" ok \
-  "$(DIR="$dir" OUT="$shared_out" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" OUT="$shared_out" python3 - <<'PY'
 import json, os
 ctx = json.loads(os.environ["OUT"])["hookSpecificOutput"]["additionalContext"]
 want = "The plugin root is " + chr(96) + os.environ["DIR"] + chr(96)
@@ -272,7 +285,7 @@ PY
 # `## Rules` is in both by construction and says nothing about whether a rule
 # is. Every other line still has to be unique across the pair.
 check "no line appears in both payload files" "" \
-  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" python3 - <<'PY'
 import os
 
 def lines(path):
@@ -298,16 +311,16 @@ done
 # resolve a release rather than this checkout, so an edit here would ship
 # nothing until someone remembered to bump it.
 check ".claude-plugin/plugin.json parses and names the plugin" agent-guidance \
-  "$(DIR="$dir" python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["DIR"], ".claude-plugin/plugin.json")))["name"])' 2>/dev/null)"
+  "$(DIR="$dir" python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["DIR"], ".claude-plugin/plugin.json")))["name"])')"
 
 check ".claude-plugin/plugin.json declares no version" absent \
-  "$(DIR="$dir" python3 -c 'import json,os; print("present" if "version" in json.load(open(os.path.join(os.environ["DIR"], ".claude-plugin/plugin.json"))) else "absent")' 2>/dev/null)"
+  "$(DIR="$dir" python3 -c 'import json,os; print("present" if "version" in json.load(open(os.path.join(os.environ["DIR"], ".claude-plugin/plugin.json"))) else "absent")')"
 
 # The marketplace entry is what `enabledPlugins` resolves through; a wrong
 # relative source installs an empty plugin that fails silently. The plugin is
 # the repo root, so the source is "./".
 check "marketplace lists the plugin at the repo root, unversioned" ok \
-  "$(DIR="$dir" python3 - <<'PY' 2>/dev/null
+  "$(DIR="$dir" python3 - <<'PY'
 import json, os
 root = os.environ["DIR"]
 m = json.load(open(os.path.join(root, ".claude-plugin/marketplace.json")))
