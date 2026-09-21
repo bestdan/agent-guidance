@@ -123,7 +123,7 @@ import json, sys
 body = json.load(sys.stdin)
 out = body.get("hookSpecificOutput") or {}
 print("ok" if out.get("hookEventName") == "PreToolUse" else repr(out.get("hookEventName")))
-' 2>/dev/null)"
+')"
 
 # --- 9. the pointer names the files it exists to name ---
 # The only content assertions in this suite. A pointer that does not name
@@ -190,7 +190,7 @@ for cond in conditions:
     if cond and "|" in cond:
         problems.append("if %r uses an alternation, which matches nothing" % cond)
 print("; ".join(problems) if problems else "ok")
-' 2>/dev/null)"
+')"
 
 # --- 11. the hook script is executable ---
 # hooks.json invokes it by path. A file without the bit is "permission denied"
@@ -198,5 +198,47 @@ print("; ".join(problems) if problems else "ok")
 # missing pointer.
 check "the hook script is executable" ok \
   "$([ -x "$hook" ] && echo ok || echo "not executable")"
+
+# --- 12. the program sits beside the wrapper and parses ---
+# The wrapper runs dev-docs-context.py by path with its stderr discarded, so a
+# file that is missing, unreadable, or a syntax error is a hook that says
+# nothing on every payload and reports nothing. That is the same silent shape an
+# apostrophe inside the old `python3 -c` argument produced, which is the case
+# this one replaces: a `.py` file has no enclosing quote to end, so the
+# apostrophe hazard is gone, while the never-block rule keeps the other
+# failures quiet at runtime. This says which file and which line.
+check "the program sits beside the wrapper and parses" ok \
+  "$(PROG="$self/hooks/dev-docs-context.py" python3 -c '
+import os
+p = os.environ["PROG"]
+try:
+    src = open(p).read()
+except OSError as e:
+    print("cannot read %s: %s" % (p, e))
+else:
+    try:
+        compile(src, p, "exec")
+    except SyntaxError as e:
+        print("%s:%s: %s" % (p, e.lineno, e.msg))
+    else:
+        print("ok")
+')"
+
+# --- 13. a wrapper whose program is gone still exits 0 and says nothing ---
+# The new failure mode, and the only measurement holding up the never-block
+# claim for it. The wrapper runs its program by path with stderr discarded and
+# exits 0 unconditionally, so a missing or unparsable `.py` file is silent --
+# which is the cost the extraction accepts, not an accident. A wrapper that
+# propagated the program's exit status instead would block every write under dev_docs/.
+# The copy carries the wrapper alone, so `$here` holds no program to find.
+lone="$work/lone"
+mkdir -p "$lone"
+cp "$hook" "$lone/dev-docs-context.sh"
+# The payload has to clear the prefilter, or python is never reached and the
+# case would pass on a wrapper that had no program to run in the first place.
+lone_out="$(printf %s '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/nonexistent/dev_docs/decisions/a.md","content":"x"},"session_id":"lone-probe"}' | bash "$lone/dev-docs-context.sh" 2>/dev/null)"
+lone_code=$?
+check "a wrapper with no program exits 0" 0 "$lone_code"
+check "a wrapper with no program says nothing" "" "$lone_out"
 
 exit "$fail"

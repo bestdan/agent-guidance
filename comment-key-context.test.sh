@@ -239,7 +239,7 @@ import json, sys
 out = (json.load(sys.stdin).get("hookSpecificOutput") or {})
 extra = set(out) - {"hookEventName", "additionalContext"}
 print("ok" if not extra else "carries " + repr(sorted(extra)))
-' 2>/dev/null)"
+')"
 
 check "the finding carries hookEventName PreToolUse" ok \
   "$(PY_PATH="$work/a.py" python3 -c '
@@ -256,7 +256,7 @@ print(json.dumps({
 import json, sys
 out = (json.load(sys.stdin).get("hookSpecificOutput") or {})
 print("ok" if out.get("hookEventName") == "PreToolUse" else repr(out.get("hookEventName")))
-' 2>/dev/null)"
+')"
 
 # --- 9. a payload it cannot read never blocks the tool call ---
 printf 'not json at all' | bash "$hook" > "$work/bad" 2>/dev/null
@@ -304,50 +304,54 @@ for h in handlers:
     if h.get("if"):
         problems.append("handler carries if=%r, which narrows it to one path" % h["if"])
 print("; ".join(problems) if problems else "ok")
-' 2>/dev/null)"
+')"
 
-# --- 11. the embedded python carries no apostrophe ---
-# The python program is one single-quoted shell argument, so an apostrophe
-# anywhere inside it ends the quote. What follows is then parsed as shell
-# words, the program is truncated mid-statement, and python exits on a syntax
-# error that `2>/dev/null` swallows -- so the hook goes silent on every payload
-# and the harness reports nothing, because exit 0 is still the last thing the
-# wrapper does.
-#
-# This is not hypothetical: a comment reading "the rule's reason" broke exactly
-# this way while the fixes for #50 were being written. Every positive case in
-# this suite flipped to silent at once, which is how it was caught, but nothing
-# said why.
-#
-# The real net is shellcheck, which does catch this: measured against a broken
-# copy, SC1011 names the apostrophe and the line. That check runs from
-# scripts/run-tests.sh, not from this file, so it is one full-suite run away
-# rather than one suite run away. This case exists for that gap -- it fires in
-# the suite the hook's own author runs first, and it says what broke, where
-# eleven silent positives say only that something did.
-check "the embedded python carries no apostrophe" ok \
-  "$(HOOK="$hook" python3 -c '
-import os, sys
-src = open(os.environ["HOOK"]).read()
-opener = "python3 -c " + chr(39)
-start = src.find(opener)
-if start == -1:
-    print("no embedded python found")
-    sys.exit()
-start += len(opener)
-end = src.find(chr(10) + chr(39) + " 2>/dev/null", start)
-if end == -1:
-    print("no terminator found; the program may already be truncated")
-    sys.exit()
-body = src[start:end]
-n = body.count(chr(39))
-print("ok" if n == 0 else "%d apostrophe(s) inside the quoted program" % n)
-' 2>/dev/null)"
+# --- 11. the program sits beside the wrapper and parses ---
+# The wrapper runs comment-key-context.py by path with its stderr discarded, so a
+# file that is missing, unreadable, or a syntax error is a hook that says
+# nothing on every payload and reports nothing. That is the same silent shape an
+# apostrophe inside the old `python3 -c` argument produced, which is the case
+# this one replaces: a `.py` file has no enclosing quote to end, so the
+# apostrophe hazard is gone, while the never-block rule keeps the other
+# failures quiet at runtime. This says which file and which line.
+check "the program sits beside the wrapper and parses" ok \
+  "$(PROG="$self/hooks/comment-key-context.py" python3 -c '
+import os
+p = os.environ["PROG"]
+try:
+    src = open(p).read()
+except OSError as e:
+    print("cannot read %s: %s" % (p, e))
+else:
+    try:
+        compile(src, p, "exec")
+    except SyntaxError as e:
+        print("%s:%s: %s" % (p, e.lineno, e.msg))
+    else:
+        print("ok")
+')"
 
 # --- 12. the hook script is executable ---
 # hooks.json invokes it by path. Without the bit it is "permission denied" at
 # every write, which the harness reports as a hook failure.
 check "the hook script is executable" ok \
   "$([ -x "$hook" ] && echo ok || echo "not executable")"
+
+# --- 13. a wrapper whose program is gone still exits 0 and says nothing ---
+# The new failure mode, and the only measurement holding up the never-block
+# claim for it. The wrapper runs its program by path with stderr discarded and
+# exits 0 unconditionally, so a missing or unparsable `.py` file is silent --
+# which is the cost the extraction accepts, not an accident. A wrapper that
+# propagated the program's exit status instead would report a finding as a blocked write.
+# The copy carries the wrapper alone, so `$here` holds no program to find.
+lone="$work/lone"
+mkdir -p "$lone"
+cp "$hook" "$lone/comment-key-context.sh"
+# The payload has to clear the prefilter, or python is never reached and the
+# case would pass on a wrapper that had no program to run in the first place.
+lone_out="$(printf %s '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/nonexistent/x.py","content":"# added because PRE-999 asked for it"}}' | bash "$lone/comment-key-context.sh" 2>/dev/null)"
+lone_code=$?
+check "a wrapper with no program exits 0" 0 "$lone_code"
+check "a wrapper with no program says nothing" "" "$lone_out"
 
 exit "$fail"
