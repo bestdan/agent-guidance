@@ -79,9 +79,11 @@ conventions.
 
 A `PreToolUse` hook is the carrier the harness fires itself. It fires on a tool
 call, before the call runs, rather than at session start or when a model loads
-a skill. Two are registered: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
-write under `dev_docs/`, and `hooks/gh-body-guard.sh` refuses a `gh` command
-whose free-text flag would run a shell substitution.
+a skill. Three are registered: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
+write under `dev_docs/`, `hooks/gh-body-guard.sh` refuses a `gh` command
+whose free-text flag would run a shell substitution, and
+`hooks/comment-key-context.sh` reports a tracker key in a code comment a write
+adds.
 
 The route is Claude Code only, because Codex registers `SessionStart` alone. A
 hook is therefore an upgrade on a route both harnesses have, never the only
@@ -164,6 +166,27 @@ second hook shape in the repo, so a new hook picks a shape rather than copying
 the nearest one
 (`decisions/2026-09-19-the-body-guard-takes-the-bare-bash-matcher.md`).
 
+**A hook about what a write adds compares the new text to the old text
+itself.** Neither payload hands it over: `Edit`'s `new_string` carries the
+lines an edit quotes for context, and `Write`'s `content` is the whole file. So
+take the old text from `old_string` on an `Edit` and from the file on disk on a
+`Write`, and treat a line as added when its stripped text appears nowhere in
+it. A missing file is an empty old text, so a new file is added in full. The
+rule needs no diff and no git, which matters because a consumer repo may be
+neither a repository nor tracked, and it gives up a comment that moves intact —
+a missed finding, which is the direction a hook that advises can afford
+(`decisions/2026-09-20-added-lines-are-the-new-text-minus-the-old.md`).
+
+**A mechanical trigger stated in prose is wider than the thing it names.**
+`[A-Z][A-Z0-9]*-\d+` is how `portable.md` describes a tracker key, and read
+literally it is also `UTF-8`, `SHA-256`, `RFC-7231` and `Q1-2026`. The guard
+narrows it — two letters minimum, letters only, and a list of prefixes that
+name a standard rather than a tracker — and the narrowing is a snapshot that
+will go stale. It goes stale toward silence, which is the same direction the
+`gh` guard's shorthand table chose. Exclude prose formats by extension for the
+same reason: a decision record cites a key as a matter of course, and markdown
+gives every heading a bare `#`.
+
 ## Where a rule lives, and where its enforcement lives
 
 **A convention's enforcement is built in the repo that owns the convention.**
@@ -177,7 +200,8 @@ two placements for it look tempting and are wrong. A guard in
 rules reach cloud containers, Codex sessions, and any machine carrying the
 plugin without it. A check beside `scripts/prose-check.py` reads a finished
 tree, and a repo's suite only ever sees that repo. It cannot catch a comment as
-it is written, in whatever repo a session is working in. A hook has a cost of
+it is written, in whatever repo a session is working in. That handler is
+`hooks/comment-key-context.sh`. A hook has a cost of
 its own: every check added here runs in consumer repos that never asked for it.
 The advise-never-deny shape above bounds that cost to a missing pointer
 (`decisions/2026-09-19-comment-key-check-belongs-here.md`).

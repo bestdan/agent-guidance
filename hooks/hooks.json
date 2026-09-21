@@ -23,6 +23,10 @@
             "type": "command",
             "if": "Edit(**/dev_docs/**)",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/dev-docs-context.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/comment-key-context.sh"
           }
         ]
       },
