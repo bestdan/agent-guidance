@@ -77,9 +77,9 @@ conventions.
 
 ## Hooks
 
-Every other carrier here asks a model to read something. A `PreToolUse` hook is
-the one the harness fires itself, on the event, before the tool call runs. Two
-are registered: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
+A `PreToolUse` hook is the carrier the harness fires itself. It fires on a tool
+call, before the call runs, rather than at session start or when a model loads
+a skill. Two are registered: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
 write under `dev_docs/`, and `hooks/gh-body-guard.sh` refuses a `gh` command
 whose free-text flag would run a shell substitution.
 
@@ -152,8 +152,8 @@ which is why the suite fails an alternation
 not produce a file, and its first call would spend the session's single pointer
 (`decisions/2026-09-16-dev-docs-hook-matches-write-and-edit-not-read.md`).
 
-**A trigger `if` cannot express takes the bare matcher and pays the cost inside
-the script.** `if` matches a command prefix, and a dangerous `gh` call can carry
+**When `if` cannot express the trigger, take the bare matcher and pay the cost
+inside the script.** `if` matches a command prefix, and a dangerous `gh` call can carry
 `gh` after `&&`, after `;`, inside a subshell, or behind a `cd`. Those are the
 forms a session reaches for right after a simple one is refused. A guard that
 holds on the easy case and misses them earns a trust it does not have. Register
@@ -167,15 +167,19 @@ the nearest one
 ## Where a rule lives, and where its enforcement lives
 
 **A convention's enforcement is built in the repo that owns the convention.**
-For the conventions in this plugin, that is here, as a `PreToolUse` handler on
-the existing matchers. Two placements look tempting and are wrong. A guard in
+For the conventions in this plugin, that is here. Which instrument depends on
+when the rule has to fire. A check under `scripts/` serves a rule that a
+finished tree can settle, which is what `prose-check.py` and
+`dev-docs-layout.py` do. A `PreToolUse` handler serves one that has to catch
+the work as it is written. The ticket-key prohibition is the second kind, and
+two placements for it look tempting and are wrong. A guard in
 `bestdan/dotfiles` reaches the two machines that repo is installed on. These
 rules reach cloud containers, Codex sessions, and any machine carrying the
 plugin without it. A check beside `scripts/prose-check.py` reads a finished
 tree, and a repo's suite only ever sees that repo. It cannot catch a comment as
-it is written, in whatever repo a session is working in. The rule has a cost:
-every check added here runs in consumer repos that never asked for it. The
-advise-never-deny shape above bounds that cost to a missing pointer
+it is written, in whatever repo a session is working in. A hook has a cost of
+its own: every check added here runs in consumer repos that never asked for it.
+The advise-never-deny shape above bounds that cost to a missing pointer
 (`decisions/2026-09-19-comment-key-check-belongs-here.md`).
 
 **Delivery decides which file states a rule, not subject matter.** `inject.sh`
