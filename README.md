@@ -29,7 +29,7 @@ rather than as a placeholder.
 | `skills/authoring`           | Claude Code, at PR time                 | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
 | `skills/reviewing`           | Claude Code, when reviewing a change    | reads `writing_about_code.md` and `reviewing.md`                           |
 | `hooks/dev-docs-context.sh`  | Claude Code, before a `dev_docs/` write | names `dev_docs_layout.md` and the directory's `README.md`, once a session |
-| `hooks/gh-body-guard.sh`     | Claude Code, before every Bash call     | denies a `gh --body` argument the shell would run a substitution inside    |
+| `hooks/gh-body-guard.sh`     | Claude Code, before every Bash call     | denies a free-text `gh` argument the shell would run a substitution inside |
 | `dev_docs_layout.md`         | every harness, by name                  | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
 | `scripts/dev-docs-layout.py` | any repo's check suite                  | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
 

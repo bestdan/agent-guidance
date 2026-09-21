@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook on Bash: denies a `gh` command that hands an unquoted or
-# double-quoted `--body` argument to the shell with a command substitution in
-# it.
+# double-quoted free-text argument to the shell with a command substitution in
+# it. The guarded flags are `--body`, `--title` and `--notes`.
 #
 # The failure this exists for is silent. `gh pr comment 1 --body "see `date`"`
 # runs `date`, posts its output in place of the code span, and exits 0. Nothing
@@ -22,8 +22,8 @@
 # There is deliberately no escape hatch, which is the other difference from
 # dotfiles' guard_pr_body.py. That guard polices style and offers a marker to
 # override it. A marker here would be a way to ask for the exact behaviour the
-# guard exists to prevent, and the safe spelling is always available: write the
-# body to a file and pass --body-file.
+# guard exists to prevent, and a safe spelling is always available: a file for
+# the flags that read one, single quotes for the flags that do not.
 #
 # Why the bare `Bash` matcher rather than an `if` rule. The dev_docs handler
 # uses `if` to avoid spawning on every write, and that is right for guidance
@@ -34,9 +34,6 @@
 # and blind on the hard one is worse than no guard, because it earns trust it
 # has not got. The cost is paid down in the shell below rather than by
 # narrowing the matcher: the two `case` tests exit before python is spawned.
-# Both tests are plain substring globs, so they short-circuit fewer calls than
-# that reads --- `gh` matches "through" and "highlight", and `-b` matches any
-# path carrying it. Nothing here has been timed.
 #
 # Detection is a raw-text scan, not a tokenizer. `shlex` in posix mode discards
 # the quoting, which is the only thing separating the dangerous form from the
@@ -56,11 +53,14 @@ set -uo pipefail
 
 payload="$(cat)"
 
-# Cheap pre-filter. Both words must appear somewhere in the payload before it is
-# worth starting python. `--body` alone is not enough (a `--body-file` call is
-# the correct spelling and contains it), and `gh` alone matches most sessions.
+# Cheap pre-filter, and the selective half is the first test rather than the
+# flag names. substitution_in() below can only ever report a backtick or a `$(`,
+# so a payload containing neither cannot produce a deny whatever flags it
+# carries. Testing the flags instead would short-circuit almost nothing now that
+# `-t` and `-n` are in scope --- both match ordinary paths and ordinary flags of
+# other commands.
 case "$payload" in
-  *'--body'* | *'-b'*) ;;
+  *'`'* | *'$('*) ;;
   *) exit 0 ;;
 esac
 case "$payload" in
@@ -81,6 +81,64 @@ if not command:
     sys.exit(0)
 
 OUT, SQ, DQ, ESC = "OUT", "SQ", "DQ", "ESC"
+
+# The free-text flags, each mapped to the file-based counterpart the denial
+# should recommend. None means the flag has no counterpart, so the denial has to
+# offer quoting instead --- see reason_for() at the bottom.
+#
+# Long flags need no disambiguation: gh spells --body, --title and --notes the
+# same way under every command that accepts them, and no command gives those
+# names to anything that is not prose.
+LONG = {
+    "--body": "--body-file",
+    "--title": None,
+    "--notes": "--notes-file",
+    "--description": None,
+    "--desc": None,
+    "--readme": None,
+    "--subject": None,
+}
+
+# The last four take no shorthand entry, deliberately. -d is --description on
+# gh repo create and gh repo edit and --desc on gh gist create, but it is
+# --draft on gh pr create and gh release create and --delete-branch on
+# gh pr merge, so the letter says nothing on its own. -t is --subject on
+# gh pr merge, which is why that command is absent from the -t path list above:
+# a shorthand there would deny under the wrong flag name. The long forms carry
+# the whole coverage for these four; the class in portable.md is what a session
+# reads, and a shorthand adds a table for no case anyone writes.
+
+# Shorthands do need it. gh reuses single letters across subcommands, so a
+# shorthand names a prose flag only under the commands that spell it that way.
+# Each entry is the long flag plus the command paths that do, as a prefix of the
+# non-flag words following gh.
+#
+# Surveyed against gh 2.98.0 on 2026-09-20; re-survey before widening. The
+# collisions that make this table necessary rather than cosmetic:
+#   -b is --base on `gh issue develop`
+#   -t is --template (a Go output template) on `gh api`, `gh project create`,
+#      `gh project edit`, and every list command that prints JSON
+#   -n is --name on `gh issue develop`
+#
+# Listing the commands that DO spell it this way, rather than the ones that do
+# not, is deliberate. A table that goes stale then fails toward allowing a new
+# spelling, which is a missed deny; the inverse fails toward refusing a command
+# nobody could predict a refusal for, and an unpredictable deny with no hatch is
+# how this guard would lose the trust that makes it worth having.
+SHORT = {
+    "-b": ("--body", (
+        ("pr", "create"), ("pr", "edit"), ("pr", "comment"), ("pr", "review"),
+        ("pr", "merge"), ("issue", "create"), ("issue", "edit"),
+        ("issue", "comment"),
+    )),
+    "-t": ("--title", (
+        ("pr", "create"), ("pr", "edit"), ("issue", "create"),
+        ("issue", "edit"), ("release", "create"), ("release", "edit"),
+    )),
+    "-n": ("--notes", (
+        ("release", "create"), ("release", "edit"),
+    )),
+}
 
 
 def scan(text):
@@ -225,6 +283,62 @@ def substitution_in(token):
     return None
 
 
+# The gh top-level commands SHORT names. The path is anchored on one of these
+# rather than read off the leading non-flag words, because a flag that takes a
+# value puts a non-flag word in front of the subcommand: gh accepts
+# `gh -R owner/repo pr comment 1 -b ...`, and reading the first two non-flag
+# words there gives (owner/repo, pr), which matches nothing and lets the
+# shorthand through. Anchoring cannot be fooled that way, since a repo argument
+# is owner/name and never equals a bare command word.
+ROOTS = ("pr", "issue", "release")
+
+
+def command_path(words):
+    """The gh subcommand path: a ROOTS word and the next non-flag word after it.
+
+    Only used to disambiguate a shorthand. A command whose root is not in ROOTS
+    yields the empty path, which matches no SHORT entry, so the shorthand is not
+    treated as a prose flag --- the same direction the stale-table note above
+    chooses.
+    """
+    for i, word in enumerate(words):
+        if word in ROOTS:
+            for later in words[i + 1:]:
+                if not later.startswith("-"):
+                    return (word, later)
+            return (word,)
+    return ()
+
+
+def spells(paths, path):
+    return any(path[:len(p)] == p for p in paths)
+
+
+def flag_and_value(word, token, nxt, path):
+    """Resolve one word to (long flag, value token), or (None, None).
+
+    Four spellings reach a value: the long flag and its value as separate
+    words, --flag=value, the shorthand and its value as separate words, and the
+    shorthand joined to its value. pflag accepts the last one, so -t`date` is a
+    real spelling gh honours and an exact-word match walks straight past it.
+    """
+    if word in LONG:
+        return word, nxt
+    if word in SHORT and spells(SHORT[word][1], path):
+        return SHORT[word][0], nxt
+    for long in LONG:
+        # --body-file is the remedy, not the hazard, and it starts with --body.
+        # Match the flag exactly, or as --flag=<value>.
+        if word.startswith(long + "="):
+            return long, token[len(long) + 1:]
+    if len(word) > 2 and word[0] == "-" and word[1] != "-":
+        short = "-" + word[1]
+        # A long flag cannot reach here: its second character is a dash.
+        if short in SHORT and spells(SHORT[short][1], path):
+            return SHORT[short][0], token[2:]
+    return None, None
+
+
 found = None
 for tokens in scan(command):
     words = [text_of(t) for t in tokens]
@@ -239,26 +353,16 @@ for tokens in scan(command):
     if gh_at is None:
         continue
 
+    path = command_path(words[gh_at + 1:])
+
     for idx in range(gh_at + 1, len(words)):
-        word = words[idx]
-        value = None
-        # --body-file is the remedy, not the hazard, and it starts with --body.
-        # Match the flag exactly, or as --body=<value>.
-        if word in ("--body", "-b"):
-            if idx + 1 < len(tokens):
-                value = tokens[idx + 1]
-        elif word.startswith("--body="):
-            value = tokens[idx][len("--body="):]
-        elif len(word) > 2 and word[0] == "-" and word[1] == "b":
-            # pflag accepts a shorthand joined to its value, so -b$(date) is a
-            # real spelling gh honours. --body cannot reach here: its second
-            # character is a dash.
-            value = tokens[idx][2:]
+        nxt = tokens[idx + 1] if idx + 1 < len(tokens) else None
+        flag, value = flag_and_value(words[idx], tokens[idx], nxt, path)
         if value is None:
             continue
         hit = substitution_in(value)
         if hit:
-            found = (word, hit)
+            found = (words[idx], flag, hit)
             break
     if found:
         break
@@ -266,20 +370,35 @@ for tokens in scan(command):
 if not found:
     sys.exit(0)
 
-flag, hit = found
+typed, flag, hit = found
+remedy = LONG[flag]
+
 reason = (
-    "Refusing this command: the " + flag + " argument contains " + hit
+    "Refusing this command: the " + typed + " argument contains " + hit
     + ", which the shell runs before gh ever sees it. gh would post the "
-    "output of that substitution in place of the code span, exit 0, and "
+    "output of that substitution in place of the " + hit
+    + " expression, exit 0, and "
     "report nothing. portable.md: \"Never pass prose containing backticks "
-    "to --body.\"\n\n"
-    "Write the body to a file and pass it instead:\n"
-    "  printf %s \"$body\" > \"$TMPDIR/body.md\"\n"
-    "  gh ... --body-file \"$TMPDIR/body.md\"\n\n"
-    "Single-quoting the argument also stops the substitution, but a body is "
-    "prose and will eventually contain an apostrophe, so --body-file is the "
-    "spelling that keeps working."
+    "to a free-text gh flag.\"\n\n"
 )
+
+if remedy:
+    reason += (
+        "Write the text to a file and pass it instead:\n"
+        "  printf %s \"$text\" > \"$TMPDIR/text.md\"\n"
+        "  gh ... " + remedy + " \"$TMPDIR/text.md\"\n\n"
+        "Single-quoting the argument also stops the substitution, but prose "
+        "this long will eventually contain an apostrophe, so " + remedy
+        + " is the spelling that keeps working."
+    )
+else:
+    reason += (
+        flag + " reads no file, so single-quote the argument instead:\n"
+        "  gh ... " + flag + " \x27fix(scope): handle a bare tilde\x27\n\n"
+        "Quoting is the answer here rather than a file because this flag has no "
+        "file-reading counterpart, and a one-line value rarely carries an "
+        "apostrophe. If this one does, drop the " + hit + " expression."
+    )
 
 json.dump({
     "hookSpecificOutput": {
