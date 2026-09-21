@@ -306,7 +306,45 @@ for h in handlers:
 print("; ".join(problems) if problems else "ok")
 ' 2>/dev/null)"
 
-# --- 11. the hook script is executable ---
+# --- 11. the embedded python carries no apostrophe ---
+# The python program is one single-quoted shell argument, so an apostrophe
+# anywhere inside it ends the quote. What follows is then parsed as shell
+# words, the program is truncated mid-statement, and python exits on a syntax
+# error that `2>/dev/null` swallows -- so the hook goes silent on every payload
+# and the harness reports nothing, because exit 0 is still the last thing the
+# wrapper does.
+#
+# This is not hypothetical: a comment reading "the rule's reason" broke exactly
+# this way while the fixes for #50 were being written. Every positive case in
+# this suite flipped to silent at once, which is how it was caught, but nothing
+# said why.
+#
+# The real net is shellcheck, which does catch this: measured against a broken
+# copy, SC1011 names the apostrophe and the line. That check runs from
+# scripts/run-tests.sh, not from this file, so it is one full-suite run away
+# rather than one suite run away. This case exists for that gap -- it fires in
+# the suite the hook's own author runs first, and it says what broke, where
+# eleven silent positives say only that something did.
+check "the embedded python carries no apostrophe" ok \
+  "$(HOOK="$hook" python3 -c '
+import os, sys
+src = open(os.environ["HOOK"]).read()
+opener = "python3 -c " + chr(39)
+start = src.find(opener)
+if start == -1:
+    print("no embedded python found")
+    sys.exit()
+start += len(opener)
+end = src.find(chr(10) + chr(39) + " 2>/dev/null", start)
+if end == -1:
+    print("no terminator found; the program may already be truncated")
+    sys.exit()
+body = src[start:end]
+n = body.count(chr(39))
+print("ok" if n == 0 else "%d apostrophe(s) inside the quoted program" % n)
+' 2>/dev/null)"
+
+# --- 12. the hook script is executable ---
 # hooks.json invokes it by path. Without the bit it is "permission denied" at
 # every write, which the harness reports as a hook failure.
 check "the hook script is executable" ok \
