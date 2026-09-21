@@ -24,18 +24,11 @@ suite="$dir/inject.test.sh"
 fail=0
 checked=0
 
-# `cd … && pwd` rather than mktemp's output as given, because that output is
-# compared against a path inject.sh computed for itself. macOS sets TMPDIR with
-# a trailing slash, so the interpolation above yields `…/T//guidance-selftest.X`
-# while inject.sh's own `cd … && pwd` collapses the `//` to `/`. The two paths
-# then differ by one character and the provenance assertion fails on a hook that
-# is working correctly. Normalizing here the same way inject.sh does is what
-# makes the comparison compare directories rather than spellings.
-#
-# The Linux runner sets no TMPDIR, so the `/tmp` default has no trailing slash
-# and CI never saw this --- it reproduced only on a developer's macOS machine,
-# and only outside the Claude Code sandbox, whose TMPDIR also lacks the slash.
-work="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/guidance-selftest.XXXXXX")" && pwd)"
+# make_workdir rather than mktemp directly, because this path is compared
+# against one inject.sh computed for itself and the two must be spelled the same
+# way. The prelude says what goes wrong otherwise; this suite is where it was
+# found.
+work="$(make_workdir guidance-selftest)"
 trap 'rm -rf "$work"' EXIT
 
 # A fresh, unmutated copy of the plugin under $work/<name>. The .git directory

@@ -16,7 +16,7 @@ set -uo pipefail
 
 self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 check_py="$self/scripts/dev-docs-layout.py"
-work="$(mktemp -d "${TMPDIR:-/tmp}/dev-docs-layout-test.XXXXXX")"
+work="$(make_workdir dev-docs-layout-test)"
 trap 'rm -rf "$work"' EXIT
 fail=0
 
