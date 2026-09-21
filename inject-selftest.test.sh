@@ -24,7 +24,11 @@ suite="$dir/inject.test.sh"
 fail=0
 checked=0
 
-work="$(mktemp -d "${TMPDIR:-/tmp}/guidance-selftest.XXXXXX")"
+# make_workdir rather than mktemp directly, because this path is compared
+# against one inject.sh computed for itself and the two must be spelled the same
+# way. The prelude says what goes wrong otherwise; this suite is where it was
+# found.
+work="$(make_workdir guidance-selftest)"
 trap 'rm -rf "$work"' EXIT
 
 # A fresh, unmutated copy of the plugin under $work/<name>. The .git directory

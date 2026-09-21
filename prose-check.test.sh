@@ -19,7 +19,7 @@ set -uo pipefail
 
 self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 check_py="$self/scripts/prose-check.py"
-work="$(mktemp -d "${TMPDIR:-/tmp}/prose-check-test.XXXXXX")"
+work="$(make_workdir prose-check-test)"
 trap 'rm -rf "$work"' EXIT
 fail=0
 em="—"

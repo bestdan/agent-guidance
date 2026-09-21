@@ -20,7 +20,7 @@ set -uo pipefail
 
 self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 hook="$self/hooks/dev-docs-context.sh"
-work="$(mktemp -d "${TMPDIR:-/tmp}/dev-docs-context-test.XXXXXX")"
+work="$(make_workdir dev-docs-context-test)"
 trap 'rm -rf "$work"' EXIT
 fail=0
 

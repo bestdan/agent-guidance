@@ -34,7 +34,7 @@ suite="$dir/skills.test.sh"
 fail=0
 checked=0
 
-work="$(mktemp -d "${TMPDIR:-/tmp}/guidance-skills-selftest.XXXXXX")"
+work="$(make_workdir guidance-skills-selftest)"
 trap 'rm -rf "$work"' EXIT
 
 # A fresh, unmutated copy of the plugin under $work/<name>. The .git directory

@@ -122,7 +122,7 @@ PY
 # backticks, quotes and backslashes silently — the result stays parseable, so
 # the damage reads as garbled guidance rather than an error. Assert the decoded
 # text is byte-identical to the fixture, which is what catches the mangling.
-work="$(mktemp -d "${TMPDIR:-/tmp}/guidance-inject.XXXXXX")"
+work="$(make_workdir guidance-inject)"
 trap 'rm -rf "$work"' EXIT
 cp "$dir/inject.sh" "$work/inject.sh"
 python3 - "$work" <<'PY'
