@@ -139,11 +139,12 @@ survive rather than pair blindly; and bad examples inside `writing_about_code.md
 go in backticks, because the double quotes `## Name things precisely` uses for
 its own examples are not stripped by anything.
 
-The hook sees added lines, never the file around them, so an antecedent
-established in unchanged text is invisible to it. `prose-check.py` reads whole
-files and has the wider view. The signal's false-positive rate is therefore
-worse under the hook, and the fixtures carry an edit whose antecedent sits in
-unchanged context.
+Both consumers run this identical heuristic and report the same warning. Scope
+changes which text is scanned, never what the signal can conclude: the hook
+sees added lines and `prose-check.py` sees whole files, and neither resolves an
+antecedent, so neither can tell a dangling reference from a satisfied one. The
+difference is what the author has in front of them when the warning arrives,
+not how often it is wrong.
 
 **Three further signals were designed and dropped before implementation**, each
 on a good case it fires on: two or more bare `N/M` ratios in a sentence,
@@ -184,13 +185,19 @@ is that markdown no longer means "nothing to do here".
 path already, so it runs the module against that file, returns
 `additionalContext`, and allows the command. It emits the once-per-session
 pointer too, keyed on the marker `prose-context.py` writes, so a body composed
-by a heredoc in a session that wrote no markdown still meets shape 1 before the
-PR opens. A session that already saw the pointer pays one `exists()`.
+by a heredoc in a session that wrote no markdown still meets shape 1. A session
+that already saw the pointer pays one `exists()`.
 
-`additionalContext` on a `PreToolUse` that allows arrives after the command has
-run, so neither the vet nor the pointer stops a body shipping. They reach the
-`gh pr edit` that follows. Only a denial prevents the first publication, and
-this carrier does not deny.
+**This carrier corrects, it does not gate.** `additionalContext` on a
+`PreToolUse` that allows arrives after the command has run, so neither the vet
+nor the pointer stops a body shipping. Both reach the `gh pr edit` that
+follows. Only a denial prevents a first publication, and the decision below
+rules that out for a style check.
+
+Issue #62 asked to be told before the PR opens. On this carrier the design
+does not deliver that, and the honest reading is that a warning tier cannot:
+what it buys is the correction happening without the operator having to make
+it.
 
 Its wrapper needs the same widening. The `case` at
 `hooks/gh-body-guard.sh:78` admits only a payload carrying a backtick or `$(`,
@@ -376,8 +383,10 @@ the four were dropped on good cases the corpus could never have surfaced.
 - Whether commit bodies and status updates get triggers of their own. The rule
   reaches them through the register; only markdown writes and PR bodies get a
   mechanical check here. Decision and research records are markdown writes, so
-  the hook does see them — the genre exemption above is what keeps it from
-  reporting their required history.
+  the hook does see them, and the one thing it can report there is the shape-2
+  regex, which the genre exemption does not govern. Nothing mechanical reports
+  historical narrative in the first place: the exemption is addressed to the
+  author and the reviewer reading the rule, not to a carrier.
 - What the pointer costs in tokens against what it saves. Worth measuring after
   it exists.
 
