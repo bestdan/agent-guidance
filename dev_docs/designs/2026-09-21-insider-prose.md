@@ -10,9 +10,11 @@ Agents write prose from inside the work, where the context is free, and ship it
 to a reader for whom it is not. Two shapes recur: a body that recounts how the
 work unfolded, and prose whose every clause sends the reader looking something
 up. This names the failure **insider prose**, states it once in
-`writing_about_code.md`, and adds four carriers that reach that file rather
+`writing_about_code.md`, and adds three carriers that reach that file rather
 than restating it. The checks register no new hook and block no write; what
-they cost is an interpreter start on writes that today stop at the shell.
+they cost is an interpreter start on markdown writes that today stop at the
+shell. The check that runs at PR time is three lines in a guard that already
+exists, not a fourth carrier here.
 
 ## What is true today
 
@@ -57,10 +59,9 @@ against a process that was going to start anyway. Price the rejected path, and
 the interpreter is the cost.
 
 **A PR body reaches disk before it ships.** `hooks/gh-body-guard.py` denies
-`--body` in favour of `--body-file`, so a vetting step there reads a file that
-already exists. Its wrapper runs on every `Bash` call and gates the same way:
-`python3` starts only for a payload carrying a backtick or `$(`, which the
-`gh pr create --body-file` command it would vet does not carry.
+`--body` in favour of `--body-file`, so a body exists as a file, normally
+written by a `Write` to a `.md` path before any `gh` command runs. That write
+is what a markdown carrier sees, and it sees it while no PR exists yet.
 
 **A PR-body guard already exists, outside this plugin.**
 `bestdan/dotfiles` `agents/guard_pr_body.py` is a `PreToolUse` guard that
@@ -181,30 +182,9 @@ new check wants, so it becomes a branch into the detector rather than a
 `sys.exit(0)`. The tracker-key check's own behaviour is unchanged; what changes
 is that markdown no longer means "nothing to do here".
 
-**`hooks/gh-body-guard.py` gains a body vet.** It resolves `--body-file` to a
-path already, so it runs the module against that file, returns
-`additionalContext`, and allows the command. It emits the once-per-session
-pointer too, keyed on the marker `prose-context.py` writes, so a body composed
-by a heredoc in a session that wrote no markdown still meets shape 1. A session
-that already saw the pointer pays one `exists()`.
-
-**This carrier corrects, it does not gate.** `additionalContext` on a
-`PreToolUse` that allows arrives after the command has run, so neither the vet
-nor the pointer stops a body shipping. Both reach the `gh pr edit` that
-follows. Only a denial prevents a first publication, and the decision below
-rules that out for a style check.
-
-Issue #62 asked to be told before the PR opens. On this carrier the design
-does not deliver that, and the honest reading is that a warning tier cannot:
-what it buys is the correction happening without the operator having to make
-it.
-
-Its wrapper needs the same widening. The `case` at
-`hooks/gh-body-guard.sh:78` admits only a payload carrying a backtick or `$(`,
-which an ordinary `gh pr create --body-file body.md` carries neither of, so it
-gains an arm for `--body-file` and its `--notes-file` spelling. Parsing
-`--body` instead is the wrong branch: `--body` is what the guard denies, so
-there is no body left there to vet.
+**`hooks/gh-body-guard.py` gains nothing.** A PR-time carrier in this plugin
+was designed and dropped; the decision below says why, and where the PR-time
+check goes instead.
 
 **`reviewing.md` gains a pointer, not a restatement.** One line under `## What
 a review checks` naming the section and the two shapes as checkable, with the
@@ -217,8 +197,8 @@ markdown.
 
 The hook reads the section out of `writing_about_code.md` at run time through
 `GUIDANCE_ROOT`. Only `hooks/dev-docs-context.sh` exports that variable today;
-`hooks/comment-key-context.sh` and `hooks/gh-body-guard.sh` each run `python3`
-with `PAYLOAD` alone, so both wrappers gain it as part of this change.
+`hooks/comment-key-context.sh` runs `python3` with `PAYLOAD` alone, so that
+wrapper gains it as part of this change.
 
 No carrier holds a copy of the rule's text. The reviewer reaches the same bytes
 by a different route: `skills/reviewing/SKILL.md` reads `writing_about_code.md`
@@ -322,14 +302,19 @@ decision not to adopt what they measured, so the pointer is the likely winner
 on cost. The shipped path is unchanged either way
 and the result is a number instead of a guess.
 
-### The hook warns and allows
+### The markdown carrier warns and allows
 
-The `--body` denial in `gh-body-guard.py` stays a denial, because it is a
-safety guard, and
-`dev_docs/decisions/2026-09-19-a-safety-guard-denies-and-has-no-hatch.md` is
-why. The insider-prose check is style, so it returns `additionalContext` and
-allows. A style check that denies is eventually wrong with no way past it, and
-it would deny the write that fixes a violation.
+It returns `additionalContext` and never denies. A hook that denied a markdown
+write would deny the write that fixes a violation, which is the argument
+`dev_docs/decisions/2026-09-16-dev-docs-hook-never-denies-the-write.md` already
+makes for the layout pointer.
+
+`gh-body-guard.py`'s `--body` denial is untouched and stays a denial, being a
+safety guard rather than a style check, per
+`dev_docs/decisions/2026-09-19-a-safety-guard-denies-and-has-no-hatch.md`.
+
+Denying is not ruled out everywhere, only here. The PR-time check denies, in
+the guard that can, with an escape marker.
 
 ### What `guard_pr_body.py` settles, and what it reopens
 
@@ -345,18 +330,33 @@ design. Each is taken deliberately here rather than by default.
   this plugin is absent, so embedding is its only option; a plugin hook ships
   beside the file it quotes, so quoting costs nothing and removes the drift the
   guard has to accept.
-- **It denies, with an escape marker; these carriers warn.** Its own line is
-  where the split belongs: it enforces the unambiguous rules and leaves every
-  judgment call to the author. That is the same cut this design makes between
-  the one regex and the pointer, reached independently.
+- **It denies, with an escape marker; this plugin's carrier warns.** Not
+  because one enforces facts and the other judgment. The guard's word ceiling
+  and narrator openers are heuristics too, and it denies on them. The
+  difference is where each sits: a hook that warns cannot stop anything, and
+  the plugin chose that shape for a signal it ships to repos it does not own.
 
-**The cheapest route to shape 2 on a PR body is one tuple.** That guard's
-`BANNED` is a list of `(regex, why)` pairs, so the dangling-reference signal is
-a three-line addition there: no module, no fixtures, no hook change. It is not
-the route this design takes, because it is machine-local and would leave every
-other machine, every other repo and every markdown write uncovered, which is
-this plugin's whole reason to exist. It is still the right first move on this
-machine, and the two do not exclude each other.
+### The PR-time check is one tuple in that guard, not a carrier here
+
+A `PreToolUse` hook that allows does not gate. Verified: a write to this design
+fired `dev-docs-context`, the guidance arrived, and the file was created
+anyway. So a plugin carrier on `gh pr create` could only warn after the PR was
+published, and the `gh pr edit` that follows is the best it could buy.
+
+The markdown carrier already covers the path that matters. A PR body is
+normally written to a `.md` file first, which warns while the body is still
+local and no PR exists, so issue #62's "before the PR opens" is met there
+rather than at `gh pr create`.
+
+What the plugin cannot do, `guard_pr_body.py` can: it denies before
+publication, and its `BANNED` is a list of `(regex, why)` pairs, so the
+dangling-reference signal is three lines. That is the PR-time check.
+
+The cost is honest and worth stating. `guard_pr_body.py` is machine-local, so
+a PR body composed by a heredoc, on a machine without it, in a session that
+wrote no markdown, is not checked at all. That case buys a portable carrier
+whose own description would have to be "warns after publishing", and it is not
+worth one.
 
 ### The rule ships as failing, because this corpus cannot decide it
 
@@ -381,8 +381,8 @@ the four were dropped on good cases the corpus could never have surfaced.
 - Whether Jev is adopted for shape 1. The probe answers it, and a win would
   need a degrade-to-pointer path before anything shipped.
 - Whether commit bodies and status updates get triggers of their own. The rule
-  reaches them through the register; only markdown writes and PR bodies get a
-  mechanical check here. Decision and research records are markdown writes, so
+  reaches them through the register; only markdown writes get a mechanical
+  check in this plugin. Decision and research records are markdown writes, so
   the hook does see them, and the one thing it can report there is the shape-2
   regex, which the genre exemption does not govern. Nothing mechanical reports
   historical narrative in the first place: the exemption is addressed to the
@@ -417,10 +417,13 @@ Conventions that receive the guidance:
 
 Delivery is two PRs. The first carries the rule, the `reviewing.md` pointer,
 the fixtures, `scripts/insider_prose.py`, and `prose-check.py` gaining the rule
-with the corpus measurement behind it. The second carries the two hook
-carriers: the `prose-context` rename and the `gh-body-guard.py` vet, with the
-prefilter widening each needs and the `GUIDANCE_ROOT` export both wrappers
-need.
+with the corpus measurement behind it. The second carries the `prose-context`
+rename, with the prefilter widening it needs and the `GUIDANCE_ROOT` export its
+wrapper needs.
+
+The PR-time check is a third change, in `bestdan/dotfiles` rather than here:
+one `(regex, why)` tuple in `guard_pr_body.py`'s `BANNED`, with a case in its
+own suite. It is independent of both PRs above and lands whenever.
 
 The rename reaches past the two files. `hooks/hooks.json`, `README.md`,
 `dev_docs/conventions.md` and the suite file `comment-key-context.test.sh` all
