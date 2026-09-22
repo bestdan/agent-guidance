@@ -62,6 +62,21 @@ already exists. Its wrapper runs on every `Bash` call and gates the same way:
 `python3` starts only for a payload carrying a backtick or `$(`, which the
 `gh pr create --body-file` command it would vet does not carry.
 
+**A PR-body guard already exists, outside this plugin.**
+`bestdan/dotfiles` `agents/guard_pr_body.py` is a `PreToolUse` guard that
+denies a `gh pr create` or `gh pr edit` whose title or body breaks the
+authoring guideline. It enforces the word ceiling, a banned-phrase list,
+narrator openers and the title grammar, across the `gh` flags and the GitHub
+MCP tools that would otherwise route around it. It strips fenced blocks,
+inline code and HTML comments before measuring anything, and a body carrying
+`<!-- pr-guard: allow -->` on a line of its own passes untouched.
+
+It is machine-local, so this plugin cannot assume it exists, and it embeds its
+rules rather than reading them from here, deliberately, so that it needs no
+path to the plugin. Its own diagnosis of why it exists is this design's:
+a prose rule alone loses to an agent's instinct to be thorough, and the failure
+stays invisible until a human opens the PR and stops reading.
+
 **`scripts/prose-check.py` measures two rules over this repo's tracked
 markdown**: em-dash density, which fails the build, and sentence length, which
 only reports. Neither would have caught either example in the issue. The split
@@ -167,7 +182,15 @@ is that markdown no longer means "nothing to do here".
 
 **`hooks/gh-body-guard.py` gains a body vet.** It resolves `--body-file` to a
 path already, so it runs the module against that file, returns
-`additionalContext`, and allows the command.
+`additionalContext`, and allows the command. It emits the once-per-session
+pointer too, keyed on the marker `prose-context.py` writes, so a body composed
+by a heredoc in a session that wrote no markdown still meets shape 1 before the
+PR opens. A session that already saw the pointer pays one `exists()`.
+
+`additionalContext` on a `PreToolUse` that allows arrives after the command has
+run, so neither the vet nor the pointer stops a body shipping. They reach the
+`gh pr edit` that follows. Only a denial prevents the first publication, and
+this carrier does not deny.
 
 Its wrapper needs the same widening. The `case` at
 `hooks/gh-body-guard.sh:78` admits only a payload carrying a backtick or `$(`,
@@ -300,6 +323,33 @@ safety guard, and
 why. The insider-prose check is style, so it returns `additionalContext` and
 allows. A style check that denies is eventually wrong with no way past it, and
 it would deny the write that fixes a violation.
+
+### What `guard_pr_body.py` settles, and what it reopens
+
+That guard is older and in daily use, and three of its choices bear on this
+design. Each is taken deliberately here rather than by default.
+
+- **It strips fenced blocks, inline code and HTML comments before measuring.**
+  This design reached the same rule for the detector, so the stripping is not a
+  new idea needing an argument: `prose_of()` is the house pattern and the
+  implementation to mimic.
+- **It embeds its rules; the hook carriers here quote `writing_about_code.md`
+  at run time.** Both fit their carrier. The guard must work on a machine where
+  this plugin is absent, so embedding is its only option; a plugin hook ships
+  beside the file it quotes, so quoting costs nothing and removes the drift the
+  guard has to accept.
+- **It denies, with an escape marker; these carriers warn.** Its own line is
+  where the split belongs: it enforces the unambiguous rules and leaves every
+  judgment call to the author. That is the same cut this design makes between
+  the one regex and the pointer, reached independently.
+
+**The cheapest route to shape 2 on a PR body is one tuple.** That guard's
+`BANNED` is a list of `(regex, why)` pairs, so the dangling-reference signal is
+a three-line addition there: no module, no fixtures, no hook change. It is not
+the route this design takes, because it is machine-local and would leave every
+other machine, every other repo and every markdown write uncovered, which is
+this plugin's whole reason to exist. It is still the right first move on this
+machine, and the two do not exclude each other.
 
 ### The rule ships as failing, because this corpus cannot decide it
 
