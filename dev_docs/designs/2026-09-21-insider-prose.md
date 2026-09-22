@@ -134,18 +134,21 @@ It strips inline-code spans before scanning, reusing the `_INLINE_CODE`
 treatment `prose-check.py` already applies to both of its own rules. A
 backticked literal is how markdown quotes a string, and the hook runs over
 markdown in repos this plugin does not own, so a convention about fencing would
-bind the one repo that needs it least. Two consequences: an `Edit`'s added text
+bind the one repo that needs it least. Under `prose-check.py`, which holds the
+whole file, the stripping widens to fences and HTML comments as well; the hook
+cannot follow it there, for the reason the decision below gives. Two
+consequences: an `Edit`'s added text
 can begin or end mid-span with one unmatched backtick, which the stripper must
 survive rather than pair blindly; and bad examples inside `writing_about_code.md`
 go in backticks, because the double quotes `## Name things precisely` uses for
 its own examples are not stripped by anything.
 
-Both consumers run this identical heuristic and report the same warning. Scope
-changes which text is scanned, never what the signal can conclude: the hook
-sees added lines and `prose-check.py` sees whole files, and neither resolves an
-antecedent, so neither can tell a dangling reference from a satisfied one. The
-difference is what the author has in front of them when the warning arrives,
-not how often it is wrong.
+Both consumers run the same signal and report the same warning. What differs is
+what each can feed it: the hook has added lines, `prose-check.py` has whole
+files, and each strips what its input lets it strip. Neither resolves an
+antecedent, so neither can tell a dangling reference from a satisfied one, and
+the wider input buys no better verdict. The difference is what the author has
+in front of them when the warning arrives, not how often it is wrong.
 
 **Three further signals were designed and dropped before implementation**, each
 on a good case it fires on: two or more bare `N/M` ratios in a sentence,
@@ -321,10 +324,16 @@ the guard that can, with an escape marker.
 That guard is older and in daily use, and three of its choices bear on this
 design. Each is taken deliberately here rather than by default.
 
-- **It strips fenced blocks, inline code and HTML comments before measuring.**
-  This design reached the same rule for the detector, so the stripping is not a
-  new idea needing an argument: `prose_of()` is the house pattern and the
-  implementation to mimic.
+- **It strips fenced blocks, inline code and HTML comments before measuring;
+  the detector strips less.** Not a narrower ambition, a narrower input. The
+  guard holds a whole body, so it can pair a fence and know what sits inside
+  it. The hook holds added lines, which carry no fence state at all: an added
+  line inside a fenced block is indistinguishable from one outside it, and
+  `prose-check.py:50-67` gets that right only by streaming the whole file. So
+  the hook strips inline spans, which are decidable line by line, and
+  `prose-check.py` gets the full treatment because it has the document. A
+  single-line HTML comment is strippable from added lines too; a multi-line one
+  is not, and is left.
 - **It embeds its rules; the hook carriers here quote `writing_about_code.md`
   at run time.** Both fit their carrier. The guard must work on a machine where
   this plugin is absent, so embedding is its only option; a plugin hook ships
