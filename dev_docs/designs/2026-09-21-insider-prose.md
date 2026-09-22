@@ -11,8 +11,8 @@ to a reader for whom it is not. Two shapes recur: a body that recounts how the
 work unfolded, and prose whose every clause sends the reader looking something
 up. This names the failure **insider prose**, states it once in
 `writing_about_code.md`, and adds four carriers that reach that file rather
-than restating it. None of the new checks adds a process to a session, and none
-of them blocks a write.
+than restating it. The checks register no new hook and block no write; what
+they cost is an interpreter start on writes that today stop at the shell.
 
 ## What is true today
 
@@ -34,27 +34,33 @@ That is exactly the complaint against `14/14 against 10/14 then 12/14`. A
 second statement of it would put two versions of one rule in one file, which
 `reviewing.md` calls a finding.
 
-**Every `Write` and `Edit` already pays for a hook process.**
+**Every `Write` and `Edit` spawns a hook, but most stop at the shell.**
 `hooks/comment-key-context.sh` is registered on the bare `Write|Edit` matcher
-with no `if` gate, so it spawns on every write. Measured on this machine, 20
-spawns each, handing the hook a 15,258-byte payload on stdin:
+with no `if` gate, so `bash` starts on every write. A `case` test on the raw
+payload then exits before `python3` unless the payload carries an uppercase
+tracker-key shape, which an ordinary markdown write does not. Measured on this
+machine, 20 spawns each:
 
-| Run                                     | ms per spawn |
-| --------------------------------------- | ------------ |
-| `bash -c true`                          | 5.02         |
-| `python3 -c pass`                       | 10.11        |
-| the hook, markdown path (exits early)   | 25.68        |
-| the hook, `.py` path (runs its scan)    | 25.36        |
+| Run                                            | ms per spawn |
+| ---------------------------------------------- | ------------ |
+| `bash -c true`                                 | 5.02         |
+| `python3 -c pass`                              | 10.11        |
+| the hook, markdown write the prefilter rejects | 10.70        |
+| the hook, payload the prefilter admits         | 24.59        |
 
-Startup is what the 25 ms buys. The hook's existing comment scan does not rise
-above the noise between the last two rows, which differ by less than their
-spread. The markdown row is pure waste today: the extension guard exits before
-any work, so a markdown write pays 25 ms and receives nothing.
+The process is half paid for, not paid for. `bash` is already spent on every
+write; the interpreter is not, and the interpreter is what any new check needs.
+
+Measuring this is easy to get wrong in one direction. A payload that happens to
+satisfy the prefilter prices the admitted path, which makes the scan look free
+against a process that was going to start anyway. Price the rejected path, and
+the interpreter is the cost.
 
 **A PR body reaches disk before it ships.** `hooks/gh-body-guard.py` denies
-`--body` in favour of `--body-file`, and it runs on every `Bash` call. So a
-vetting step there reads a file that already exists and spends no process of
-its own.
+`--body` in favour of `--body-file`, so a vetting step there reads a file that
+already exists. Its wrapper runs on every `Bash` call and gates the same way:
+`python3` starts only for a payload carrying a backtick or `$(`, which the
+`gh pr create --body-file` command it would vet does not carry.
 
 **`scripts/prose-check.py` measures two rules over this repo's tracked
 markdown**: em-dash density, which fails the build, and sentence length, which
@@ -80,9 +86,13 @@ can apply to their own draft:
 - **No historical narrative.** State what is true now. Would this sentence
   exist if the work had gone right the first time? If it is there only because
   of how you got here, cut it.
-- **The reader does no lookups.** Every reference resolves inside the text.
-  Read each sentence cold and count what the reader would have to go find.
-  Zero.
+- **The reader resolves no references you left dangling.** A demonstrative
+  needs its antecedent in the same text: "the same 14 rows" as what, "the other
+  two" being which. Read each sentence cold and count what the reader has to
+  reconstruct from context you did not give them. Zero. A deliberate citation
+  is the opposite of this and is required elsewhere in this file: a `file:line`,
+  a command with its output, an issue number named as an issue. Those send the
+  reader somewhere on purpose, and `## Say what you know` asks for them.
 
 **A record whose subject is the history is exempt from the first rule.** A
 decision record's Context and Alternatives, a design's "What is true today", a
@@ -97,8 +107,7 @@ it.
 ### One detector, three consumers
 
 `scripts/insider_prose.py` is a pure module with no I/O and no side effects,
-imported by the hook, by `prose-check.py`, and by the fixture test. What it
-detects, and the scope each signal is trusted over:
+imported by the hook, by `prose-check.py`, and by the fixture test.
 
 **One signal, not a suite.** The module detects an unresolved `the same \d+
 <noun>` over added lines, and nothing else. A firing means "go check the
@@ -147,12 +156,25 @@ work over a few KB:
 - On every markdown write, the detector over added lines, reported as
   `line N:` with the offending text.
 
-Its existing tracker-key check is untouched, including the markdown exclusion,
-because the two checks disagree about markdown on purpose.
+Two gates stand between the wrapper and that code, and both move. The shell
+`case` at `hooks/comment-key-context.sh:75` exits before `python3` on any
+payload without a tracker-key shape, so it gains a second arm admitting a
+markdown `file_path`. The `PROSE` extension exit at
+`hooks/comment-key-context.py:34` then returns early on exactly the files the
+new check wants, so it becomes a branch into the detector rather than a
+`sys.exit(0)`. The tracker-key check's own behaviour is unchanged; what changes
+is that markdown no longer means "nothing to do here".
 
 **`hooks/gh-body-guard.py` gains a body vet.** It resolves `--body-file` to a
-path already, so it runs the module against that file and returns
-`additionalContext`. It allows the command.
+path already, so it runs the module against that file, returns
+`additionalContext`, and allows the command.
+
+Its wrapper needs the same widening. The `case` at
+`hooks/gh-body-guard.sh:78` admits only a payload carrying a backtick or `$(`,
+which an ordinary `gh pr create --body-file body.md` carries neither of, so it
+gains an arm for `--body-file` and its `--notes-file` spelling. Parsing
+`--body` instead is the wrong branch: `--body` is what the guard denies, so
+there is no body left there to vet.
 
 **`reviewing.md` gains a pointer, not a restatement.** One line under `## What
 a review checks` naming the section and the two shapes as checkable, with the
@@ -193,7 +215,7 @@ writer and the reviewer from one source. The alternative was a fourth prose
 file linked from three places. Rejected: the failure diagnosed in issue #62 is
 not-re-reading, and a file one link further away is read less rather than more.
 
-### Every carrier quotes the file at run time
+### The hook carriers quote the file at run time
 
 `hooks/comment-key-context.py` holds a hardcoded quote of `portable.md`, and a
 second hook doing the same would make drift the default. The hook reads the
@@ -203,16 +225,25 @@ prose rather than wiring.
 
 ### The checks ride the processes that already exist
 
-Both additions land inside hook scripts that already spawn, so no new process
-is created and the added cost is the scan alone: **0.44 ms** at process level
-and 0.69 ms measured in-process over 200 repetitions, against the same
-15,258-byte markdown payload. That is under 3% of the 25 ms the spawn already
-costs.
+Both additions land inside hook scripts whose `bash` already runs, so what the
+change buys is an interpreter, not a process. Measured per markdown write, 20
+spawns each:
 
-The alternatives were a new `PreToolUse` handler gated on `Write(**/*.md)`,
-which pays a fresh 25 ms per markdown write to do 0.44 ms of work, and a `Stop`
-hook reading `transcript_path`, which caps the cost at one process per turn but
-fires after the turn, too late for a `gh pr create` in the same turn.
+| Carrier                                         | ms per markdown write |
+| ----------------------------------------------- | --------------------- |
+| today, the prefilter rejects it                 | 10.70                 |
+| widen the prefilter, one process does both jobs | 24.59                 |
+| a separate handler gated on `Write(**/*.md)`    | 38.89                 |
+
+The scan itself is 0.44 ms of that, so it is not what anything here costs. The
+gated handler is the expensive option rather than the clean one, because it
+does not replace the existing hook: `comment-key-context.sh` still spawns on
+every write, so its 10.70 ms is paid again underneath the new handler's own
+start-up. Widening the prefilter is 14 ms cheaper for the same work.
+
+The remaining alternative was a `Stop` hook reading `transcript_path`, which
+caps the cost at one process per turn but fires after the turn, too late for a
+`gh pr create` in the same turn.
 
 ### The detector is one module, not three implementations
 
@@ -224,7 +255,10 @@ each consumer, which drifts with nothing reporting it.
 ### Fixtures precede the detector
 
 `insider-prose.test.py` carries four bad cases and three good ones before any
-pattern is written. Bad-1 and bad-2 are the issue's two examples verbatim;
+pattern is written, reached by a one-line `insider-prose.test.sh` beside it.
+The wrapper is not decoration: `scripts/run-tests.sh` discovers suites with
+`git ls-files '*.test.sh'`, so a bare `.test.py` never runs in CI.
+`gh-body-guard.test.sh` is the same pairing already in the repo. Bad-1 and bad-2 are the issue's two examples verbatim;
 bad-3 is a `SKILL.md` opener recounting its own design history; bad-4 is a
 decision record pointing at "the other two" with no antecedent. The three good
 cases are rewrites of bad-1, bad-2 and bad-3, and they are load-bearing: a
@@ -247,8 +281,9 @@ blocking gate, which must stay hermetic and offline; and it permits a key
 requirement only as a fast path that degrades when the key is absent, which a
 hook running for every installed user on every write cannot be.
 
-So it runs once, offline, over the fixtures, as a research record's artifact
-under `references/`. That file sets the comparison: not accuracy against ground
+So it runs once, out of band and online, over the fixtures, as a research
+record's artifact under `references/`. What stays offline is the blocking gate
+and the artifact the probe leaves behind, never the probe itself. That file sets the comparison: not accuracy against ground
 truth, but whether the typed call beats what is done today, which here is the
 model re-reading the section after the pointer. It also requires more than one
 pass, because a margin measured there moved threefold across four runs of an
@@ -325,7 +360,14 @@ Delivery is two PRs. The first carries the rule, the `reviewing.md` pointer,
 the fixtures, `scripts/insider_prose.py`, and `prose-check.py` gaining the rule
 with the corpus measurement behind it. The second carries the two hook
 carriers: the `prose-context` rename and the `gh-body-guard.py` vet, with the
-`GUIDANCE_ROOT` export both wrappers need.
+prefilter widening each needs and the `GUIDANCE_ROOT` export both wrappers
+need.
+
+The rename reaches past the two files. `hooks/hooks.json`, `README.md`,
+`dev_docs/conventions.md` and the suite file `comment-key-context.test.sh` all
+name the old path, and an unrenamed `hooks.json` entry is a hook that silently
+stops running. Decision records naming the old path stay as they are, being
+records of when it was true.
 
 The pointer ships with the rule it points at, so no third PR is left with
 anything to carry.
