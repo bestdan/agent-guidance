@@ -132,11 +132,10 @@ is the strongest claim it supports.
 
 It strips inline-code spans before scanning, reusing the `_INLINE_CODE`
 treatment `prose-check.py` already applies to both of its own rules. A
-backticked literal is how markdown quotes a string, and the hook runs over
-markdown in repos this plugin does not own, so a convention about fencing would
-bind the one repo that needs it least. Under `prose-check.py`, which holds the
-whole file, the stripping widens to fences and HTML comments as well; the hook
-cannot follow it there, for the reason the decision below gives. Two
+backticked literal is how markdown quotes a string, so an example quoted that
+way is not prose the signal should read. Under `prose-check.py`, which holds
+the whole file, the stripping widens to fences and HTML comments as well; the
+hook cannot follow it there, for the reason the decision below gives. Two
 consequences: an `Edit`'s added text
 can begin or end mid-span with one unmatched backtick, which the stripper must
 survive rather than pair blindly; and bad examples inside `writing_about_code.md`
@@ -335,6 +334,11 @@ design. Each is taken deliberately here rather than by default.
   `prose-check.py` gets the full treatment because it has the document. A
   single-line HTML comment is strippable from added lines too; a multi-line one
   is not, and is left.
+
+  Stripping is also what this design uses in place of a convention requiring
+  authors to fence their bad examples. A convention binds only the repo that
+  adopts it, and the hook runs over markdown in repos this plugin does not own,
+  so the check has to handle a backticked example rather than ask for one.
 - **It embeds its rules; the hook carrier here quotes `writing_about_code.md`
   at run time.** Both fit their carrier. The guard must work on a machine where
   this plugin is absent, so embedding is its only option; a plugin hook ships
@@ -348,10 +352,13 @@ design. Each is taken deliberately here rather than by default.
 
 ### The PR-time check is one tuple in that guard, not a carrier here
 
-A `PreToolUse` hook that allows does not gate. Verified: a write to this design
-fired `dev-docs-context`, the guidance arrived, and the file was created
-anyway. So a plugin carrier on `gh pr create` could only warn after the PR was
-published, and the `gh pr edit` that follows is the best it could buy.
+A `PreToolUse` hook fires before its command, and an allowing one cannot stop
+it. Verified: a write to this design fired `dev-docs-context`, the guidance
+arrived, and the file was created anyway. The timing is not the problem; the
+enforcement is. A plugin carrier on `gh pr create` would produce its warning
+before the command ran and still not prevent publication, because the model
+cannot retract a call it has already issued. The correction lands on the
+`gh pr edit` that follows, which is the most such a carrier could buy.
 
 The markdown carrier already covers the path that matters. A PR body is
 normally written to a `.md` file first, which warns while the body is still
