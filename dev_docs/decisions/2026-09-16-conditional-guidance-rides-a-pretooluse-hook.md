@@ -6,6 +6,16 @@ convention: ../conventions.md
 
 # Guidance with a mechanical trigger rides a `PreToolUse` hook, not a skill
 
+> [!NOTE] 2026-09-22: The rejected `SessionStart`-writes-rules alternative
+> below assumed the consumer repo as the destination. A hook can instead write
+> the user-level `~/.claude/rules/`, which is how Betterment's `the-book` CLI
+> delivers its standards, and a `paths:`-scoped rule written there at
+> `SessionStart` does load in that same session on 2.1.280. An always-on rule
+> written the same way loads one session late. Measured in
+> `../research/2026-09-22-session-start-written-rules/`. This does not change
+> the decision: the hook here still covers the first write of a new file,
+> which a `paths:` rule misses, and it runs where `~/.claude` is not ours.
+
 ## Context
 
 Every carrier this plugin had decided before the task was known. The
