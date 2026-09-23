@@ -106,8 +106,7 @@ anything.
 [#49410](https://github.com/anthropics/claude-code/issues/49410). Both were read
 in full and both describe the _clone_ failing to advance — "never runs
 `git pull`", "git fetch runs, but the working tree is never updated". That is
-step 1 with the same smell, not step 2. An earlier draft cited them and review
-caught it.
+step 1 with the same smell, not step 2.
 
 ## This plugin is the worst-affected kind — and this skill is the exception
 

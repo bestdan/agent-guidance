@@ -41,7 +41,7 @@ finding like any other. Check, when they are in front of you:
   Context, links, and verification are the exception.
 - **Body**, where no repo template or documented body convention says
   otherwise, opens with the problem it solves or the capability it adds, and
-  the approach; it fits on one screen (about 200 words, 400 at most), and
+  the approach; it fits on one screen without scrolling, and
   carries no line counts, no per-file bullets, no walkthrough of the diff, and
   no "tests pass".
 - **Commit subjects** use the same type-and-scope grammar, without the ticket
