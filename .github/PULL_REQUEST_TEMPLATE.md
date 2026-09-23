@@ -1,5 +1,5 @@
 <!-- Title: imperative, under 70 characters, grammar per the `Git:` bullet in portable.md.
-     Body: about 200 words, 400 at the hard ceiling. Delete any heading you leave empty.
+     Body: fits on one screen without scrolling. Delete any heading you leave empty.
      `authoring_pull_requests.md` governs how to write inside this shape. -->
 
 ## Summary

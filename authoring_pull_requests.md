@@ -11,7 +11,7 @@ One test settles every sentence in a PR body: does it change what the reviewer d
 
 ## Budget
 
-The body fits on one screen without scrolling — about 200 words. 400 is the hard ceiling. A change that seems to need
+The body fits on one screen without scrolling. A change that seems to need
 more usually needs to be a smaller PR, or the extra content belongs somewhere else.
 
 ## Shape
@@ -111,5 +111,5 @@ never a side effect of authoring a PR.
 ## Notes for the reviewer
 
 <!-- Verification CI cannot show, what to scrutinize, rollback, links.
-     Delete if empty. Keep the whole body under ~200 words. -->
+     Delete if empty. Keep the whole body to one screen. -->
 ```
