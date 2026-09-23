@@ -24,7 +24,7 @@ from `~/.codex/AGENTS.md` are the two things the delivery tests assert.
 
 ## Delegation & subagents
 
-- **How:** on `Agent`/`Task` calls pass `model: "haiku"` (or `"sonnet"`); in a `Workflow` script **you author**, set `model:`/`effort:` per stage — cheap on the fan-out, Opus on synthesize/verify.
+- **How:** on `Agent`/`Task` calls pass `model: "haiku"` (or `"sonnet"`); in a `Workflow` script **you author**, set `model:`/`effort:` per stage — cheap on the fan-out, the strong model on synthesize/verify.
 - **Reach — be honest about it.** This only bites where the model actually chooses the tier: live Agent-tool fan-outs and workflows you write. It does **not** reach a pre-packaged skill's _fixed_ workflow (e.g. `/deep-research`) — those inherit the session model uniformly with no per-stage knob. For a sealed, retrieval-heavy skill, control cost by running it from a cheaper session instead.
 
 ## Rules
