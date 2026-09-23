@@ -22,6 +22,11 @@ extra reading, never the rule itself.
   with no test that would fail if it broke. A test whose assertions would pass
   with the guarded behaviour removed is the same gap with a comment on it.
 - **Security and performance** where the change touches them.
+- **Insider prose**, in any text the change adds: prose written from inside the
+  work for a reader who was not there. The two shapes and the exemption are the
+  `## Don't write insider prose` section of
+  [`writing_about_code.md`](writing_about_code.md), which this file does not
+  restate — a reviewer reads that file first either way.
 
 Skip pure formatting and issues that pre-date the diff.
 

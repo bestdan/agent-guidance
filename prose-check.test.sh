@@ -142,6 +142,23 @@ check "tracked Markdown paths with newlines are handled" 0 "$newline_status"
 
 # --- 9. the repository's own markdown passes ---
 # The enforcing case. Everything above proves the check is right; this one makes
+# --- the insider-prose rule reports and never fails ---
+# The corpus case below cannot exercise this: it has no match, so only the
+# "none" branch ever runs there and a regression in the per-finding print, the
+# line attribution, or the paragraph filtering would pass unnoticed.
+check "a dangling reference is reported and still exits 0" 0 \
+  "$(verdict dangling "On the same 14 rows the typed call scored well.")"
+check "the report names file and line" ok \
+  "$(grep -q 'dangling.md:1  the same 14 rows' "$work/dangling.out" && echo ok || echo missing)"
+
+# The paragraph stream drops fenced blocks before the detector sees them, so an
+# example quoted in a fence is not prose this rule governs. Nothing else pins
+# that claim.
+check "a fenced example is not reported" ok \
+  "$(verdict fenced '```
+On the same 14 rows the typed call scored well.
+```' > /dev/null; grep -q 'the same 14 rows' "$work/fenced.out" && echo reported || echo ok)"
+
 # it bind.
 (cd "$self" && python3 "$check_py" > "$work/corpus.out" 2>&1)
 corpus=$?

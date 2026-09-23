@@ -18,6 +18,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import insider_prose  # noqa: E402  (path set above)
+
 WORD_CAP = 25  # portable.md, Simplified Technical English: 25 words in a description.
 EM_DASH = "—"
 
@@ -105,10 +108,11 @@ def word_count(sentence):
 
 
 def measure(path):
-    """Return (long_sentences, sentence_total, em_dash_violations) for one file.
+    """Return (long_sentences, sentence_total, em_dash_violations, dangling).
 
     A violation is (line_number, em_dash_count); a long sentence is
-    (line_number, word_count, sentence).
+    (line_number, word_count, sentence); a dangling reference is
+    (line_number, matched_text).
     """
     text = pathlib.Path(path).read_text(encoding="utf-8")
     long_sentences = []
@@ -123,7 +127,21 @@ def measure(path):
             count = word_count(sentence)
             if count > WORD_CAP:
                 long_sentences.append((line, count, sentence))
-    return long_sentences, total, violations
+
+    # Scanned over the paragraph stream, not the raw file, so the fenced
+    # blocks and tables `paragraphs()` already drops stay dropped: a bad
+    # example quoted inside a fence is not prose this rule governs.
+    #
+    # Paragraph-start is the granularity, as it is for the two rules above.
+    # `paragraphs()` joins a paragraph's lines with a space, so what reaches
+    # the detector never carries a newline and its own line numbers are always
+    # 1; reporting them would claim a precision this stream cannot supply.
+    dangling = []
+    for line, paragraph in paragraphs(text):
+        for _offset, _signal, matched in insider_prose.scan(paragraph):
+            dangling.append((line, matched))
+
+    return long_sentences, total, violations, dangling
 
 
 def tracked_markdown():
@@ -142,14 +160,16 @@ def main(argv):
         return 1
 
     all_violations = []
+    all_dangling = []
     long_total = 0
     sentence_total = 0
     rows = []
     for path in sorted(paths):
-        long_sentences, total, violations = measure(path)
+        long_sentences, total, violations, dangling = measure(path)
         long_total += len(long_sentences)
         sentence_total += total
         all_violations.extend((path, line, count) for line, count in violations)
+        all_dangling.extend((path, line, matched) for line, matched in dangling)
         rows.append((path, len(long_sentences), total))
 
     print(f"sentences over {WORD_CAP} words (reported, never fails):")
@@ -158,6 +178,17 @@ def main(argv):
         print(f"  {long_count:4d}/{total:<4d} {share:>4}  {path}")
     share = f"{100 * long_total / sentence_total:.0f}%" if sentence_total else "-"
     print(f"  {long_total:4d}/{sentence_total:<4d} {share:>4}  TOTAL")
+
+    # Reported and never failing, for the reason the module's docstring gives:
+    # the signal says "go check the antecedent" and cannot say "there is none",
+    # so a resolved reference matches it exactly as a dangling one does. The
+    # em-dash cap below can decide a violation, which is why that one fails.
+    print()
+    print("references to check (reported, never fails):")
+    if not all_dangling:
+        print("  none")
+    for path, line, matched in all_dangling:
+        print(f"  {path}:{line}  {matched}")
 
     print()
     if not all_violations:

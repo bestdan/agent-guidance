@@ -20,6 +20,27 @@ came for.
 Never build to a conclusion. An explanation is not a story, and a reader who has to reach the end to learn whether the
 answer was yes has been made to do your work.
 
+## Don't write insider prose
+
+You write from inside the work, where the context is free. It is not free where it is read. Two shapes follow from
+that, and they are one habit with two faces.
+
+- **No historical narrative.** State what is true now. Would this sentence exist if the work had gone right the first
+  time? If it is there only because of how you got here — a candidate that lost, an approach you abandoned, a section
+  number from your own process — cut it. The reader is deciding about the thing, not auditing its making.
+- **Leave no reference dangling.** A demonstrative needs its antecedent in the same text: `the same 14 rows` as what,
+  `the other two` being which, `rule 1` of what. Read each sentence cold and count what the reader has to reconstruct
+  from context you never gave them. Zero.
+
+A deliberate citation is the opposite of a dangling reference, and `## Say what you know` requires it: a `file:line`, a
+command with its output, an issue named as an issue. Those send the reader somewhere on purpose. For the numbers half
+of the second rule — a quantity carrying its unit, a comparison carrying its baseline — see `## Name things precisely`,
+which states it already.
+
+**A record whose subject is the history is exempt from the first rule.** A decision record's context and alternatives, a
+design's account of what is true today, a research record: there the history is what the reader came for, stated as the
+current subject rather than smuggled in around something else.
+
 ## Say what you know, and say how you know it
 
 - A claim about behavior carries its evidence: a `file:line`, a command and the output it produced, a test that fails.
