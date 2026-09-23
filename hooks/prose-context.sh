@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
-# PreToolUse hook on Write and Edit: when a session is about to add a code
-# comment carrying a tracker key outside a `TODO`, say so before the tool call
-# runs. `portable.md`: "A comment carries no ticket key and no PR number: a
-# reader with no tracker access has the whole explanation, or the comment has
-# failed."
+# PreToolUse hook on Write and Edit. Two checks over the text a write adds,
+# split by the file's extension in prose-context.py:
+#
+#   source   -- a code comment carrying a tracker key outside a `TODO`.
+#               `portable.md`: "A comment carries no ticket key and no PR
+#               number: a reader with no tracker access has the whole
+#               explanation, or the comment has failed."
+#   markdown -- insider prose, the `## Don't write insider prose` section of
+#               `writing_about_code.md`. Once per session, on the first markdown
+#               write, the section itself, quoted from the file at run time so
+#               no copy of it lives here. On every markdown write, the one
+#               detectable shape: a `the same N <noun>` whose antecedent may be
+#               missing, from scripts/insider_prose.py.
+#
+# The pointer is the reason the markdown half exists. That rule was loaded and
+# in context when the examples that prompted it shipped; what failed was
+# re-reading it, and a hook is the one carrier that fires without the model
+# choosing to. The detector rides the same interpreter start for 0.44 ms.
 #
 # Advises, never denies. `dev_docs/decisions/2026-09-16-dev-docs-hook-never-denies-the-write.md`
 # is the reasoning and it applies unchanged: the write that REMOVES a key must
@@ -39,12 +52,16 @@
 # matcher, with the cost paid down in the shell below, where a `case` test on
 # the raw payload exits before python3 starts.
 #
-# Why no once-per-session marker. The `dev_docs/` pointer is the same paragraph
-# every time, so a session needs it once. This names a specific line in a
-# specific file, and the second offending comment is a different finding from
-# the first.
+# Findings repeat; the pointer does not. A finding names a specific line, and
+# the second offending line is a different finding from the first. The quoted
+# section is the same text every time, so a session needs it once, keyed on the
+# session id the way hooks/dev-docs-context.py keys the layout pointer.
 #
-# The program is comment-key-context.py beside this file, not a `python3 -c`
+# If the section cannot be quoted -- no GUIDANCE_ROOT, a moved file, a renamed
+# or duplicated heading -- the pointer says so instead of going quiet. A silent
+# miss would remove it for every installed user with nothing reporting it.
+#
+# The program is prose-context.py beside this file, not a `python3 -c`
 # argument. That argument was parsed by nothing: shellcheck sees one opaque
 # string, and a python checker sees no file to open. So a truncated program was
 # a hook that said nothing on every payload, with nothing reporting it. A
@@ -63,15 +80,25 @@ set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 payload="$(cat)"
 
-# Cheap pre-filter. A payload with no `<uppercase><uppercase>...-<digit>`
-# anywhere in it cannot produce a finding, whatever else it contains. The test
-# is looser than the key regex in comment-key-context.py -- it has to be, as a
-# shell glob -- so it over-admits and never over-rejects.
+# Cheap pre-filter, two arms. A payload matching neither cannot produce a
+# finding, whatever else it contains.
+#
+#   - `<uppercase><uppercase>...-<digit>` anywhere: a possible tracker key. The
+#     test is looser than the key regex in prose-context.py -- it has to be, as
+#     a shell glob -- so it over-admits and never over-rejects.
+#   - a markdown extension closing a JSON string: a possible markdown
+#     file_path. Matched on the path rather than on the detector's shape,
+#     because a glob is case-sensitive where the detector's regex is not, and
+#     `The same 14 rows` at a sentence start would slip past a glob written for
+#     `the same`. Case-folded on the extension for the same reason. Any `.md"`
+#     in the payload admits it, not only the file_path's, which over-admits.
 case "$payload" in
   *[A-Z][A-Z]*-[0-9]*) ;;
+  *.[mM][dD]\"*|*.[mM][dD][xX]\"*|*.[mM][aA][rR][kK][dD][oO][wW][nN]\"*) ;;
   *) exit 0 ;;
 esac
 
-PAYLOAD="$payload" python3 "$here/comment-key-context.py" 2>/dev/null
+PAYLOAD="$payload" GUIDANCE_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$here")}" \
+  python3 "$here/prose-context.py" 2>/dev/null
 
 exit 0
