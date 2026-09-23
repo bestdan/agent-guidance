@@ -108,13 +108,30 @@ GOOD_3 = (
     "of them."
 )
 
-# --- good-4: a resolved `the same N <noun>`, which the regex cannot see. --
-# The antecedent is named in the previous sentence, so this is correct prose.
-# The detector fires on it anyway -- it reports "go check the antecedent", not
-# "there is none" -- which is why the check reports and never fails the build.
-GOOD_4 = (
-    "The baseline covered 14 rows. The candidate covered the same 14 rows."
-)
+# --- the resolvers the regex cannot see -----------------------------------
+# Correct prose that fires anyway. Three shapes, measured rather than guessed,
+# and they are the whole documented false-positive surface. The detector says
+# "go check the antecedent" and never "there is none", which is why the check
+# reports and never fails a build.
+#
+# A separating mechanism was looked for and does not exist. The first pair is
+# string-identical to the real dangling case inside the window the regex can
+# see -- `the same 14 rows the <NP> <verb>` -- and what separates them is
+# whether the preceding clause already has its verb. That is a parse, not a
+# pattern, so every candidate that dropped these also dropped the true
+# positive.
+RESOLVED_BY_RELATIVE_CLAUSE = [
+    "The suite runs the same 3 checks CI runs.",
+    "It reads the same 14 rows the baseline read.",
+]
+RESOLVED_BY_COMPARISON_SET = [
+    "Both machines resolve the same 2 paths.",
+    "We reuse the same 4 fixtures across both suites.",
+    "Apply the same 3 files to both environments.",
+]
+RESOLVED_BY_PRIOR_MENTION = [
+    "The baseline covered 14 rows. The candidate covered the same 14 rows.",
+]
 
 # --- good-5: the construction inside inline code. Not prose at all. --------
 # A backticked literal is how markdown quotes a string, so the rule's own
@@ -138,7 +155,15 @@ print("-- where the mechanical tier stops, reported not asserted --")
 report("bad-1 (historical narrative)", BAD_1)
 report("bad-3 (historical narrative)", BAD_3)
 report("bad-4 (dangling, different form)", BAD_4)
-report("good-4 (resolved antecedent)", GOOD_4)
+
+print()
+print("-- correct prose the signal fires on, by resolver shape --")
+for n, case in enumerate(RESOLVED_BY_RELATIVE_CLAUSE, 1):
+    report(f"relative clause {n}", case)
+for n, case in enumerate(RESOLVED_BY_COMPARISON_SET, 1):
+    report(f"comparison set {n}", case)
+for n, case in enumerate(RESOLVED_BY_PRIOR_MENTION, 1):
+    report(f"prior mention {n}", case)
 
 print()
 if fails:
