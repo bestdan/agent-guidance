@@ -58,9 +58,11 @@ whether the clause before the match already has its verb, which is a parse.
 
 ## Confirmation
 
-`insider-prose.test.py` carries the bad cases, the good rewrites, and all three
-false-positive shapes as reported cases, so a change to the pattern that
-silently narrows or widens it fails. `prose-check.py` keeps the signal in its
+`insider-prose.test.py` asserts that the good rewrites and the inline-code case
+stay silent, and that the #62 example (bad-2) fires. A pattern change that
+widens onto a correct rewrite, or narrows past that example, fails the suite.
+The other bad cases and the three false-positive shapes are printed as notes
+and not asserted. `prose-check.py` keeps the signal in its
 reporting tier beside sentence length, not its failing tier beside the em-dash
 cap.
 
