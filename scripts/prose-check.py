@@ -131,10 +131,15 @@ def measure(path):
     # Scanned over the paragraph stream, not the raw file, so the fenced
     # blocks and tables `paragraphs()` already drops stay dropped: a bad
     # example quoted inside a fence is not prose this rule governs.
+    #
+    # Paragraph-start is the granularity, as it is for the two rules above.
+    # `paragraphs()` joins a paragraph's lines with a space, so what reaches
+    # the detector never carries a newline and its own line numbers are always
+    # 1; reporting them would claim a precision this stream cannot supply.
     dangling = []
     for line, paragraph in paragraphs(text):
-        for offset, _signal, matched in insider_prose.scan(paragraph):
-            dangling.append((line + offset - 1, matched))
+        for _offset, _signal, matched in insider_prose.scan(paragraph):
+            dangling.append((line, matched))
 
     return long_sentences, total, violations, dangling
 
@@ -179,7 +184,7 @@ def main(argv):
     # so a resolved reference matches it exactly as a dangling one does. The
     # em-dash cap below can decide a violation, which is why that one fails.
     print()
-    print("dangling references (reported, never fails):")
+    print("references to check (reported, never fails):")
     if not all_dangling:
         print("  none")
     for path, line, matched in all_dangling:
