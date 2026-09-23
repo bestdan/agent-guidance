@@ -65,9 +65,3 @@ def scan(text):
         for match in SAME_N.finditer(prose):
             findings.append((number, "dangling-reference", match.group(0)))
     return findings
-
-
-def describe(finding):
-    """One line for a reader, in the shape the hook and the checker both use."""
-    number, _signal, matched = finding
-    return f"  line {number}: {matched}"

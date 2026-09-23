@@ -116,10 +116,18 @@ GOOD_4 = (
     "The baseline covered 14 rows. The candidate covered the same 14 rows."
 )
 
+# --- good-5: the construction inside inline code. Not prose at all. --------
+# A backticked literal is how markdown quotes a string, so the rule's own
+# examples are written this way and must not report themselves. Verified by
+# mutation: with `strip_inline_code` replaced by a no-op, every other case in
+# this file still passes and only this one fails.
+GOOD_5 = "The rule flags `the same 14 rows` when the antecedent is missing."
+
 print("-- good cases: a firing here kills the signal --")
 check("good-1 (bad-1 rewritten)", GOOD_1, expect_hit=False)
 check("good-2 (bad-2 rewritten)", GOOD_2, expect_hit=False)
 check("good-3 (bad-3 rewritten)", GOOD_3, expect_hit=False)
+check("good-5 (construction inside inline code)", GOOD_5, expect_hit=False)
 
 print()
 print("-- bad case the mechanical tier reaches --")
