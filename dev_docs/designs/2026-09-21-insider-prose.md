@@ -228,10 +228,10 @@ writer and the reviewer from one source. The alternative was a fourth prose
 file linked from three places. Rejected: the failure diagnosed in issue #62 is
 not-re-reading, and a file one link further away is read less rather than more.
 
-### The hook carriers quote the file at run time
+### The hook carrier quotes the file at run time
 
 `hooks/comment-key-context.py` holds a hardcoded quote of `portable.md`, and a
-second hook doing the same would make drift the default. The hook reads the
+second such quote beside it would make drift the default. The hook reads the
 section instead. The alternative was a test asserting the same sentence appears
 in two files. Rejected: it would be the first assertion in this suite about
 prose rather than wiring.
@@ -330,11 +330,12 @@ design. Each is taken deliberately here rather than by default.
   it. The hook holds added lines, which carry no fence state at all: an added
   line inside a fenced block is indistinguishable from one outside it, and
   `prose-check.py:50-67` gets that right only by streaming the whole file. So
-  the hook strips inline spans, which are decidable line by line, and
+  the hook strips the spans it can pair inside the added lines, leaving an
+  unmatched backtick's span unstripped rather than mispairing it, and
   `prose-check.py` gets the full treatment because it has the document. A
   single-line HTML comment is strippable from added lines too; a multi-line one
   is not, and is left.
-- **It embeds its rules; the hook carriers here quote `writing_about_code.md`
+- **It embeds its rules; the hook carrier here quotes `writing_about_code.md`
   at run time.** Both fit their carrier. The guard must work on a machine where
   this plugin is absent, so embedding is its only option; a plugin hook ships
   beside the file it quotes, so quoting costs nothing and removes the drift the
@@ -367,17 +368,25 @@ wrote no markdown, is not checked at all. That case buys a portable carrier
 whose own description would have to be "warns after publishing", and it is not
 worth one.
 
-### The rule ships as failing, because this corpus cannot decide it
+### The rule reports and never fails, because it cannot decide a defect
 
-Measured over all 46 tracked `*.md` files, at the scope each was designed for,
-all four candidate signals return zero hits. The corpus therefore cannot play
-the part the em-dash precedent played. That split had spread to read, 6% of
-paragraphs against 30% of sentences, and a rule most of the corpus already broke
-was the thing worth not enforcing.
+`prose-check.py` already splits its two rules this way, and the line it draws
+is precision rather than importance. The em-dash cap fails the build because a
+paragraph either carries more than one interruption or it does not. Sentence
+length only reports, because a long sentence is a candidate and not a verdict.
 
-Here nothing breaks, so the surviving rule ships as failing: a check that fires
-zero times today costs nothing to enforce, and the first firing is a finding
-rather than a backlog.
+This signal is the second kind, and its own specification says so: it can claim
+"go check the antecedent" and never "there is none". Measured on the prototype,
+`The baseline covered 14 rows. The candidate covered the same 14 rows.` and
+`On the same 14 rows the typed call scored well.` produce the identical finding.
+The first resolves its reference and the second does not, and nothing in the
+regex separates them. A check that cannot tell those apart cannot fail a build
+without failing correct prose.
+
+The corpus measurement does not rescue it. All four candidate signals return
+zero hits across the 46 tracked `*.md` files, so nothing existing breaks — but
+that is a fact about today's text, not about the check's precision on text
+someone writes next week, which is what enforcement would rest on.
 
 A zero-hit corpus is also why the fixtures decide which signals exist. Three of
 the four were dropped on good cases the corpus could never have surfaced.
@@ -407,7 +416,7 @@ warn-and-allow split is already recorded in
 `dev_docs/decisions/2026-09-19-a-safety-guard-denies-and-has-no-hatch.md`, and
 run-time quoting shares the first record below with the one-file decision.
 
-- The rule lives in one file and every carrier quotes it at run time, rather
+- The rule lives in one file and the hook carrier quotes it at run time, rather
   than holding a copy.
 - A check rides an existing hook process rather than adding a handler, with the
   25 ms spawn against 0.44 ms scan measurement behind it.
