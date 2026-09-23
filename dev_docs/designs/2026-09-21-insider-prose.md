@@ -269,6 +269,21 @@ does nothing. That failure has already happened twice in this repo, in the two
 prefilters this design has to widen. Fourteen milliseconds a write, against
 roughly 400 ms across a session, is not worth a third instance of it.
 
+### The pointer justifies the carrier; the detector rides it
+
+One report-only regex is thin payment for a module, a fixture suite and a
+rename across four files, and that is the wrong way round. The carrier exists
+for the pointer, which is the only part of this design that fires without the
+model choosing to re-read anything — and not re-reading is the failure issue
+#62 documents, with `writing_about_code.md` loaded and in context while both
+examples shipped. Once the hook starts an interpreter to emit that pointer, the
+scan costs 0.44 ms on top, so the detector is a rider rather than the fare.
+
+The alternatives were the rule and the pointer with no detector, and the rule
+alone. The second is what already exists and already failed. The first is
+defensible and stays the fallback if the fixtures kill the signal, which the
+deferral below keeps open.
+
 ### The detector is one module, not three implementations
 
 The hook, `prose-check.py` and the fixture test import `scripts/insider_prose.py`.
