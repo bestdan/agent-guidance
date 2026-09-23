@@ -82,8 +82,9 @@ call, before the call runs, rather than at session start or when a model loads
 a skill. Three are registered: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
 write under `dev_docs/`, `hooks/gh-body-guard.sh` refuses a `gh` command
 whose free-text flag would run a shell substitution, and
-`hooks/comment-key-context.sh` reports a tracker key in a code comment a write
-adds.
+`hooks/prose-context.sh` reports a tracker key in a code comment a write adds
+and, on a markdown write, quotes the insider-prose rule once a session and
+reports a possible dangling reference.
 
 The route is Claude Code only, because Codex registers `SessionStart` alone. A
 hook is therefore an upgrade on a route both harnesses have, never the only
@@ -212,7 +213,7 @@ rules reach cloud containers, Codex sessions, and any machine carrying the
 plugin without it. A check beside `scripts/prose-check.py` reads a finished
 tree, and a repo's suite only ever sees that repo. It cannot catch a comment as
 it is written, in whatever repo a session is working in. That handler is
-`hooks/comment-key-context.sh`. A hook has a cost of
+`hooks/prose-context.sh`. A hook has a cost of
 its own: every check added here runs in consumer repos that never asked for it.
 The advise-never-deny shape above bounds that cost to a missing pointer
 (`decisions/2026-09-19-comment-key-check-belongs-here.md`).

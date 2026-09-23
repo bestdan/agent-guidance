@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Tests hooks/comment-key-context.sh, the PreToolUse hook that reports a
-# tracker key added in a code comment.
-# Run: bash comment-key-context.test.sh
+# Tests hooks/prose-context.sh, the PreToolUse hook that reports a tracker key
+# added in a code comment and, on markdown, insider prose.
+# Run: bash prose-context.test.sh
 #
 # The cases are the boundaries, not the happy path. This hook runs on every
 # Write and Edit in every repo a session touches, so its failure mode is a
@@ -19,8 +19,8 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/scripts/test_prelude.sh"
 
 self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-hook="$self/hooks/comment-key-context.sh"
-work="$(make_workdir comment-key-context-test)"
+hook="$self/hooks/prose-context.sh"
+work="$(make_workdir prose-context-test)"
 trap 'rm -rf "$work"' EXIT
 fail=0
 
@@ -55,13 +55,23 @@ print("context" if out.get("additionalContext") else "silent")
 '
 }
 
+# Every payload carries a session and a scratchpad, because a markdown write
+# leaves a once-per-session marker there. Without them the marker lands in the
+# hook's fallback directory, shared with every other run on the machine, and a
+# case would pass or fail on what an earlier run left behind. SESSION defaults
+# to one id; a case that needs a fresh pointer sets its own.
+SESSION=keys
+scratch="$work/scratch"
+
 # An Edit payload: the file path, the replaced text, the replacing text.
 edit() {
-  PY_PATH=$1 PY_OLD=$2 PY_NEW=$3 python3 -c '
+  PY_PATH=$1 PY_OLD=$2 PY_NEW=$3 PY_SESSION=$SESSION PY_SCRATCH=$scratch python3 -c '
 import json, os
 print(json.dumps({
     "hook_event_name": "PreToolUse",
     "tool_name": "Edit",
+    "session_id": os.environ["PY_SESSION"],
+    "scratchpad_dir": os.environ["PY_SCRATCH"],
     "tool_input": {
         "file_path": os.environ["PY_PATH"],
         "old_string": os.environ["PY_OLD"],
@@ -74,11 +84,13 @@ print(json.dumps({
 # A Write payload. The file on disk is the old text, so the caller creates it
 # first (or does not, for a new file).
 write() {
-  PY_PATH=$1 PY_NEW=$2 python3 -c '
+  PY_PATH=$1 PY_NEW=$2 PY_SESSION=$SESSION PY_SCRATCH=$scratch python3 -c '
 import json, os
 print(json.dumps({
     "hook_event_name": "PreToolUse",
     "tool_name": "Write",
+    "session_id": os.environ["PY_SESSION"],
+    "scratchpad_dir": os.environ["PY_SCRATCH"],
     "tool_input": {
         "file_path": os.environ["PY_PATH"],
         "content": os.environ["PY_NEW"],
@@ -182,13 +194,19 @@ check "a comment naming Q1-2026 is silent" silent \
   "$(edit "$work/a.py" "x = 1" "# shipped Q1-2026
 x = 1")"
 
-# --- 6. prose files are out of scope ---
+# --- 6. prose files are out of scope for the key check ---
 # A decision record, a README or a changelog cites a key as a matter of course,
-# and markdown gives every heading a bare `#`.
+# and markdown gives every heading a bare `#`. Markdown is not silent any more
+# -- it gets the insider-prose pointer, section 14 -- so the first write below
+# spends this session's pointer, and the two after it pin the key check alone.
+check "the session's first markdown write gets the pointer" context \
+  "$(edit "$work/notes.md" "x" "y")"
 check "a markdown file is silent" silent \
   "$(edit "$work/notes.md" "x" "# PRE-999 and the reasoning behind it")"
 check "a markdown comment carrying a key is silent" silent \
   "$(edit "$work/notes.md" "x" "<!-- tracked as PRE-999 -->")"
+check "a plain-text file is silent" silent \
+  "$(edit "$work/notes.txt" "x" "# PRE-999 and the reasoning behind it")"
 
 # --- 7. the finding names the line it found ---
 # A pointer that does not say which line it is about sends the reader back
@@ -292,14 +310,14 @@ problems = []
 handlers = []
 for e in entries:
     for h in e.get("hooks") or []:
-        if "comment-key-context.sh" in h.get("command", ""):
+        if "prose-context.sh" in h.get("command", ""):
             handlers.append(h)
             m = e.get("matcher", "")
             for tool in ("Write", "Edit"):
                 if tool not in m:
                     problems.append("matcher %r does not cover %s" % (m, tool))
 if not handlers:
-    problems.append("no PreToolUse entry runs comment-key-context.sh")
+    problems.append("no PreToolUse entry runs prose-context.sh")
 for h in handlers:
     if h.get("if"):
         problems.append("handler carries if=%r, which narrows it to one path" % h["if"])
@@ -307,7 +325,7 @@ print("; ".join(problems) if problems else "ok")
 ')"
 
 # --- 11. the program sits beside the wrapper and parses ---
-# The wrapper runs comment-key-context.py by path with its stderr discarded, so a
+# The wrapper runs prose-context.py by path with its stderr discarded, so a
 # file that is missing, unreadable, or a syntax error is a hook that says
 # nothing on every payload and reports nothing. That is the same silent shape an
 # apostrophe inside the old `python3 -c` argument produced, which is the case
@@ -315,7 +333,7 @@ print("; ".join(problems) if problems else "ok")
 # apostrophe hazard is gone, while the never-block rule keeps the other
 # failures quiet at runtime. This says which file and which line.
 check "the program sits beside the wrapper and parses" ok \
-  "$(PROG="$self/hooks/comment-key-context.py" python3 -c '
+  "$(PROG="$self/hooks/prose-context.py" python3 -c '
 import os
 p = os.environ["PROG"]
 try:
@@ -346,12 +364,136 @@ check "the hook script is executable" ok \
 # The copy carries the wrapper alone, so `$here` holds no program to find.
 lone="$work/lone"
 mkdir -p "$lone"
-cp "$hook" "$lone/comment-key-context.sh"
+cp "$hook" "$lone/prose-context.sh"
 # The payload has to clear the prefilter, or python is never reached and the
 # case would pass on a wrapper that had no program to run in the first place.
-lone_out="$(printf %s '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/nonexistent/x.py","content":"# added because PRE-999 asked for it"}}' | bash "$lone/comment-key-context.sh" 2>/dev/null)"
+lone_out="$(printf %s '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/nonexistent/x.py","content":"# added because PRE-999 asked for it"}}' | bash "$lone/prose-context.sh" 2>/dev/null)"
 lone_code=$?
 check "a wrapper with no program exits 0" 0 "$lone_code"
 check "a wrapper with no program says nothing" "" "$lone_out"
+
+# --- 14. markdown: the insider-prose pointer and the dangling-reference check ---
+# The pointer is the half that matters: it fires without the model choosing to
+# re-read anything. The detector is one report-only regex riding the same
+# process.
+
+# Prints the additionalContext the hook emitted for the payload on stdin, or
+# nothing. The cases below assert on content, not only on presence, because a
+# pointer quoting the wrong text or a miss message is still "context".
+context_of() {
+  bash "$hook" 2>/dev/null | python3 -c '
+import json, sys
+raw = sys.stdin.read().strip()
+if raw:
+    print((json.loads(raw).get("hookSpecificOutput") or {}).get("additionalContext", ""))
+'
+}
+
+# A markdown Edit payload under a given session, printed rather than run, so a
+# case can pipe it into context_of with whatever environment it needs.
+md_payload() {
+  PY_SESSION=$1 PY_PATH=$2 PY_OLD=$3 PY_NEW=$4 PY_SCRATCH=$scratch python3 -c '
+import json, os
+print(json.dumps({
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "session_id": os.environ["PY_SESSION"],
+    "scratchpad_dir": os.environ["PY_SCRATCH"],
+    "tool_input": {
+        "file_path": os.environ["PY_PATH"],
+        "old_string": os.environ["PY_OLD"],
+        "new_string": os.environ["PY_NEW"],
+    },
+}))
+'
+}
+
+has() {
+  case "$1" in *"$2"*) echo yes ;; *) echo no ;; esac
+}
+
+# The pointer quotes the repo's own section, end to end: the wrapper's
+# GUIDANCE_ROOT, the heading lookup, and the section boundary. This is the
+# assertion that the rule the hook points at still resolves. A renamed heading
+# fails it here rather than in every installed session.
+out="$(md_payload md1 "$work/a.md" x "plain prose" | context_of)"
+check "the first markdown write quotes the rule's heading" yes \
+  "$(has "$out" "## Don't write insider prose")"
+check "the quote carries the section's body" yes \
+  "$(has "$out" "Leave no reference dangling")"
+# Matched as a line start: the section cites `## Say what you know` inline.
+check "the quote stops at the next section" no \
+  "$(has "$out" $'\n## Say what you know')"
+check "the quote names the file it came from" yes \
+  "$(has "$out" "/writing_about_code.md")"
+check "the second clean markdown write in the session is silent" "" \
+  "$(md_payload md1 "$work/a.md" x "more plain prose" | context_of)"
+
+# A sentence-start capital is the case a glob prefilter written for the
+# detector's shape would miss. The payload carries no tracker-key shape, so
+# only the markdown arm of the prefilter admits it.
+out="$(md_payload md1 /nonexistent/notes.md x "The same 14 rows scored well." | context_of)"
+check "a dangling-reference shape is reported" yes "$(has "$out" "The same 14 rows")"
+check "the finding names its line" yes "$(has "$out" "line 1 of the edit")"
+check "the finding does not repeat the pointer" no "$(has "$out" "Leave no reference")"
+
+out="$(md_payload md1 /nonexistent/notes.md x "intro
+
+and the same 3 files again" | context_of)"
+check "a finding's line is its line in the new text" yes "$(has "$out" "line 3 of")"
+
+# Upper-case extensions: the prefilter is a glob, so the case fold is its own.
+check "an .MD extension is admitted" yes \
+  "$(has "$(md_payload md1 /nonexistent/NOTES.MD x "the same 2 paths" | context_of)" "the same 2 paths")"
+
+# Stripped before scanning: a backticked example is how markdown quotes a
+# string, and a single-line HTML comment is not prose.
+check "a backticked example is silent" "" \
+  "$(md_payload md1 /nonexistent/n.md x 'writes like `the same 14 rows` dangle' | context_of)"
+check "a single-line HTML comment is silent" "" \
+  "$(md_payload md1 /nonexistent/n.md x '<!-- the same 14 rows -->' | context_of)"
+
+# Added lines only, for the same reason as the key check: a sentence that
+# pre-dates the rule is not this write's finding.
+printf 'The same 14 rows.\n' > "$work/old.md"
+check "a Write keeping an existing shape is silent" "" \
+  "$(PY_PATH="$work/old.md" PY_SCRATCH=$scratch python3 -c '
+import json, os
+print(json.dumps({"tool_name": "Write", "session_id": "md1",
+    "scratchpad_dir": os.environ["PY_SCRATCH"],
+    "tool_input": {"file_path": os.environ["PY_PATH"],
+                   "content": "The same 14 rows.\nA new line.\n"}}))
+' | context_of)"
+
+# A plain-text file is prose, but not markdown: neither check reads it.
+check "a .txt write is silent" "" \
+  "$(md_payload md2 /nonexistent/n.txt x "The same 14 rows." | context_of)"
+
+# Fails closed. A root whose writing_about_code.md lost the heading, carries it
+# twice, or is missing entirely produces a message naming the miss rather than
+# a silent session. Each case gets a fresh session, since the miss rides the
+# once-per-session pointer.
+fake="$work/fakeroot"
+mkdir -p "$fake"
+out="$(md_payload miss1 /nonexistent/n.md x "prose" | CLAUDE_PLUGIN_ROOT="$fake" context_of)"
+check "a missing writing_about_code.md is reported" yes "$(has "$out" "could not quote")"
+printf '# W\n\n## Something else\n\ntext\n' > "$fake/writing_about_code.md"
+out="$(md_payload miss2 /nonexistent/n.md x "prose" | CLAUDE_PLUGIN_ROOT="$fake" context_of)"
+check "a renamed heading is reported" yes "$(has "$out" "0 '## Don't write insider prose' headings")"
+printf "## Don't write insider prose\n\na\n\n## Don't write insider prose\n\nb\n" > "$fake/writing_about_code.md"
+out="$(md_payload miss3 /nonexistent/n.md x "prose" | CLAUDE_PLUGIN_ROOT="$fake" context_of)"
+check "a duplicated heading is reported" yes "$(has "$out" "2 '## Don't write insider prose' headings")"
+# The detector lives under the root too, and the fake root carries none. The
+# hook says so rather than dropping the check silently.
+check "a missing detector is reported" yes "$(has "$out" "insider_prose.py is missing")"
+
+# The pointer and the finding still never carry a permission decision.
+check "the markdown output carries no permission decision" ok \
+  "$(md_payload md3 /nonexistent/n.md x "The same 14 rows." | bash "$hook" 2>/dev/null | python3 -c '
+import json, sys
+out = (json.load(sys.stdin).get("hookSpecificOutput") or {})
+extra = set(out) - {"hookEventName", "additionalContext"}
+print("ok" if not extra else "carries " + repr(sorted(extra)))
+')"
 
 exit "$fail"
