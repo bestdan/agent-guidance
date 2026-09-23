@@ -257,6 +257,18 @@ The remaining alternative was a `Stop` hook reading `transcript_path`, which
 caps the cost at one process per turn but fires after the turn, too late for a
 `gh pr create` in the same turn.
 
+**The prefilter admits markdown by path, not by the signal's shape.** Gating on
+the signal instead would keep almost every markdown write at 10.70 ms, since
+the corpus says the signal fires approximately never, and would cost one
+interpreter start per session for the pointer. It is rejected anyway. The shell
+test has to over-admit to be safe — `comment-key-context.sh:66-69` says exactly
+that of the existing one — and a shell glob is case-sensitive where the regex is
+not,
+so `The same 14 rows` at a sentence start goes unmatched and the check silently
+does nothing. That failure has already happened twice in this repo, in the two
+prefilters this design has to widen. Fourteen milliseconds a write, against
+roughly 400 ms across a session, is not worth a third instance of it.
+
 ### The detector is one module, not three implementations
 
 The hook, `prose-check.py` and the fixture test import `scripts/insider_prose.py`.
