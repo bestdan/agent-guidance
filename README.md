@@ -31,13 +31,15 @@ rather than as a placeholder.
 | `hooks/dev-docs-context.sh`  | Claude Code, before a `dev_docs/` write | names `dev_docs_layout.md` and the directory's `README.md`, once a session |
 | `hooks/gh-body-guard.sh`     | Claude Code, before every Bash call     | denies a free-text `gh` argument the shell would run a substitution inside |
 | `hooks/prose-context.sh`     | Claude Code, before a write or edit     | a tracker key in an added comment; insider prose on a markdown write       |
+| `hooks/handoff-command.sh`   | Claude Code, when a reply ends          | a `! <command>` hand-off too long, or too many lines, to survive a copy    |
 | `dev_docs_layout.md`         | every harness, by name                  | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
 | `scripts/dev-docs-layout.py` | any repo's check suite                  | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
-Claude Code's `SessionStart` and the three hooks above on `PreToolUse`, across
+Claude Code's `SessionStart`, and the three hooks above the hand-off check on `PreToolUse`, across
 two matchers: `Write|Edit` carries the `dev_docs/` pointer and the prose
-checks, and `Bash` carries the `gh` guard. Each hook is a shell wrapper beside a
+checks, and `Bash` carries the `gh` guard. It registers the hand-off check on
+`Stop`, because only that event sees the reply text. Each hook is a shell wrapper beside a
 `.py` file that holds its program. The root `plugin.json` follows the
 [Agent Plugins](https://agent-plugins.org) layout for harnesses that read it.
 

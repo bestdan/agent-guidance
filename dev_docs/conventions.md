@@ -79,12 +79,21 @@ conventions.
 
 A `PreToolUse` hook is the carrier the harness fires itself. It fires on a tool
 call, before the call runs, rather than at session start or when a model loads
-a skill. Three are registered: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
+a skill. Three are registered on it: `hooks/dev-docs-context.sh` names `dev_docs_layout.md` before a
 write under `dev_docs/`, `hooks/gh-body-guard.sh` refuses a `gh` command
 whose free-text flag would run a shell substitution, and
 `hooks/prose-context.sh` reports a tracker key in a code comment a write adds
 and, on a markdown write, quotes the insider-prose rule once a session and
 reports a possible dangling reference.
+
+One hook rides `Stop` instead: `hooks/handoff-command.sh` reports a `! <command>`
+hand-off in the reply that just ended when the command will not survive a copy.
+Its trigger is in the reply text, and no `PreToolUse` event sees that text.
+`Stop` fires after the reply is on screen, so the hook cannot keep a bad command
+from the user. It returns `decision: block`, the one output of a `Stop` hook that
+reaches the agent, and the agent re-issues the command at once. It blocks once:
+the forced turn carries `stop_hook_active: true`, and the hook stays quiet then
+(`decisions/2026-09-25-handoff-command-check-rides-a-stop-hook/`).
 
 The route is Claude Code only, because Codex registers `SessionStart` alone. A
 hook is therefore an upgrade on a route both harnesses have, never the only
