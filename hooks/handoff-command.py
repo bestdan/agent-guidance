@@ -14,9 +14,12 @@ import sys
 
 LIMIT = 100
 
-# An inline code span whose content starts with "! ". A fenced line is handled
-# separately, because a fence can hold a continuation the span form cannot.
-SPAN = re.compile(r"`(! [^`\n]+)`")
+# An inline code span: a run of backticks closed by a run of the same length. A
+# command holding a backtick needs the longer run, ``! echo `pwd` ``, so a
+# single-backtick pattern would stop at the inner one and measure a prefix.
+# A fenced line is handled separately, because a fence can hold a continuation
+# the span form cannot.
+SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)")
 FENCE = re.compile(r"(`{3,}|~{3,})")
 
 
@@ -58,7 +61,12 @@ def handoffs(text):
             yield from _check(stripped, seen)
             continue
         for match in SPAN.finditer(line):
-            yield from _check(match.group(1).strip(), seen)
+            content = match.group(2)
+            # CommonMark drops one space from each end when both are present.
+            if len(content) >= 2 and content[0] == content[-1] == " " and content.strip():
+                content = content[1:-1]
+            if content.startswith("! "):
+                yield from _check(content.strip(), seen)
     # A fence left open at the end still renders as one code block, and a copy
     # of it carries every line.
     if in_fence and fence_cmd is not None and fence_cmd[1]:

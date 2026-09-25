@@ -83,6 +83,15 @@ check("101 characters blocks", "block", verdict(at + "x"))
 
 check("a long inline span blocks", "block",
       verdict("Then run `" + incident + "` and tell me."))
+tick = "! echo `pwd` && " + "x" * 95
+check("a long double-backtick span with an inner backtick blocks", "block",
+      verdict("Run ``" + tick + "`` now."))
+check("a padded double-backtick span blocks", "block",
+      verdict("Run `` " + tick + " `` now."))
+check("two short spans on one line are quiet", "quiet",
+      verdict("Run `! a` then ``! b `c` d`` please."))
+check("a closing backtick is not read as an opener", "quiet",
+      verdict("See `x`! " + "y" * 120 + "`z"))
 check("a `\\` continuation blocks even when short", "block",
       verdict("```\n! gh api repos/o/r \\\n  --input f.json\n```"))
 check("an unfenced `\\` continuation blocks", "block",
