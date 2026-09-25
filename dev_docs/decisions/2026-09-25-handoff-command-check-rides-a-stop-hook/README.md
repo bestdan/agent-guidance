@@ -30,8 +30,8 @@ already on screen.
 Register `hooks/handoff-command.sh` on `Stop`. It reads the reply that just
 ended and reports each `!` hand-off over 100 characters, ending in `\`, or
 followed by more lines in its code block. It returns `decision: block` with the
-findings as the reason, so the agent re-issues the commands at once, and a
-`systemMessage` that tells the user a correction follows. On the forced turn
+findings as the reason, which tells the agent to re-issue the commands at once,
+and a `systemMessage` that tells the user to check the follow-up before pasting. On the forced turn
 `stop_hook_active` is true, and the hook exits without output.
 
 ## Consequences

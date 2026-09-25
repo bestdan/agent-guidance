@@ -13,8 +13,8 @@
 # Why Stop and not PreToolUse. The command lives in the reply text, and no
 # PreToolUse hook sees that text. Stop is the one event that does, and it fires
 # after the reply is on screen. So this cannot keep a bad command from the
-# user. It makes the agent re-issue a corrected one straight away, and its
-# systemMessage tells the user one is coming, before they paste.
+# user. It tells the agent to re-issue a corrected one straight away, and its
+# systemMessage tells the user to check the follow-up before they paste.
 #
 # Why it blocks the stop when every other guidance hook here only advises.
 # `decision: block` is how a Stop hook reaches the agent at all: its plain

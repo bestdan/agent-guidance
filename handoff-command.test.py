@@ -54,8 +54,11 @@ def verdict(text, **extra):
 def transcript(entries):
     path = os.path.join(tmp, "t%d.jsonl" % len(os.listdir(tmp)))
     with open(path, "w") as fh:
-        for kind, content in entries:
-            fh.write(json.dumps({"type": kind, "message": {"content": content}}) + "\n")
+        for kind, content, *meta in entries:
+            entry = {"type": kind, "message": {"content": content}}
+            if meta:
+                entry["isMeta"] = True
+            fh.write(json.dumps(entry) + "\n")
     return path
 
 
@@ -86,6 +89,14 @@ check("an unfenced `\\` continuation blocks", "block",
       verdict("Run:\n! gh api repos/o/r \\\n  --input f.json"))
 check("a second line in the hand-off's code block blocks", "block",
       verdict("```\n! cd /tmp/x\nmake install\n```"))
+check("a second line in a ~~~ block blocks", "block",
+      verdict("~~~\n! cd /tmp/x\nmake install\n~~~"))
+check("a one-line ~~~ hand-off is quiet", "quiet",
+      verdict("~~~\n! bash /tmp/claude/fix.sh\n~~~"))
+check("a ``` line inside ~~~ does not close it", "block",
+      verdict("~~~\n! cd /tmp/x\n```\nmake install\n~~~"))
+check("a second line in an unclosed code block blocks", "block",
+      verdict("```\n! cd /tmp/x\nmake install"))
 check("a one-line fenced hand-off is quiet", "quiet",
       verdict("```\n! bash /tmp/claude/fix.sh\n```"))
 check("a fenced block with no hand-off is quiet", "quiet",
@@ -115,6 +126,13 @@ cur = transcript([
 check("a hand-off after a tool result blocks", "block",
       fire({"hook_event_name": "Stop", "stop_hook_active": False,
             "transcript_path": cur})[1] and "block" or "quiet")
+meta = transcript([
+    ("user", "prompt"), said(incident),
+    ("user", "Another Claude session sent a message: ...", True), said("Done."),
+])
+check("a mid-turn isMeta entry does not end the turn", "block",
+      fire({"hook_event_name": "Stop", "stop_hook_active": False,
+            "transcript_path": meta})[1] and "block" or "quiet")
 check("a missing transcript is quiet", (0, None),
       fire({"hook_event_name": "Stop", "transcript_path": os.path.join(tmp, "no")}))
 check("an unparsable payload is quiet", (0, None), fire("not json"))

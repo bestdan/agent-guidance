@@ -17,6 +17,7 @@ LIMIT = 100
 # An inline code span whose content starts with "! ". A fenced line is handled
 # separately, because a fence can hold a continuation the span form cannot.
 SPAN = re.compile(r"`(! [^`\n]+)`")
+FENCE = re.compile(r"(`{3,}|~{3,})")
 
 
 def handoffs(text):
@@ -24,15 +25,26 @@ def handoffs(text):
     seen = set()
     lines = text.splitlines()
     in_fence = False
+    opener = ""
     fence_cmd = None
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith("```"):
-            if in_fence and fence_cmd is not None:
+        marker = FENCE.match(stripped)
+        # A block closes only on a run of its opener's character at least as
+        # long, with nothing after it, so a ``` line inside ~~~ stays content.
+        closes = (
+            in_fence and marker is not None
+            and marker.group(1)[0] == opener[0]
+            and len(marker.group(1)) >= len(opener)
+            and stripped == marker.group(1)
+        )
+        if closes or (not in_fence and marker is not None):
+            if closes and fence_cmd is not None:
                 cmd, extra = fence_cmd
                 if extra:
                     yield cmd, "it spans more than one line of its code block"
             in_fence = not in_fence
+            opener = "" if closes else marker.group(1)
             fence_cmd = None
             continue
         if in_fence:
@@ -47,6 +59,10 @@ def handoffs(text):
             continue
         for match in SPAN.finditer(line):
             yield from _check(match.group(1).strip(), seen)
+    # A fence left open at the end still renders as one code block, and a copy
+    # of it carries every line.
+    if in_fence and fence_cmd is not None and fence_cmd[1]:
+        yield fence_cmd[0], "it spans more than one line of its code block"
 
 
 def _check(cmd, seen):
@@ -79,7 +95,9 @@ def turn_text(hook):
                     continue
                 kind = entry.get("type")
                 content = (entry.get("message") or {}).get("content")
-                if kind == "user" and _is_prompt(content):
+                # A loaded skill or a subagent's report arrives mid-turn as an
+                # isMeta user entry, and does not start a new turn.
+                if kind == "user" and not entry.get("isMeta") and _is_prompt(content):
                     texts = []
                 elif kind == "assistant" and isinstance(content, list):
                     texts.extend(
@@ -130,7 +148,7 @@ def main():
         "decision": "block",
         "reason": reason,
         "systemMessage": "A hand-off command in that reply may break when "
-        "copied; a corrected one follows.",
+        "copied; check the follow-up before pasting it.",
     }, sys.stdout)
 
 
