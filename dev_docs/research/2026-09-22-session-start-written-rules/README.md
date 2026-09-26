@@ -86,6 +86,4 @@ that the hook ran is the directory's appearance, not the log line.
 whose "Revisit when" names a plugin being able to ship `.claude/rules/`. This
 record shows a hook-written user-level rules directory is a working variant of
 that for path-scoped content. The decision carries a dated callout pointing
-here; it was not superseded, because the `PreToolUse` hook still covers the
-new-file case a `paths:` rule misses, and the always-on payload cannot ride a
-rules directory at all.
+here.

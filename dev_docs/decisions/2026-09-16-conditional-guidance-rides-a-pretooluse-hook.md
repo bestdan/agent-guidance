@@ -14,7 +14,8 @@ convention: ../conventions.md
 > written the same way loads one session late. Measured in
 > `../research/2026-09-22-session-start-written-rules/`. This does not change
 > the decision: the hook here still covers the first write of a new file,
-> which a `paths:` rule misses, and it runs where `~/.claude` is not ours.
+> which a `paths:` rule is expected to miss (inferred, not measured), and it
+> runs where `~/.claude` is not ours.
 
 ## Context
 
