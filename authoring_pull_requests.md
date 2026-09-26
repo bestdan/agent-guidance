@@ -85,6 +85,22 @@ The title's grammar — the Conventional Commits prefix, the bracketed ticket ke
 `portable.md`, which every session already carries. This file restates none of it; if the two ever disagree,
 `portable.md` is right and this file is stale.
 
+## Closing keyword
+
+**A PR that finishes a tracked issue carries `Closes #<n>` on its own line in the body.** The key in the title is for
+the human scanning a list; the keyword in the body is what actually retires the issue, and the two are not
+interchangeable.
+
+On a board running the `gh-issue` handler this is the only completion path there is. `/sweep-for-complete`,
+`/complete-task`, `/archive-tasks` and `/reconcile-tasks` all decline to act on a `gh-issue` board _because_ they
+assume the keyword fired on merge — so a PR that omits it leaves the issue open with nothing downstream to catch it.
+
+The keyword must be the real one GitHub matches — `Closes`, `Fixes` or `Resolves`, followed by `#<n>`. A bare `#<n>`
+mention links without closing, which is correct when the PR references an issue it does not finish (a deferral, a
+related bug) and wrong when it finishes one.
+
+One PR closing several issues repeats the keyword per issue; `Closes #12, #13` closes only the first.
+
 ## Before you open it
 
 - Compare the changed files against what the work was meant to touch. A file nobody asked for is either scope creep or a
@@ -98,6 +114,11 @@ never a side effect of authoring a PR.
 
 ```markdown
 <!-- Title: imperative, <70 chars, grammar per the Git bullet in portable.md. -->
+
+Closes #<n>
+
+<!-- Own line, above the summary. Repeat the keyword per issue.
+     Delete if this PR finishes no tracked issue. -->
 
 ## Summary
 
