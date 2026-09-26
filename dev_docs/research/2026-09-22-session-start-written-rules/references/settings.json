@@ -1,0 +1,3 @@
+{
+  "hooks": { "SessionStart": [{ "hooks": [{ "type": "command", "command": "<scratchpad>/rules-exp/write-rule.sh" }] }] }
+}
