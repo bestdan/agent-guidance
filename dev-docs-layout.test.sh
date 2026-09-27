@@ -345,15 +345,24 @@ check "a dev_docs/ under a dot-directory is not a package" 0 "$(verdict "$fx")"
 # and the root-only rule reads the filesystem as check 1 does.
 fx="$(fixture package-git)"
 git -C "$fx" init -q
-printf 'packages/core/dev_docs/co-review/\n' > "$fx/.gitignore"
-mkdir -p "$fx/packages/core/dev_docs/co-review"
-: > "$fx/packages/core/dev_docs/co-review/.co-review.yml"
+printf 'packages/core/dev_docs/drafts/\n' > "$fx/.gitignore"
+mkdir -p "$fx/packages/core/dev_docs/drafts"
+printf -- '- [ ] unchecked\n' > "$fx/packages/core/dev_docs/drafts/scratch.md"
 record "$fx/packages/core/dev_docs/decisions" 2026-09-13-a-choice.md 2026-09-13 '## Revisit when'
-check "ignored skill config in a package passes in a repository" 0 "$(verdict "$fx")"
+check "ignored content in a package passes in a repository" 0 "$(verdict "$fx")"
 printf 'packages/core/dev_docs/tasks/\n' >> "$fx/.gitignore"
 mkdir -p "$fx/packages/core/dev_docs/tasks"
 : > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
 check "an ignored tasks/ in a package still fails in a repository" 1 "$(verdict "$fx")"
+
+# Every file git lists is filtered before the checks read it, and the package has
+# to be found anyway: a dot-entry under tasks/ is dropped as tooling.
+fx="$(fixture package-git-tasks-only)"
+rm -r "$fx/dev_docs"
+git -C "$fx" init -q
+mkdir -p "$fx/packages/core/dev_docs/tasks"
+: > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
+check "a package holding only tasks/.task-config.yml fails in a repository" 1 "$(verdict "$fx")"
 
 # --- 9. this repository's own dev_docs/ passes ---
 # The enforcing case. Everything above proves the checker is right; this one

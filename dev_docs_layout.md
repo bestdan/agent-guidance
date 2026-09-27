@@ -214,7 +214,9 @@ as needed. A package has only the directories it uses, and a package with no
 docs of its own has no `dev_docs/`.
 
 - **Root only:** `tasks/`, `.handoffs/` and `<skill>/` config. The tooling
-  that owns each resolves one location, so a package never has them. Repo-wide
+  that owns each resolves one location, so a package never has them. The
+  checker enforces the first two; review holds the third, because a skill's
+  directory is gitignored and the checker never sees it. Repo-wide
   material stays at the root too: development workflow, testing, CI, code
   style, product-scope decisions.
 - **Where a live file goes:** in a package when every code path it describes

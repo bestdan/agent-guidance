@@ -123,10 +123,13 @@ def git_listing(root: pathlib.Path):
         i = rel.parts.index("dev_docs")
         package = pathlib.Path(*rel.parts[:i])
         inner = pathlib.Path(*rel.parts[i:])
+        # Registered before the filter: a package whose only file is its
+        # tasks/.task-config.yml still has to reach check_root_only.
+        files = groups.setdefault(package, [])
         # A tracked file deleted in the working tree is still listed.
         if (root / rel).is_file() and rel.name not in FINDER_NOISE \
                 and not in_tool_entry(inner):
-            groups.setdefault(package, []).append(inner)
+            files.append(inner)
     return groups
 
 
