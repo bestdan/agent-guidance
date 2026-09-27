@@ -41,7 +41,7 @@
 # never had that limit, so before `if` gated the spawn it covered any depth;
 # the narrowing is what made the anchor matter.
 #
-# It emits a pointer, never the layout itself. dev_docs_layout.md is ~2,400
+# It emits a pointer, never the layout itself. dev_docs_layout.md is ~4,200
 # tokens and a second copy here would drift from the file the checker names in
 # its own failure output.
 #

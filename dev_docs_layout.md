@@ -202,6 +202,40 @@ Every repo with a `dev_docs/` has one. It is short: a table of the tracked
 directories this repo has, one line each on what this repo keeps there, and
 any exception this repo makes to this convention with the reason. It names
 this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
+In a monorepo it also lists each package's `dev_docs/`.
+
+## Packages in a monorepo
+
+A monorepo whose packages have subsystems of their own gives a package its own
+`<package>/dev_docs/`, so package-scoped conventions, decisions and designs do
+not sit at the root mixed with repo-wide material. Everything above applies to
+it unchanged: live `<topic>.md` files, `decisions/`, `designs/` and `research/`
+as needed. A package has only the directories it uses, and a package with no
+docs of its own has no `dev_docs/`.
+
+- **Root only:** `tasks/`, `.handoffs/` and `<skill>/` config. The tooling
+  that owns each resolves one location, so a package never has them. The
+  checker enforces the first two; review holds the third, because a skill's
+  directory is gitignored and the checker never sees it. Repo-wide
+  material stays at the root too: development workflow, testing, CI, code
+  style, product-scope decisions.
+- **Where a live file goes:** in a package when every code path it describes
+  is inside that package. One that spans packages goes at the root.
+- **Where a decision goes:** in the package whose code it constrains, linked
+  from any other package it mentions. A decision almost always names the
+  boundary it sits on, so the live-file test would send nearly every one to
+  the root.
+- **A package whose directory ships as an artifact keeps its docs at the
+  root.** A package copied wholesale to a public repo or into a release would
+  publish its `dev_docs/` with it. The root `dev_docs/README.md` names the
+  exception.
+- **Indexes:** the root `dev_docs/README.md` lists each package's `dev_docs/`;
+  a package's `dev_docs/README.md` indexes only its own directories. A
+  package's `decisions/`, `designs/` or `research/` README may be one line
+  pointing to the root's copy, so a repo does not carry one copy per package
+  to drift apart.
+- **`AGENTS.md`:** a package with an `AGENTS.md` of its own links its
+  package's `dev_docs/` from it, the way the root `AGENTS.md` links the root's.
 
 ## What never goes under `dev_docs/`
 
@@ -223,15 +257,20 @@ this file, `dev_docs_layout.md` at the plugin root, rather than restating it.
    that a bundle holds a `README.md` record and nothing outside `references/`,
    with no flat `YYYY-MM-DD-<slug>.md` beside a bundle of the same name;
    that a record's `created` matches its date; and that a decision has a
-   `## Revisit when` section. Undated subdirectories of `dev_docs/research/`
+   `## Revisit when` section. It finds every package's `dev_docs/` under the
+   root it is given and checks each the same way, except that a package's
+   holding `tasks/` or `.handoffs/` fails; a `dev_docs/` inside another
+   `dev_docs/` is not a package. Undated subdirectories of `dev_docs/research/`
    are skipped, because the `research-spike` skill owns and validates those —
    the date is what tells a bundle from a spike. Nothing under a `references/`
    tree is checked. Inside a repository it
    reads what git sees, so an ignored skill directory or plan never fails
-   locally what CI would pass. The `dev_docs/tasks/` check is the exception
-   and always reads the filesystem: an ignored plan directory is legitimate
+   locally what CI would pass, and a package's `dev_docs/` is found by the
+   files in it git sees. The `dev_docs/tasks/` check is the exception and
+   always reads the filesystem: an ignored plan directory is legitimate
    content there, and a stray file is stray whether or not anyone committed
-   it.
+   it. The package check for `tasks/` and `.handoffs/` reads it for the same
+   reason.
 
    A repo calls it as one entry in the suite it already has, a `*.test.sh` or
    a line in `check.sh`, and resolves the plugin root before the call:

@@ -125,7 +125,7 @@ than single-quoting, because a body is prose and will eventually contain an
 apostrophe.
 
 **A guidance hook names the file and stops.** It never inlines the content.
-`dev_docs_layout.md` is about 2,406 tokens, and it is out of the always-on
+`dev_docs_layout.md` is about 4,200 tokens, and it is out of the always-on
 payload because most sessions never need it. Inlining it one write at a time
 reintroduces exactly that cost. A second copy also drifts, and
 `scripts/dev-docs-layout.py` names the same file in its own failure output, so

@@ -295,7 +295,76 @@ printf 'dev_docs/tasks/*\n' > "$fx/.gitignore"
 mkdir -p "$fx/dev_docs/tasks/notes"
 check "the tasks/ rule reads the filesystem even when tasks/ is ignored" 1 "$(verdict "$fx")"
 
-# --- 8. this repository's own dev_docs/ passes ---
+# --- 8. a monorepo package's dev_docs/ ---
+# One call at the repository root has to cover every package, or a package added
+# after the suite was written goes unchecked. So the checker finds them itself,
+# and the rules it applies there are the root's minus the root-only entries.
+fx="$(fixture package-ok)"
+record "$fx/packages/core/dev_docs/decisions" 2026-09-13-a-choice.md 2026-09-13 '## Revisit when'
+printf 'See the root copy.\n' > "$fx/packages/core/dev_docs/decisions/README.md"
+printf '# Tax layer\n' > "$fx/packages/core/dev_docs/tax-layer.md"
+check "a package dev_docs/ laid out like the root passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture package-violation)"
+record "$fx/packages/core/dev_docs/designs" a-change.md 2026-09-13
+check "a violation in a package dev_docs/ fails" 1 "$(verdict "$fx")"
+check "the failure names the path from the repository root" ok \
+  "$(grep -q '^packages/core/dev_docs/designs/a-change.md: ' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture package-no-root)"
+rm -r "$fx/dev_docs"
+record "$fx/packages/core/dev_docs/designs" a-change.md 2026-09-13
+check "packages are checked when the root has no dev_docs/" 1 "$(verdict "$fx")"
+
+fx="$(fixture package-tasks)"
+mkdir -p "$fx/packages/core/dev_docs/tasks/foo_plan"
+: > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
+: > "$fx/packages/core/dev_docs/notes.md"
+check "tasks/ in a package fails; its tooling resolves one location" 1 "$(verdict "$fx")"
+check "the failure names the package's tasks/" ok \
+  "$(grep -q '^packages/core/dev_docs/tasks: ' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture package-handoffs)"
+record "$fx/packages/core/dev_docs/.handoffs" 2026-09-13-a-note.md 2026-09-13
+check ".handoffs/ in a package fails" 1 "$(verdict "$fx")"
+
+# A dev_docs/ below another one is part of the outer tree, not a second
+# package: the outer tree's rules judge it, so it fails as an undated
+# subdirectory of a record directory, and only once.
+fx="$(fixture package-nested-in-dev-docs)"
+record "$fx/dev_docs/designs/dev_docs/designs" 2026-09-13-a-change.md 2026-09-13
+check "a dev_docs/ inside a dev_docs/ is not a package" 1 "$(verdict "$fx")"
+check "it is reported once, as the outer tree's content" 1 \
+  "$(grep -c 'dev_docs/designs/dev_docs' "$fx.out")"
+
+fx="$(fixture package-dot-dir)"
+record "$fx/.claude/worktrees/x/dev_docs/designs" a-change.md 2026-09-13
+check "a dev_docs/ under a dot-directory is not a package" 0 "$(verdict "$fx")"
+
+# In a repository, git's view decides discovery as it decides everything else,
+# and the root-only rule reads the filesystem as check 1 does.
+fx="$(fixture package-git)"
+git -C "$fx" init -q
+printf 'packages/core/dev_docs/drafts/\n' > "$fx/.gitignore"
+mkdir -p "$fx/packages/core/dev_docs/drafts"
+printf -- '- [ ] unchecked\n' > "$fx/packages/core/dev_docs/drafts/scratch.md"
+record "$fx/packages/core/dev_docs/decisions" 2026-09-13-a-choice.md 2026-09-13 '## Revisit when'
+check "ignored content in a package passes in a repository" 0 "$(verdict "$fx")"
+printf 'packages/core/dev_docs/tasks/\n' >> "$fx/.gitignore"
+mkdir -p "$fx/packages/core/dev_docs/tasks"
+: > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
+check "an ignored tasks/ in a package still fails in a repository" 1 "$(verdict "$fx")"
+
+# Every file git lists is filtered before the checks read it, and the package has
+# to be found anyway: a dot-entry under tasks/ is dropped as tooling.
+fx="$(fixture package-git-tasks-only)"
+rm -r "$fx/dev_docs"
+git -C "$fx" init -q
+mkdir -p "$fx/packages/core/dev_docs/tasks"
+: > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
+check "a package holding only tasks/.task-config.yml fails in a repository" 1 "$(verdict "$fx")"
+
+# --- 9. this repository's own dev_docs/ passes ---
 # The enforcing case. Everything above proves the checker is right; this one
 # makes it bind.
 python3 "$check_py" "$self" > "$work/corpus.out" 2>&1
