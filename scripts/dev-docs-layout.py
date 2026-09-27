@@ -4,8 +4,15 @@
 Run: scripts/dev-docs-layout.py [ROOT]
 
 ROOT is the repository root and defaults to the current directory. A ROOT with
-no dev_docs/ has nothing to check and passes. Every violation is one line on
-stdout, `path: what is wrong`, and the exit status is 1 when there is any.
+no dev_docs/ anywhere under it has nothing to check and passes. Every violation
+is one line on stdout, `path: what is wrong` with the path relative to ROOT,
+and the exit status is 1 when there is any.
+
+A monorepo package's dev_docs/ (`<package>/dev_docs/`) is found without being
+named and gets every check below except the first; in its place, a package's
+dev_docs/ holding tasks/ or .handoffs/ fails, because the tooling that owns
+each resolves one location. A dev_docs/ inside another dev_docs/ is not a
+package: it is content of the outer tree, and the outer tree's checks judge it.
 
 The checks, each one the Enforcement section of dev_docs_layout.md names:
 
@@ -42,12 +49,16 @@ table -- in whatever shape and nesting the evidence came in.
 Which files count. Inside a git repository the checks read what git sees:
 tracked files plus untracked files that .gitignore does not exclude, so a
 skill's ignored config directory and a locally ignored plan never fail a check
-that CI would pass. Outside a repository, or when git is not on PATH, the
-directory is walked as is. Check 1 always walks the filesystem: an ignored
-plan directory is legitimate content there, and a stray file is stray whether
-or not anyone committed it. Neither reader descends into a dot-prefixed entry
-under tasks/: that entry belongs to a tool, so its contents are no check's to
-judge, and outside a repository nothing else would filter them out.
+that CI would pass. That includes discovery: a package's dev_docs/ is found by
+the files in it git sees, so one whose every file is ignored is not checked.
+Outside a repository, or when git is not on PATH, the directory is walked as
+is, without entering dot-prefixed directories. Check 1 always walks the
+filesystem: an ignored plan directory is legitimate content there, and a stray
+file is stray whether or not anyone committed it; the package check for tasks/
+and .handoffs/ reads the filesystem for the same reason. Neither reader
+descends into a dot-prefixed entry under tasks/: that entry belongs to a tool,
+so its contents are no check's to judge, and outside a repository nothing else
+would filter them out.
 """
 
 import datetime
@@ -69,14 +80,22 @@ CHECKBOX = re.compile(r"^\s*[-*+] \[ \]")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 CREATED = re.compile(r"^created:\s*(.*?)\s*$")
 REVISIT = re.compile(r"^## Revisit when\s*$")
+# Entries only the repository root's dev_docs/ may hold.
+ROOT_ONLY = ("tasks", ".handoffs")
 
 # macOS Finder writes this into any directory it displays, so it appears on a
 # clean checkout without anyone committing anything. Skipped by name.
 FINDER_NOISE = {".DS_Store"}
 
 
-def git_files(root: pathlib.Path):
-    """Paths under dev_docs/ that git sees, relative to root, or None if not a repo."""
+def git_listing(root: pathlib.Path):
+    """The dev_docs/ files git sees under root, grouped by the directory that
+    holds their dev_docs/, or None if root is not in a repository.
+
+    Returns {package: [path relative to package]}, where package is relative
+    to root and is `.` for the root's own dev_docs/. The first dev_docs
+    component of a path decides its package, so a dev_docs/ nested inside
+    another one is content of the outer tree rather than a package."""
     try:
         top = subprocess.run(
             ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
@@ -88,22 +107,43 @@ def git_files(root: pathlib.Path):
             return None
         out = subprocess.run(
             ["git", "-C", str(root), "ls-files", "-z", "--cached", "--others",
-             "--exclude-standard", "--", "dev_docs"],
+             "--exclude-standard", "--", ":(glob)**/dev_docs/**"],
             capture_output=True,
             check=True,
         ).stdout
     except (OSError, subprocess.CalledProcessError):
         return None
-    files = []
+    groups = {}
     for raw in out.split(b"\0"):
         if not raw:
             continue
         rel = pathlib.Path(os.fsdecode(raw))
+        # The pathspec only matches a dev_docs that has something below it, so
+        # its first occurrence is always a directory.
+        i = rel.parts.index("dev_docs")
+        package = pathlib.Path(*rel.parts[:i])
+        inner = pathlib.Path(*rel.parts[i:])
         # A tracked file deleted in the working tree is still listed.
         if (root / rel).is_file() and rel.name not in FINDER_NOISE \
-                and not in_tool_entry(rel):
-            files.append(rel)
-    return files
+                and not in_tool_entry(inner):
+            groups.setdefault(package, []).append(inner)
+    return groups
+
+
+def walked_listing(root: pathlib.Path):
+    """git_listing's shape, read from the filesystem. Dot-prefixed directories
+    are not entered: they belong to tools, and a harness's worktree under
+    .claude/ carries a whole second copy of the repository."""
+    groups = {}
+    for dirpath, dirnames, _ in os.walk(root):
+        if "dev_docs" in dirnames:
+            package = pathlib.Path(dirpath).relative_to(root)
+            groups[package] = walked_files(root / package)
+        # Not descending into dev_docs/ is what keeps a nested one from
+        # counting as a package; walked_files reads its whole tree.
+        dirnames[:] = [d for d in dirnames
+                       if d != "dev_docs" and not d.startswith(".")]
+    return groups
 
 
 def walked_files(root: pathlib.Path):
@@ -219,6 +259,17 @@ def check_tasks(root: pathlib.Path, report):
             report(rel, "only .task-config*.yml and <slug>.md cards belong loose under dev_docs/tasks/")
 
 
+def check_root_only(root: pathlib.Path, report):
+    """A package's dev_docs/ has no tasks/ and no .handoffs/: the tooling that
+    owns each resolves one location, the repository root's. Read from the
+    filesystem, like check 1, because both are usually gitignored."""
+    for name in ROOT_ONLY:
+        entry = root / "dev_docs" / name
+        if entry.exists():
+            report(entry.relative_to(root),
+                   f"{name}/ belongs only in the repository root's dev_docs/; see {CONVENTION}")
+
+
 def check_checkboxes(root: pathlib.Path, files, report):
     for rel in files:
         if (rel.suffix != ".md" or in_plan_dir(rel) or in_research_spike(rel)
@@ -319,30 +370,42 @@ def main(argv):
         print("Run: scripts/dev-docs-layout.py [ROOT]")
         return 0 if argv[1:] in (["-h"], ["--help"]) else 2
     root = pathlib.Path(argv[1] if len(argv) == 2 else ".").resolve()
-    if not (root / "dev_docs").is_dir():
+
+    listing = git_listing(root)
+    if listing is None:
+        listing = walked_listing(root)
+    # The root's dev_docs/ is checked even when git sees nothing in it: check 1
+    # reads the filesystem, and an ignored tasks/ is exactly where it looks.
+    if (root / "dev_docs").is_dir():
+        listing.setdefault(pathlib.Path("."), [])
+    if not listing:
         print(f"{root}: no dev_docs/, nothing to check")
         return 0
 
     violations = []
+    count = 0
+    for package in sorted(listing):
+        files = sorted(listing[package])
+        count += len(files)
+        base = root / package
 
-    def report(rel, message):
-        violations.append(f"{rel.as_posix()}: {message}")
+        def report(rel, message, package=package):
+            violations.append(f"{(package / rel).as_posix()}: {message}")
 
-    files = git_files(root)
-    if files is None:
-        files = walked_files(root)
-    files.sort()
-
-    check_tasks(root, report)
-    check_checkboxes(root, files, report)
-    check_records(root, files, report)
+        if package == pathlib.Path("."):
+            check_tasks(base, report)
+        else:
+            check_root_only(base, report)
+        check_checkboxes(base, files, report)
+        check_records(base, files, report)
 
     for v in violations:
         print(v)
     if violations:
         print(f"{len(violations)} layout violation(s); see {CONVENTION}")
         return 1
-    print(f"dev_docs/ layout ok ({len(files)} files)")
+    where = "" if len(listing) == 1 else f" across {len(listing)} dev_docs/ directories"
+    print(f"dev_docs/ layout ok ({count} files{where})")
     return 0
 
 
