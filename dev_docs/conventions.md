@@ -141,8 +141,9 @@ one text has to be the text
 **A pointer is emitted once per session, not once per write.** The script writes
 a zero-byte marker keyed on the payload's `session_id`, and speaks only when the
 marker is absent. A plan that writes nine records then pays for the paragraph
-once. The marker goes under `/tmp/claude` rather than the payload's
-`scratchpad_dir`, which the live probe did not receive. When the marker
+once. The marker goes under the payload's `scratchpad_dir`, which the harness
+cleans up with the session, and falls back to `/tmp/claude` when the field is
+absent, as it was on 2.1.274. When the marker
 directory cannot be written, emit anyway: repetition is a cheaper failure than
 silence (`decisions/2026-09-16-dev-docs-pointer-fires-once-per-session.md`).
 
