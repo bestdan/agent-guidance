@@ -28,6 +28,8 @@ rather than as a placeholder.
 | `skills/plugin-delivery`     | Claude Code, on demand                  | why a release may not have reached the session reading it, and what to do  |
 | `skills/authoring`           | Claude Code, at PR time                 | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
 | `skills/reviewing`           | Claude Code, when reviewing a change    | reads `writing_about_code.md` and `reviewing.md`                           |
+| `skills/consult`             | Claude Code, before asking the user     | briefs a fresh, blind consultant at the same model tier or higher          |
+| `agents/consultant.md`       | Claude Code, dispatched by `consult`    | read-only; returns a verdict, a calibrated confidence and the crux         |
 | `hooks/dev-docs-context.sh`  | Claude Code, before a `dev_docs/` write | names `dev_docs_layout.md` and the directory's `README.md`, once a session |
 | `hooks/gh-body-guard.sh`     | Claude Code, before every Bash call     | denies a free-text `gh` argument the shell would run a substitution inside |
 | `hooks/prose-context.sh`     | Claude Code, before a write or edit     | a tracker key in an added comment; insider prose on a markdown write       |

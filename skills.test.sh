@@ -43,9 +43,11 @@ check() {
 check "plugin-delivery skill is at skills/<name>/SKILL.md" ok \
   "$([ -f "$dir/skills/plugin-delivery/SKILL.md" ] && echo ok || echo missing)"
 
-# --- 2. every skill's front matter parses, and carries both required keys ---
+# --- 2. every skill's and agent's front matter parses, and carries both required keys ---
 # Iterating rather than naming plugin-delivery: a second skill added later
-# inherits this check instead of shipping unguarded.
+# inherits this check instead of shipping unguarded. agents/*.md takes the same
+# check: it is front matter the harness parses the same way, nothing else here
+# would notice it breaking, and it needs nothing a plain scalar cannot hold.
 #
 # `name` must match its directory, because they are two independent spellings of
 # the same identity and a mismatch is exactly the kind of drift nothing reports.
@@ -65,7 +67,7 @@ check "plugin-delivery skill is at skills/<name>/SKILL.md" ok \
 # is never the only check: PyYAML is not in the standard library and this repo's
 # CI installs nothing, so a check that leaned on it would quietly degrade to no
 # check at all on most machines.
-check "every skills/*/SKILL.md front matter is valid and carries name+description" ok \
+check "every skills/*/SKILL.md and agents/*.md front matter is valid and carries name+description" ok \
   "$(DIR="$dir" python3 - <<'PY'
 import os, sys
 
@@ -84,18 +86,30 @@ except ImportError:
 # one here takes the whole suite out with "unexpected EOF".
 INDICATORS = "[]{}|>&*!%@" + chr(96)
 
-root = os.path.join(os.environ["DIR"], "skills")
+d = os.environ["DIR"]
+root = os.path.join(d, "skills")
 if not os.path.isdir(root):
     print("no skills directory")
     sys.exit()
 
+# (label, path, the name its front matter must declare). A skill's name is its
+# directory; an agent's is its filename, which is how the harness keys each.
+items = [
+    (e, os.path.join(root, e, "SKILL.md"), e)
+    for e in sorted(os.listdir(root))
+    if os.path.isfile(os.path.join(root, e, "SKILL.md"))
+]
+agents = os.path.join(d, "agents")
+if os.path.isdir(agents):
+    items += [
+        ("agents/" + f, os.path.join(agents, f), f[:-3])
+        for f in sorted(os.listdir(agents))
+        if f.endswith(".md")
+    ]
+
 problems = []
-found = 0
-for entry in sorted(os.listdir(root)):
-    path = os.path.join(root, entry, "SKILL.md")
-    if not os.path.isfile(path):
-        continue
-    found += 1
+found = sum(1 for label, _, _ in items if not label.startswith("agents/"))
+for entry, path, want_name in items:
     with open(path) as f:
         text = f.read()
     # The front matter must OPEN the file: a leading blank line or a stray
@@ -148,7 +162,7 @@ for entry in sorted(os.listdir(root)):
         if not isinstance(loaded, dict):
             problems.append(entry + ": front matter is not a mapping")
             continue
-    if keys.get("name") != entry:
+    if keys.get("name") != want_name:
         problems.append(entry + ": name is " + repr(keys.get("name")))
     if not keys.get("description"):
         problems.append(entry + ": description is empty or missing")
@@ -170,7 +184,7 @@ PY
 # precisely the omission it is written to catch. Narrowing to the section is not
 # enough on its own either: the check must require a `|`-leading line, or a
 # sentence inside the section would stand in for the row.
-check "README's ships table names every skill" ok \
+check "README's ships table names every skill and agent" ok \
   "$(DIR="$dir" python3 - <<'PY'
 import os, re, sys
 
@@ -189,11 +203,14 @@ if not section:
     sys.exit()
 
 rows = [ln for ln in section.group(1).splitlines() if ln.lstrip().startswith("|")]
-missing = [
-    e for e in sorted(os.listdir(root))
+shipped = [
+    "skills/" + e for e in sorted(os.listdir(root))
     if os.path.isfile(os.path.join(root, e, "SKILL.md"))
-    and not any("skills/" + e in row for row in rows)
 ]
+agents = os.path.join(d, "agents")
+if os.path.isdir(agents):
+    shipped += ["agents/" + f for f in sorted(os.listdir(agents)) if f.endswith(".md")]
+missing = [s for s in shipped if not any(s in row for row in rows)]
 print("; ".join(missing) if missing else "ok")
 PY
 )"
