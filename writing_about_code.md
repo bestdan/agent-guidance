@@ -23,7 +23,7 @@ answer was yes has been made to do your work.
 ## End a hand-off on what the reader must do
 
 A report that hands work back — a task delivered, a review finished, an unattended run's summary — has two parts the
-reader needs, and they go at the two ends. The first line is the verdict: what happened, and how many items wait for
+reader needs. They go at the two ends. The first line is the verdict: what happened, and how many items wait for
 the reader. Everything addressed to the reader goes in one final section: each decision, question, check to run, and
 action to take. Nothing addressed to the reader sits between them.
 
@@ -31,14 +31,17 @@ The end is where a terminal leaves the reader. A long report is scrolled to its 
 went past on the way. So what changed, the review rounds, the evidence, and the process notes all go above the final
 section, never after it.
 
-- Order the final section by impact, and number its items so the reply can name one.
+- Order the final section by impact, and label its items by the list-label rule in `portable.md`, so the reply can name
+  one.
+- List every open item in the final section, but still ask one decision at a time. When several items need answers,
+  ask the most impactful one and walk the rest, as `portable.md` says.
 - Make each item stand alone. It carries the options and the consequence of each, so the reader can answer without
   scrolling up.
 - When nothing waits for the reader, say so in the verdict and omit the final section.
 
 This is lead-with-the-answer applied to a report, not an exception to it: the verdict still opens. It governs a report
-read once, at the end of a run. A document others will read top to bottom — a PR description, a memo, a decision
-record — keeps its open questions where its own template puts them.
+read once, at the end of a run. Some documents are read top to bottom: a PR description, a memo, a decision record.
+Each keeps its open questions where its own template puts them.
 
 ## Don't write insider prose
 
