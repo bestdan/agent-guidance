@@ -4,10 +4,16 @@
 #
 # What it catches, in list-labels.py beside this file: two numbered lists in one
 # reply that share a number, and a numbered list inside a numbered item. Both
-# leave a reply of "2" pointing at two items. Text in a code block does not
-# count. What it does not catch is a repeated letter, (a) in two lists: a lone
+# leave a reply of "2" pointing at two items. Text in a fenced code block does
+# not count. What it does not catch is a repeated letter, (a) in two lists: a lone
 # `i.` or `I.` at the start of a line reads as a letter, a roman numeral, or a
 # pronoun, so the portable.md bullet carries letters alone.
+#
+# Two rarer kinds of code still count as text: a fence inside a blockquote, and
+# a 4-space indented code block. Each costs a needless re-issue. Exempting the
+# indented block is the worse trade: a line indented 4 with no open list item is
+# also a nested list after a lazy continuation line, and skipping it would turn
+# that block into a miss that nothing reports.
 #
 # Why Stop, and why it blocks once: the same reasons as handoff-command.sh,
 # whose header gives them. The labels live in the reply text, which only Stop

@@ -69,9 +69,11 @@ Decisions for you
 2. For step 3, option (a) or (b)?
 3. Should I file Linear tickets?"""
 check("the incident reply blocks", "block", verdict(incident))
-fixed = incident.replace("\n1. Should", "\n(A) Should").replace(
-    "\n2. For", "\n(B) For").replace("\n3. Should", "\n(C) Should")
-check("the incident with lettered decisions is quiet", "quiet", verdict(fixed))
+fixed = incident.replace("\n1. Should", "\nQ1. Should").replace(
+    "\n2. For", "\nQ2. For").replace("\n3. Should", "\nQ3. Should")
+check("the incident with Q-prefixed decisions is quiet", "quiet", verdict(fixed))
+check("bold prefixed labels are quiet", "quiet",
+      verdict("1. a\n2. b\n\n**Q1.** c\n**Q2.** d"))
 
 check("one numbered list is quiet", "quiet", verdict("1. a\n2. b\n3. c"))
 check("a reply with no list is quiet", "quiet", verdict("Done. Tests pass."))
@@ -91,6 +93,12 @@ check("a numbered list inside a numbered item blocks", "block",
       verdict("1. a\n   1. sub\n   2. sub\n2. b"))
 check("a numbered list under a bullet under a numbered item blocks", "block",
       verdict("1. a\n   - x\n     1. sub\n2. b"))
+check("numbered lists under separate bullets share a number and block", "block",
+      verdict("- X\n  1. a\n- Y\n  1. b"))
+check("a list under a bullet then a list at the margin blocks", "block",
+      verdict("- theme:\n  1. a\n  2. b\n\n1. question"))
+check("a list under a bullet then a list continuing its count is quiet", "quiet",
+      verdict("- theme:\n  1. a\n  2. b\n\n3. question"))
 check("lettered items inside a numbered item are quiet", "quiet",
       verdict("1. a\n   a. sub\n   b. sub\n2. b\n   a. sub"))
 check("bullets inside numbered items are quiet", "quiet",

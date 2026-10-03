@@ -52,7 +52,7 @@ def findings(text):
         if number is not None:
             if any(numbered for _, numbered in stack):
                 nested = True
-            elif not stack:
+            else:
                 if number in seen:
                     restarted = True
                 seen.add(number)
@@ -77,16 +77,17 @@ def main():
         "The user cannot answer that reply by number, because "
         + " and ".join(found) + ".\n"
         "Re-issue the reply so that each label names one item. Number one "
-        "list at most. Label a second list (A), (B), (C), and items inside an "
-        "item a, b, c, so that `3b` names one item. Say that the earlier "
+        "list at most. Give each other list a prefix for its kind, Q1 for "
+        "questions or F1 for findings, and label items inside an item a, b, "
+        "c, so that `3b` names one item. Say that the earlier "
         "version is replaced. The rule is the `Give each list label in a "
         "reply one meaning` bullet in portable.md."
     )
     json.dump({
         "decision": "block",
         "reason": reason,
-        "systemMessage": "That reply reused a list number; a relabelled "
-        "version follows, so answer that one.",
+        "systemMessage": "That reply reused a list number; check the "
+        "follow-up before answering by number.",
     }, sys.stdout)
 
 

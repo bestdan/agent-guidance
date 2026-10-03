@@ -13,8 +13,8 @@ numbered steps and then three numbered decisions, so "2" named a step and a
 decision at once. The user could not answer it by number.
 
 `portable.md` says a rule a machine can decide belongs in a check, once the
-corpus has been measured. The shape is machine detectable: a numbered list item
-at the margin whose number already appeared, or a numbered item inside a
+corpus has been measured. The shape is machine detectable: a numbered item with
+no numbered ancestor whose number already appeared, or a numbered item inside a
 numbered item. A scan of one laptop's transcripts on 2026-10-03 ran the check
 over the final message of each turn, which is what `last_assistant_message`
 carries. Of 1,987 turns, 299 held a numbered list and 13 were flagged. A sample
@@ -38,7 +38,7 @@ bullet carries letters.
 - Good, because a reply that cannot be answered by number is re-issued before
   the user answers it.
 - Bad, because the re-issue repeats the reply, and the earlier version stays on
-  screen. The `systemMessage` tells the user to answer the later one.
+  screen. The `systemMessage` tells the user to check the follow-up.
 - Bad, because two procedures under separate headings, each numbered from 1,
   are flagged. The user can name one of them by heading, so this is a false
   positive. It was one case in the sample, and the relabel costs one turn.

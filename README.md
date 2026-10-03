@@ -37,10 +37,10 @@ rather than as a placeholder.
 | `scripts/dev-docs-layout.py` | any repo's check suite                  | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
-Claude Code's `SessionStart`, and the three hooks above the two reply checks on `PreToolUse`, across
+Claude Code's `SessionStart`, and the hooks that run before a call on `PreToolUse`, across
 two matchers: `Write|Edit` carries the `dev_docs/` pointer and the prose
-checks, and `Bash` carries the `gh` guard. It registers the hand-off and
-list-label checks on `Stop`, because only that event sees the reply text. Each hook is a shell wrapper beside a
+checks, and `Bash` carries the `gh` guard. It registers the hooks that
+run when a reply ends on `Stop`, because only that event sees the reply text. Each hook is a shell wrapper beside a
 `.py` file that holds its program. The root `plugin.json` follows the
 [Agent Plugins](https://agent-plugins.org) layout for harnesses that read it.
 
