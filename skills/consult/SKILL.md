@@ -18,8 +18,9 @@ most of what follows protects it.
 ## Which decisions to consult on
 
 Take every decision you were about to put to the user, except the ones no agent
-can answer: a fact about the user (a budget, a deadline, who owns something) or
-a pure preference. Those go to the user directly, without a consult.
+can answer: a fact about the user (a budget, a deadline, who owns something),
+what they intend or require, or a pure preference. Those go to the user
+directly, without a consult.
 
 Outside that, consult on your own call when you have a concrete reason to doubt
 it: a second fix attempt has failed, you are choosing between approaches just
@@ -71,7 +72,8 @@ Verified by me: nothing beyond the file names. Treat the rest as claims.
 
 ## 3. Pick the model: same tier or higher
 
-Read your own model from your system prompt and pass the `model` override. The
+Read your own model from your system prompt and pass the `model` override. If
+it names more than one model, the line giving your exact model ID wins. The
 tiers, lowest to highest: `haiku`, `sonnet`, `opus`, `fable`. Pass the next
 tier up when there is one; at the top tier, pass your own. Never pass a lower
 tier — a weaker consultant's agreement is not a second opinion.
@@ -108,9 +110,11 @@ agreement when the consultant is at 70% or above, and as disagreement below.
 Anything pushed or published, data deleted, a message sent, an interface others
 depend on, or money spent is hard to undo, however confident both of you are.
 
-One consult per decision. Rewording the brief and asking again after a
-disagreement is shopping for agreement, which defeats the point. Consult again
-only when a materially new fact turns up, and report both answers.
+One consult per batch: every decision headed to the user goes in a single
+brief. Do not consult the same decision again to get a different answer.
+Rewording the brief and asking again after a disagreement is shopping for
+agreement, which defeats the point. Consult again only when a materially new
+fact turns up, and report both answers.
 
 ## 5. Report it
 
