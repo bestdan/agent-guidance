@@ -50,13 +50,14 @@
 # for nine copies of the same paragraph. The marker file is keyed on the
 # session id so a second session in the same repo still gets it.
 #
-# The marker lands in /tmp/claude in practice, not in the payload's
-# scratchpad_dir. The hooks reference documents that field on the PreToolUse
-# payload, and a live probe against 2.1.274 did not receive it: the marker for
-# session f2761851 appeared under /tmp/claude, which is the fallback. So the
-# fallback is the ordinary path and scratchpad_dir is the optimisation, which is
-# the reverse of how it reads. The cost is that a zero-byte marker per session
-# accumulates in /tmp/claude, where nothing prunes it.
+# The marker lands in the payload's scratchpad_dir, a session-scoped directory
+# the harness makes and cleans up, and /tmp/claude is the fallback for a
+# payload without the field. Measured 2026-09-22: nine markers under
+# scratchpad_dir across five projects, and none in /tmp/claude with a session
+# id for a name. Re-measured 2026-10-03 on 2.1.288: ten, and none. It was not
+# always so: a live probe against 2.1.274 on 2026-09-16 did not receive the
+# field, and the marker for session f2761851 appeared under /tmp/claude. Which
+# version began sending it is not narrowed by either measurement.
 #
 # Never blocks. `permissionDecision: deny` was the alternative and is wrong
 # here: the layout is guidance, not a safety rule, and the checker
