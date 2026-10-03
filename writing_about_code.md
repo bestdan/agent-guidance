@@ -20,6 +20,26 @@ came for.
 Never build to a conclusion. An explanation is not a story, and a reader who has to reach the end to learn whether the
 answer was yes has been made to do your work.
 
+## End a hand-off on what the reader must do
+
+A report that hands work back — a task delivered, a review finished, an unattended run's summary — has two parts the
+reader needs, and they go at the two ends. The first line is the verdict: what happened, and how many items wait for
+the reader. Everything addressed to the reader goes in one final section: each decision, question, check to run, and
+action to take. Nothing addressed to the reader sits between them.
+
+The end is where a terminal leaves the reader. A long report is scrolled to its bottom, and whatever sat in the middle
+went past on the way. So what changed, the review rounds, the evidence, and the process notes all go above the final
+section, never after it.
+
+- Order the final section by impact, and number its items so the reply can name one.
+- Make each item stand alone. It carries the options and the consequence of each, so the reader can answer without
+  scrolling up.
+- When nothing waits for the reader, say so in the verdict and omit the final section.
+
+This is lead-with-the-answer applied to a report, not an exception to it: the verdict still opens. It governs a report
+read once, at the end of a run. A document others will read top to bottom — a PR description, a memo, a decision
+record — keeps its open questions where its own template puts them.
+
 ## Don't write insider prose
 
 You write from inside the work, where the context is free. It is not free where it is read. Two shapes follow from
