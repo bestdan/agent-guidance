@@ -218,6 +218,52 @@ with open(path, "w") as f:
 PY
 check pass "quoted name still accepted" "$target"
 
+# --- (i) an agent's front matter is unparseable ---
+# agents/*.md rides the same check as the skills; this proves it is reached,
+# rather than iterated over an empty list.
+target="$(fixture unparseable-agent)"
+mutate "$target/agents/consultant.md" <<'PY'
+import os
+
+path = os.environ["OUT"]
+with open(path) as f:
+    src = f.read()
+assert src.startswith("---\n"), "consultant.md no longer opens with front matter"
+with open(path, "w") as f:
+    f.write("---\nbroken: [\n" + src[4:])
+PY
+check fail "agent front matter does not parse" "$target"
+
+# --- (j) an agent's name disagrees with its filename ---
+target="$(fixture agent-name-drift)"
+mutate "$target/agents/consultant.md" <<'PY'
+import os
+
+path = os.environ["OUT"]
+with open(path) as f:
+    src = f.read()
+old = "\nname: consultant\n"
+assert src.count(old) == 1, "consultant.md no longer declares name on its own line"
+with open(path, "w") as f:
+    f.write(src.replace(old, "\nname: consult\n"))
+PY
+check fail "agent name disagrees with its filename" "$target"
+
+# --- (k) an agent's ships-table row is deleted ---
+target="$(fixture no-agent-row)"
+mutate "$target/README.md" <<'PY'
+import os
+
+path = os.environ["OUT"]
+with open(path) as f:
+    lines = f.readlines()
+kept = [ln for ln in lines if not (ln.startswith("|") and "agents/consultant.md" in ln)]
+assert len(kept) == len(lines) - 1, "expected exactly one ships-table row to remove"
+with open(path, "w") as f:
+    f.writelines(kept)
+PY
+check fail "agent ships-table row deleted" "$target"
+
 printf '%d mutations checked, %s\n' "$checked" \
   "$([ "$fail" = 0 ] && echo 'skills-selftest.test.sh: all passed' || echo 'skills-selftest.test.sh: FAILURES above')"
 exit "$fail"
