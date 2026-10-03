@@ -86,7 +86,7 @@ whose free-text flag would run a shell substitution, and
 and, on a markdown write, quotes the insider-prose rule once a session and
 reports a possible dangling reference.
 
-One hook rides `Stop` instead: `hooks/handoff-command.sh` reports a `! <command>`
+Hooks whose trigger is in the reply text ride `Stop` instead. `hooks/handoff-command.sh` reports a `! <command>`
 hand-off in the reply that just ended when the command will not survive a copy.
 Its trigger is in the reply text, and no `PreToolUse` event sees that text.
 `Stop` fires after the reply is on screen, so the hook cannot keep a bad command
@@ -94,6 +94,12 @@ from the user. It returns `decision: block`, the one output of a `Stop` hook tha
 reaches the agent, and the agent re-issues the command at once. It blocks once:
 the forced turn carries `stop_hook_active: true`, and the hook stays quiet then
 (`decisions/2026-09-25-handoff-command-check-rides-a-stop-hook/`).
+
+`hooks/list-labels.sh` reports a reply in which a list number names
+two items: two numbered lists that share a number, or a numbered list inside a
+numbered item. It reuses the hand-off check's event and its block-once contract. Each `Stop`
+hook reads the reply through `hooks/stop_turn.py`
+(`decisions/2026-10-03-list-label-check-blocks-like-the-handoff-check.md`).
 
 The route is Claude Code only, because Codex registers `SessionStart` alone. A
 hook is therefore an upgrade on a route both harnesses have, never the only
