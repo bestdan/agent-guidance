@@ -4,135 +4,36 @@ purpose: conventions for this directory
 source: bestdan/agent-guidance dev_docs/.handoffs/README.md
 ---
 
-# Handoffs
+# Handoffs (legacy)
 
-Notes from one agent session to the next, for when a fresh session is what you
-wanted.
+New handoffs do not go here. Since 2026-10-14 they live in
+`$HOME/src/worktrees/<repo>/.handoffs/`, or under `<root>/<repo>/.handoffs/` when
+the machine-local guidance puts worktrees under a different root, beside the
+repo's worktrees and outside
+every checkout, so that tearing down a worktree cannot delete a note written for
+the session that follows it. The conventions are in the plugin's
+`agent-guidance:handoff` skill, `skills/handoff/conventions.md`. `portable.md` carries the rule, under
+"A handoff is a file".
 
-A handoff is not a crash report. It exists because there was a natural place to
-start over: the previous session's context was full, or a task finished and its
-PR merged so the next piece should start clean off `main`, or any other reason
-to `/clear` and begin again. Clearing wipes the session's memory of everything
-that was not written down — a handoff is what survives that on purpose.
+A note already here is still read where it is. When its work is done, delete
+it, as its own closing line says.
 
-## What belongs here
+## Why this directory is still ignored, twice
 
-Start with the aim: what the work is trying to achieve and why, not just where
-it stopped. A session that knows the goal can re-derive a plan; one that only
-knows the last step cannot tell a detour from the route.
-
-Then whatever the next session cannot reconstruct from the repository: what was
-already tried and rejected, which measurement is load-bearing, which constraint
-is not obvious from the code, and the next concrete step. Anything that _is_
-reconstructable — commit history, a PR, a tracker issue — goes in as a link
-rather than a copy, because a copy of live state rots and nothing invalidates
-it.
-
-## Local, transient workstreams
-
-Handoffs are how a workstream runs without a ticket. Plenty of work is small
-enough that a tracker issue would cost more than it returns, including a local
-`dev_docs/tasks/<name>_plan/` that is deliberately never pushed — a handoff is
-what carries that between sessions.
-
-The state-locality rule in `portable.md` still holds in general: state belongs
-where its owner keeps it, and a handoff is a poor tracker for anything that
-outlives a few sessions. Overriding that is allowed,
-and it works because it is deliberate — say in the file that you are doing it
-and why, so the next session inherits a decision instead of guessing at an
-accident.
-
-## Naming
-
-`YYYY-MM-DD-<short-topic>.md`. A file that records a moment carries its date in
-the name; that is what makes a stale handoff obviously stale rather than quietly
-wrong.
-
-## Front matter
-
-Obsidian YAML:
-
-```yaml
----
-created: 2026-09-06
-aim: "what this work is for, in a sentence"
-branch: bestdan/<branch> # omit if none yet, or name the trunk branch to merge into
-task: PRE-123 # or a tracker URL; omit for a local workstream
-pr: https://github.com/bestdan/<repo>/pull/<n> # once one exists
-expires: "when #713 merges"
----
-```
-
-**Quote any value containing `#`.** In unquoted YAML a `#` after whitespace
-starts a comment, so `expires: when #713 merges` parses as `when` and silently
-loses the condition — which bites exactly when the condition is an issue or PR
-number. Verified with `yaml.safe_load`.
-
-`expires` is prose, not a date: "when #713 merges", "when the mini runs the
-nightly successfully once". It is the sentence that tells the next session
-whether the file still describes reality.
-
-## Every handoff ends by deleting itself
-
-Close each one with an explicit instruction to the reading agent, because an
-agent that is not told to clean up will not:
-
-> **When the work described above is done, delete this file.** It is a handoff,
-> not a record. If what it says is worth keeping, it belongs in a commit
-> message, a PR body, a decision under `dev_docs/decisions/`, a convention
-> under `dev_docs/`, or the tracker — move it there first, then delete this
-> file.
-
-A directory of stale handoffs is worse than an empty one: nothing marks which of
-them still describes reality, so the next session reads all of them and trusts
-none.
-
-## Finding them
-
-Nothing surfaces these automatically. The directory is hidden, so `rg` and `fd`
-skip it by default, and `.gitignore` keeps it out of `git status` — so a session
-that does not already know to look here will not stumble on the files. Check
-this directory when you start work, and pass `-uu` (ripgrep) or `-HI` (fd) when
-searching for one.
-
-## Why this directory is ignored twice
-
-`.gitignore` keeps handoffs out of `git status` and out of commits.
-`dprint.json` excludes them separately, and that entry is not redundant —
-verified 2026-09-12 in `bestdan/agent-guidance` by dropping an unformatted
-file into this directory and running `dprint check`, which found it. A dprint
-`includes` of `**/*.{md,json,jsonc}` matches dot-prefixed paths, so without
-the exclude every handoff has to be dprint-clean or the format check fails.
-Without the gitignore entry dprint sees these files again; without the dprint
-entry the formatting protection is an invisible side effect of the gitignore.
-Keep both.
-
-The layout checker, `scripts/dev-docs-layout.py` in the plugin, reads what
-git sees, so it never checks a handoff: an unchecked `- [ ]` here will not
-fail the stray-checkbox rule. That is a consequence of the ignore, not a
-licence to keep a backlog here.
+`.gitignore` keeps any note left here out of `git status` and out of commits.
+`dprint.json` excludes them separately, because a dprint `includes` of
+`**/*.{md,json,jsonc}` matches dot-prefixed paths and would fail the format
+check on an unformatted note. Both entries stay until no repo holds notes here.
 
 ## Why this one file is tracked
 
-This README was added with `git add -f`, against both rules above, because the
-conventions have to reach the next machine and the next session — guidance that
-exists only where it was written is not guidance. Git applies `.gitignore` only
-to untracked files, so it stays tracked with no negation pattern.
-
-Editing it later has one wrinkle worth knowing before it wastes your time:
-`git add dev_docs/.handoffs/README.md` is **refused**, because the pathspec
-names an ignored directory, and the hint it prints tells you to force it. You
-usually should not. `git add -A` and `git commit -a` stage the change normally —
-a tracked file's modifications are not subject to the ignore rules. Reach for
-`-f` only when adding a genuinely new file here, which should be close to never.
-
-Every other file here stays untracked, and that asymmetry is the point: the
-conventions are shared, the handoffs are not.
+This README stays tracked so that a session finding the directory learns where
+handoffs went. It was added with `git add -f`, and Git applies `.gitignore` only
+to untracked files, so it needs no negation pattern. `git add dev_docs/.handoffs/README.md`
+is refused, because the pathspec names an ignored directory; `git add -A` and
+`git commit -a` stage a change to it normally.
 
 ## Copies
 
-This is the canonical copy, as `dev_docs_layout.md` says of every directory
-README here. A repo that uses `.handoffs/` copies this file, keeps the
-`source:` line, and puts anything specific to that repo in its own
-`dev_docs/README.md` rather than in the copy. The conventions above are what
-the copies are meant to share; when one changes, change it here first.
+A repo that copied the earlier version of this file keeps its `source:` line
+and can replace its copy with this one.

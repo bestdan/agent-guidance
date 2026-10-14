@@ -20,7 +20,7 @@ came for.
 Never build to a conclusion. An explanation is not a story, and a reader who has to reach the end to learn whether the
 answer was yes has been made to do your work.
 
-## End a hand-off on what the reader must do
+## End a report on what the reader must do
 
 A report that hands work back — a task delivered, a review finished, an unattended run's summary — has two parts the
 reader needs. They go at the two ends. The first line is the verdict: what happened, and how many items wait for

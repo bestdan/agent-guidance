@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests hooks/handoff-command.sh. Run by handoff-command.test.sh.
+"""Tests hooks/copyable-command.sh. Run by copyable-command.test.sh.
 
 Reads the hook under test from HOOK and the repo root from ROOT, both set by
 the wrapper, and prints one ok/FAIL line per case plus a failure count.
@@ -15,7 +15,7 @@ import tempfile
 hook = os.environ["HOOK"]
 root = os.environ["ROOT"]
 fails = 0
-tmp = tempfile.mkdtemp(prefix="handoff-command.")
+tmp = tempfile.mkdtemp(prefix="copyable-command.")
 
 
 def check(name, want, got):
@@ -73,8 +73,8 @@ incident = ("! gh api repos/o/r/pulls/60117/reviews --method POST --input "
             "/private/tmp/claude-502/-Users-x-src-retail/12a9876b-42e5-465f-"
             "ac24-8a43d17a93df/scratchpad/review.json")
 check("the incident command blocks", "block", verdict("Run this:\n\n" + incident))
-check("a short hand-off is quiet", "quiet", verdict("Run `! gh auth login` first."))
-check("a reply with no hand-off is quiet", "quiet", verdict("Done. Tests pass."))
+check("a short command is quiet", "quiet", verdict("Run `! gh auth login` first."))
+check("a reply with no command is quiet", "quiet", verdict("Done. Tests pass."))
 
 # The boundary. 100 characters fit; 101 do not.
 at = "! echo " + "x" * 93
@@ -96,19 +96,19 @@ check("a `\\` continuation blocks even when short", "block",
       verdict("```\n! gh api repos/o/r \\\n  --input f.json\n```"))
 check("an unfenced `\\` continuation blocks", "block",
       verdict("Run:\n! gh api repos/o/r \\\n  --input f.json"))
-check("a second line in the hand-off's code block blocks", "block",
+check("a second line in the command's code block blocks", "block",
       verdict("```\n! cd /tmp/x\nmake install\n```"))
 check("a second line in a ~~~ block blocks", "block",
       verdict("~~~\n! cd /tmp/x\nmake install\n~~~"))
-check("a one-line ~~~ hand-off is quiet", "quiet",
+check("a one-line ~~~ command is quiet", "quiet",
       verdict("~~~\n! bash /tmp/claude/fix.sh\n~~~"))
 check("a ``` line inside ~~~ does not close it", "block",
       verdict("~~~\n! cd /tmp/x\n```\nmake install\n~~~"))
 check("a second line in an unclosed code block blocks", "block",
       verdict("```\n! cd /tmp/x\nmake install"))
-check("a one-line fenced hand-off is quiet", "quiet",
+check("a one-line fenced command is quiet", "quiet",
       verdict("```\n! bash /tmp/claude/fix.sh\n```"))
-check("a fenced block with no hand-off is quiet", "quiet",
+check("a fenced block with no command is quiet", "quiet",
       verdict("```\n" + "y" * 150 + "\nsecond line\n```"))
 check("a line that only mentions `!` is quiet", "quiet",
       verdict("Prefix with ! to run it; " + "z" * 120))
@@ -119,20 +119,20 @@ check("stop_hook_active silences it", "quiet",
       verdict(incident, stop_hook_active=True))
 
 # The transcript path, for a payload with no last_assistant_message. Only the
-# turn that just ended counts: a long hand-off from an earlier turn was already
+# turn that just ended counts: a long command from an earlier turn was already
 # reported then. A tool result is a user entry too, and must not end the turn.
 old = transcript([
     ("user", "first prompt"), said(incident),
     ("user", "second prompt"), said("All short here."),
 ])
-check("an earlier turn's hand-off is quiet", "quiet",
+check("an earlier turn's command is quiet", "quiet",
       fire({"hook_event_name": "Stop", "stop_hook_active": False,
             "transcript_path": old})[1] and "block" or "quiet")
 cur = transcript([
     ("user", "prompt"), said("Checking."),
     ("user", [{"type": "tool_result", "content": "x"}]), said(incident),
 ])
-check("a hand-off after a tool result blocks", "block",
+check("a command after a tool result blocks", "block",
       fire({"hook_event_name": "Stop", "stop_hook_active": False,
             "transcript_path": cur})[1] and "block" or "quiet")
 meta = transcript([
@@ -157,12 +157,12 @@ with open(os.path.join(root, "hooks", "hooks.json")) as fh:
     registered = json.load(fh)["hooks"].get("Stop", [])
 commands = [h.get("command", "") for g in registered for h in g.get("hooks", [])]
 check("hooks.json registers it on Stop", True,
-      any(c.endswith("/hooks/handoff-command.sh") for c in commands))
+      any(c.endswith("/hooks/copyable-command.sh") for c in commands))
 
 # A wrapper whose program is gone must still exit 0 and say nothing: a Stop
 # hook that failed closed would hold every turn in every session open.
-lone_dir = tempfile.mkdtemp(prefix="handoff-command-lone.")
-lone = os.path.join(lone_dir, "handoff-command.sh")
+lone_dir = tempfile.mkdtemp(prefix="copyable-command-lone.")
+lone = os.path.join(lone_dir, "copyable-command.sh")
 shutil.copy(hook, lone)
 check("a wrapper with no program is quiet", (0, None),
       fire({"hook_event_name": "Stop", "last_assistant_message": incident}, lone))

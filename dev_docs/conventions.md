@@ -86,8 +86,8 @@ whose free-text flag would run a shell substitution, and
 and, on a markdown write, quotes the insider-prose rule once a session and
 reports a possible dangling reference.
 
-Hooks whose trigger is in the reply text ride `Stop` instead. `hooks/handoff-command.sh` reports a `! <command>`
-hand-off in the reply that just ended when the command will not survive a copy.
+Hooks whose trigger is in the reply text ride `Stop` instead. `hooks/copyable-command.sh` reports a `! <command>`
+in the reply that just ended when the command will not survive a copy.
 Its trigger is in the reply text, and no `PreToolUse` event sees that text.
 `Stop` fires after the reply is on screen, so the hook cannot keep a bad command
 from the user. It returns `decision: block`, the one output of a `Stop` hook that
@@ -97,9 +97,18 @@ the forced turn carries `stop_hook_active: true`, and the hook stays quiet then
 
 `hooks/list-labels.sh` reports a reply in which a list number names
 two items: two numbered lists that share a number, or a numbered list inside a
-numbered item. It reuses the hand-off check's event and its block-once contract. Each `Stop`
+numbered item. It reuses the command-copy check's event and its block-once contract. Each `Stop`
 hook reads the reply through `hooks/stop_turn.py`
 (`decisions/2026-10-03-list-label-check-blocks-like-the-handoff-check.md`).
+
+`hooks/handoff-inline.sh` reports a handoff pasted into the reply instead of
+written to a file: a fenced block or blockquote of more than three lines that
+addresses an agent picking up work. It rides the same event and block-once
+contract. Its cue phrases are a judgment, and "A hook when the trigger is
+mechanical; a skill when it is a judgment" below gives a judgment to a skill, so
+the hook is a backstop behind the `agent-guidance:handoff` skill and the
+`portable.md` bullet, not a replacement for them
+(`decisions/2026-10-14-handoff-means-a-file.md`).
 
 The route is Claude Code only, because Codex registers `SessionStart` alone. A
 hook is therefore an upgrade on a route both harnesses have, never the only

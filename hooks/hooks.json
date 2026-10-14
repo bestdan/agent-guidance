@@ -15,11 +15,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/handoff-command.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/copyable-command.sh"
           },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/list-labels.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/handoff-inline.sh"
           }
         ]
       }
