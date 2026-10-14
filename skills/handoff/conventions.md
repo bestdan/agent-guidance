@@ -106,5 +106,6 @@ so no search of the checkout finds it. Look in it when you start work in a
 repo, and before writing a new handoff, in case one for the same work exists.
 
 A repo may still hold notes in its own `dev_docs/.handoffs/`, where handoffs
-lived before 2026-10-14. Read them there; write new ones to the directory
-above.
+lived before 2026-10-14. When you find one, move it to the directory above if
+its work is still live, or delete it by its closing line if not. That folder's
+`README.md` stays.

@@ -15,8 +15,13 @@ the session that follows it. The conventions are in the plugin's
 `agent-guidance:handoff` skill, `skills/handoff/conventions.md`. `portable.md` carries the rule, under
 "A handoff is a file".
 
-A note already here is still read where it is. When its work is done, delete
-it, as its own closing line says.
+When you find a note here other than this README, move it. One whose work is
+still live (its `expires:` condition has not happened) goes to
+`$HOME/src/worktrees/<repo>/.handoffs/`, where the next session will look for
+it. One whose work is done gets deleted, as its own closing line says, once
+anything worth keeping has moved somewhere durable. The directory is gitignored,
+so every checkout on every machine has its own notes. Moving them when found is
+how each one empties without a task per machine.
 
 ## Why this directory is still ignored, twice
 
