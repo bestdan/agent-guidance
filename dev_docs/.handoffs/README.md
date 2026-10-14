@@ -7,7 +7,9 @@ source: bestdan/agent-guidance dev_docs/.handoffs/README.md
 # Handoffs (legacy)
 
 New handoffs do not go here. Since 2026-10-14 they live in
-`$HOME/src/worktrees/<repo>/.handoffs/`, beside the repo's worktrees and outside
+`$HOME/src/worktrees/<repo>/.handoffs/`, or under `<root>/<repo>/.handoffs/` when
+the machine-local guidance puts worktrees under a different root, beside the
+repo's worktrees and outside
 every checkout, so that tearing down a worktree cannot delete a note written for
 the session that follows it. The conventions are in the plugin's
 `agent-guidance:handoff` skill, `skills/handoff/conventions.md`. `portable.md` carries the rule, under

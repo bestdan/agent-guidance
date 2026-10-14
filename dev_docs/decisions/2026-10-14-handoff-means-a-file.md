@@ -72,8 +72,8 @@ or the line threshold.
 
 ## Confirmation
 
-`handoff-inline.test.sh` covers the #96 shape, the three-line boundary, blocks
-with no cue, and the wiring. The `portable.md` bullet holds it on Codex, which
+`handoff-inline.test.sh` covers the #96 shape, the three-line boundary, long
+blocks with no cue staying quiet, and the wiring. The `portable.md` bullet holds it on Codex, which
 runs no `Stop` hook.
 
 ## Alternatives
