@@ -35,9 +35,12 @@ every checkout, went through without a prompt.
 ## Decision
 
 "Handoff" names one act: write the note to a file and reply with a one-line
-pointer to it in one fenced block. The file goes in one directory per repo
-outside every checkout, which the machine-local guidance names, and
-`dev_docs/.handoffs/` keeps only older notes. The conventions move from its
+pointer to it in one fenced block. The file goes in
+`$HOME/src/worktrees/<repo>/.handoffs/`, beside the repo's worktrees and outside
+every checkout, and `dev_docs/.handoffs/` keeps only older notes. The path is
+named in `portable.md` itself rather than left to the machine-local guidance:
+the guidance is one developer's, so naming that developer's layout is allowed,
+and a named path leaves no case where a session has to ask. The conventions move from its
 `README.md` into `skills/handoff/conventions.md`. The `portable.md` bullet
 opens with that definition. The report heading becomes "End a report on what the reader must
 do". The `!`-command hook is renamed `hooks/copyable-command.sh`. The
@@ -53,8 +56,9 @@ holds a cue phrase.
   `/handoff` invokes it directly.
 - Good, because a note outside every checkout survives a worktree teardown,
   and every session reads the same directory whichever tree it stands in.
-- Bad, because the directory is outside the repo, so a machine whose local
-  guidance names none has no handoff directory, and the session must ask.
+- Bad, because the path assumes the `$HOME/src/worktrees/` layout. A machine
+  that puts worktrees elsewhere has to say so in its machine-local guidance,
+  and the handoffs follow that root.
 - Bad, because the cue phrases are a judgment in regex form. A long quoted log
   that says "pick up" blocks once, at the cost of one forced turn.
 - Bad, because a handoff pasted as plain paragraphs has no block to detect, so

@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Write a handoff, the note another agent or a fresh session picks the work up from, to the repo's handoff directory outside every checkout, and reply with a one-line pointer to it. Use when the user says "handoff", "/handoff", "hand this off", "write a handoff", "a prompt for another agent", "pick it up with another agent", "so a fresh session can pick it up", or "before I /clear", before tearing down a worktree whose work is not finished, and on your own call when you are about to give the user text for them to paste into another agent. Not for the report that ends a task, which writing_about_code.md governs, and not for a command handed to the user to run.
+description: Write a handoff, the note another agent or a fresh session picks the work up from, to $HOME/src/worktrees/<repo>/.handoffs/, outside every checkout, and reply with a one-line pointer to it. Use when the user says "handoff", "/handoff", "hand this off", "write a handoff", "a prompt for another agent", "pick it up with another agent", "so a fresh session can pick it up", or "before I /clear", before tearing down a worktree whose work is not finished, and on your own call when you are about to give the user text for them to paste into another agent. Not for the report that ends a task, which writing_about_code.md governs, and not for a command handed to the user to run.
 ---
 
 # handoff
@@ -12,10 +12,10 @@ is the `A handoff is a file` bullet in `portable.md`; these are its steps.
 
 ## 1. Pick the path
 
-Write `<handoff directory>/YYYY-MM-DD-<short-topic>.md`. The handoff directory
-is one per repo, outside every checkout of it, and the machine-local guidance
-names it. Create it when it does not exist yet. If no guidance names one, ask
-the user where it goes; do not invent a path.
+Write `$HOME/src/worktrees/<repo>/.handoffs/YYYY-MM-DD-<short-topic>.md`, where
+`<repo>` is the repo's directory name, the same one its worktrees sit under.
+Create the directory when it does not exist yet. When the machine-local
+guidance puts worktrees under a different root, use `<that root>/<repo>/.handoffs/`.
 
 Never write the note inside a checkout: not the worktree, which is often torn
 down right after, and not a path inside the work, such as a story directory or
@@ -49,12 +49,13 @@ copy would pick up:
 
 ````
 ```
-Read <handoff directory>/2026-10-14-scene-3.md and follow it.
+Read $HOME/src/worktrees/ai-scifi/.handoffs/2026-10-14-scene-3.md and follow it.
 ```
 ````
 
-Spell the directory out as an absolute path, because the receiver may start in
-any checkout. Above the
+The path is absolute because the receiver may start in any checkout, and it
+keeps `$HOME` rather than `~` so it still resolves inside a worktree-isolated
+session. Above the
 block, one sentence on what the handoff covers is enough. Do not repeat the
 note's paths, task list or setup steps in the reply; they are in the file.
 

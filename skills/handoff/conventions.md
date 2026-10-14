@@ -12,13 +12,15 @@ written down, and a handoff is what survives that on purpose.
 
 ## Where it lives
 
-One directory per repo, outside every checkout of it. A worktree is often torn
-down right after its handoff is written, and a note inside the tree would go
-with it. A directory outside every checkout also means every session finds the
+`$HOME/src/worktrees/<repo>/.handoffs/`, where `<repo>` is the repo's directory
+name: beside that repo's worktrees, and outside every checkout of it. A worktree
+is often torn down right after its handoff is written, and a note inside the
+tree would go with it. Teardown removes only the worktree, never the directory
+above it. A directory outside every checkout also means every session finds the
 same notes, whichever tree it stands in.
 
-The machine-local guidance names the directory. On a machine that names none,
-ask where it should go rather than inventing a path.
+When the machine-local guidance puts worktrees under a different root, the
+handoffs go under that root, at `<root>/<repo>/.handoffs/`.
 
 ## What belongs in one
 

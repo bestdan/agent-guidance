@@ -15,7 +15,6 @@ import tempfile
 hook = os.environ["HOOK"]
 root = os.environ["ROOT"]
 fails = 0
-tmp = tempfile.mkdtemp(prefix="handoff-inline.")
 
 
 def check(name, want, got):
@@ -135,7 +134,6 @@ shutil.copy(hook, lone)
 check("a wrapper with no program is quiet", (0, None),
       fire({"hook_event_name": "Stop", "last_assistant_message": incident}, lone))
 shutil.rmtree(lone_dir, ignore_errors=True)
-shutil.rmtree(tmp, ignore_errors=True)
 
 print("%d failures" % fails)
 sys.exit(1 if fails else 0)

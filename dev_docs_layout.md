@@ -44,8 +44,9 @@ edits it, either name it for the moment it describes or keep it out of git.
 
 Research feeds designs and decisions with evidence, and handoffs carry a
 session's state to the next one. Neither is guidance. Handoffs live outside the
-repo, in the directory the `agent-guidance:handoff` skill describes; a
-`dev_docs/.handoffs/` holds only older notes.
+repo, in `$HOME/src/worktrees/<repo>/.handoffs/` (see
+`skills/handoff/conventions.md`); a `dev_docs/.handoffs/` holds only older
+notes.
 
 ## Directories
 
