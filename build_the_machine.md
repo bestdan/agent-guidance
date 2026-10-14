@@ -21,9 +21,6 @@ every run.
 
 ## Why
 
-The reasons below hold whatever the model costs. Price is one more of them,
-and the least certain.
-
 ### Reliability
 
 - **Latency.** A script returns in milliseconds. An agent loop takes seconds
