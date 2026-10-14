@@ -38,7 +38,7 @@ rather than as a placeholder.
 | `hooks/list-labels.sh`       | Claude Code, when a reply ends           | a list number that names two items in one reply                                 |
 | `hooks/handoff-inline.sh`    | Claude Code, when a reply ends           | a handoff pasted into the reply as a long quote or code block                   |
 | `dev_docs_layout.md`         | every harness, by name                   | how a repo's `dev_docs/` is laid out: directories, naming, front matter         |
-| `build_the_machine.md`       | people and agents, by link               | when a model belongs on a workflow's runtime path, and keeping agents swappable |
+| `build_the_machine.md`       | every harness, by name                   | when a model belongs on a workflow's runtime path, and keeping agents swappable |
 | `scripts/dev-docs-layout.py` | any repo's check suite                   | checks a repo's `dev_docs/` against that layout; exits 1 on a violation         |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
