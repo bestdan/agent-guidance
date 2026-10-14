@@ -15,7 +15,7 @@
 # also a nested list after a lazy continuation line, and skipping it would turn
 # that block into a miss that nothing reports.
 #
-# Why Stop, and why it blocks once: the same reasons as handoff-command.sh,
+# Why Stop, and why it blocks once: the same reasons as copyable-command.sh,
 # whose header gives them. The labels live in the reply text, which only Stop
 # sees, after the reply is on screen. `decision: block` is the one output that
 # reaches the agent, and on the forced turn `stop_hook_active` is true, so a

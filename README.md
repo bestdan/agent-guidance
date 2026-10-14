@@ -19,24 +19,26 @@ rather than as a placeholder.
 
 ## What it ships
 
-| File                         | Reaches                                 | Carries                                                                    |
-| ---------------------------- | --------------------------------------- | -------------------------------------------------------------------------- |
-| `portable.md`                | every harness                           | preferences any coding agent can act on                                    |
-| `portable-claude.md`         | Claude Code only                        | preferences that name Claude Code machinery                                |
-| `inject.sh`                  | Claude Code and Codex `SessionStart`    | prints the hook's JSON contract for the files it is given; both by default |
-| `codex/hooks.json`           | Codex CLI                               | registers `inject.sh` with `portable.md` only                              |
-| `skills/plugin-delivery`     | Claude Code, on demand                  | why a release may not have reached the session reading it, and what to do  |
-| `skills/authoring`           | Claude Code, at PR time                 | reads `writing_about_code.md` and `authoring_pull_requests.md`             |
-| `skills/reviewing`           | Claude Code, when reviewing a change    | reads `writing_about_code.md` and `reviewing.md`                           |
-| `skills/consult`             | Claude Code, before asking the user     | briefs a fresh, blind consultant at the same model tier or higher          |
-| `agents/consultant.md`       | Claude Code, dispatched by `consult`    | read-only; returns a verdict, a calibrated confidence and the crux         |
-| `hooks/dev-docs-context.sh`  | Claude Code, before a `dev_docs/` write | names `dev_docs_layout.md` and the directory's `README.md`, once a session |
-| `hooks/gh-body-guard.sh`     | Claude Code, before every Bash call     | denies a free-text `gh` argument the shell would run a substitution inside |
-| `hooks/prose-context.sh`     | Claude Code, before a write or edit     | a tracker key in an added comment; insider prose on a markdown write       |
-| `hooks/handoff-command.sh`   | Claude Code, when a reply ends          | a `! <command>` hand-off too long, or too many lines, to survive a copy    |
-| `hooks/list-labels.sh`       | Claude Code, when a reply ends          | a list number that names two items in one reply                            |
-| `dev_docs_layout.md`         | every harness, by name                  | how a repo's `dev_docs/` is laid out: directories, naming, front matter    |
-| `scripts/dev-docs-layout.py` | any repo's check suite                  | checks a repo's `dev_docs/` against that layout; exits 1 on a violation    |
+| File                         | Reaches                                  | Carries                                                                      |
+| ---------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- |
+| `portable.md`                | every harness                            | preferences any coding agent can act on                                      |
+| `portable-claude.md`         | Claude Code only                         | preferences that name Claude Code machinery                                  |
+| `inject.sh`                  | Claude Code and Codex `SessionStart`     | prints the hook's JSON contract for the files it is given; both by default   |
+| `codex/hooks.json`           | Codex CLI                                | registers `inject.sh` with `portable.md` only                                |
+| `skills/plugin-delivery`     | Claude Code, on demand                   | why a release may not have reached the session reading it, and what to do    |
+| `skills/authoring`           | Claude Code, at PR time                  | reads `writing_about_code.md` and `authoring_pull_requests.md`               |
+| `skills/reviewing`           | Claude Code, when reviewing a change     | reads `writing_about_code.md` and `reviewing.md`                             |
+| `skills/consult`             | Claude Code, before asking the user      | briefs a fresh, blind consultant at the same model tier or higher            |
+| `skills/handoff`             | Claude Code, when a handoff is asked for | writes the note to `dev_docs/.handoffs/` and replies with a one-line pointer |
+| `agents/consultant.md`       | Claude Code, dispatched by `consult`     | read-only; returns a verdict, a calibrated confidence and the crux           |
+| `hooks/dev-docs-context.sh`  | Claude Code, before a `dev_docs/` write  | names `dev_docs_layout.md` and the directory's `README.md`, once a session   |
+| `hooks/gh-body-guard.sh`     | Claude Code, before every Bash call      | denies a free-text `gh` argument the shell would run a substitution inside   |
+| `hooks/prose-context.sh`     | Claude Code, before a write or edit      | a tracker key in an added comment; insider prose on a markdown write         |
+| `hooks/copyable-command.sh`  | Claude Code, when a reply ends           | a `! <command>` too long, or too many lines, to survive a copy               |
+| `hooks/list-labels.sh`       | Claude Code, when a reply ends           | a list number that names two items in one reply                              |
+| `hooks/handoff-inline.sh`    | Claude Code, when a reply ends           | a handoff pasted into the reply as a long quote or code block                |
+| `dev_docs_layout.md`         | every harness, by name                   | how a repo's `dev_docs/` is laid out: directories, naming, front matter      |
+| `scripts/dev-docs-layout.py` | any repo's check suite                   | checks a repo's `dev_docs/` against that layout; exits 1 on a violation      |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`, and the hooks that run before a call on `PreToolUse`, across

@@ -116,7 +116,7 @@ check("stop_hook_active silences it", "quiet",
       verdict(incident, stop_hook_active=True))
 
 # The transcript path, for a payload with no last_assistant_message.
-# handoff-command.test.py covers which turn it reads; this checks the wiring.
+# copyable-command.test.py covers which turn it reads; this checks the wiring.
 path = os.path.join(tmp, "t.jsonl")
 with open(path, "w") as fh:
     fh.write(json.dumps({"type": "user", "message": {"content": "go"}}) + "\n")

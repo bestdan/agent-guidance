@@ -15,6 +15,16 @@ PR merged so the next piece should start clean off `main`, or any other reason
 to `/clear` and begin again. Clearing wipes the session's memory of everything
 that was not written down — a handoff is what survives that on purpose.
 
+The reader can also be another agent, picking up a piece of work while this
+session carries on. The note is the same, and so is the rule: a handoff is
+this file, never text pasted into the reply. The reply gives one line in one
+fenced code block that names the file, such as
+`Read dev_docs/.handoffs/2026-10-14-kindle.md and follow it.`. A longer prompt
+pasted into a terminal reaches the next agent with every `>` prefix and indent
+a copy carries. When the repo has no `.handoffs/`, or this session cannot write
+into it, the note goes to `/tmp/claude/handoffs/` and tells its reader to move
+it here. `portable.md` carries the rule, under "A handoff is a file".
+
 ## What belongs here
 
 Start with the aim: what the work is trying to achieve and why, not just where

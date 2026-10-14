@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Stop hook. Reports a `! <command>` hand-off in the reply that just ended when
+# Stop hook. Reports a `! <command>` in the reply that just ended when
 # it will not survive a copy out of the terminal. `portable.md`: "A command you
 # hand me to run must survive a copy out of the terminal."
 #
-# What it catches, in handoff-command.py beside this file: a hand-off over 100
+# What it catches, in copyable-command.py beside this file: a command over 100
 # characters, one ending in a `\` continuation, and one whose code block holds
 # more lines after it. A `! ` line, a fenced line, and an inline code span all
 # count. What it cannot catch is a command handed over without the `!` prefix,
@@ -39,6 +39,6 @@ case "$payload" in
   *'"stop_hook_active":true'* | *'"stop_hook_active": true'*) exit 0 ;;
 esac
 
-PAYLOAD="$payload" python3 "$here/handoff-command.py" 2>/dev/null
+PAYLOAD="$payload" python3 "$here/copyable-command.py" 2>/dev/null
 
 exit 0

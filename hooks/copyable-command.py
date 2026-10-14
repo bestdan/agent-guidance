@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Reports a `! <command>` hand-off that will not survive a copy. Run by
-hooks/handoff-command.sh.
+"""Reports a `! <command>` that will not survive a copy. Run by
+hooks/copyable-command.sh.
 
 Reads the Stop payload from PAYLOAD, finds the text of the turn that just
 ended, and writes the hook response on stdout or nothing at all. The wrapper
@@ -25,8 +25,8 @@ SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)")
 FENCE = re.compile(r"(`{3,}|~{3,})")
 
 
-def handoffs(text):
-    """Yield (command, reason) for each hand-off in text that breaks the rule."""
+def commands(text):
+    """Yield (command, reason) for each `!` command in text that breaks the rule."""
     seen = set()
     lines = text.splitlines()
     in_fence = False
@@ -92,7 +92,7 @@ def main():
         return
     if hook.get("stop_hook_active"):
         return
-    findings = list(handoffs(turn_text(hook)))
+    findings = list(commands(turn_text(hook)))
     if not findings:
         return
     listed = "\n".join(
@@ -112,7 +112,7 @@ def main():
     json.dump({
         "decision": "block",
         "reason": reason,
-        "systemMessage": "A hand-off command in that reply may break when "
+        "systemMessage": "A command handed over in that reply may break when "
         "copied; check the follow-up before pasting it.",
     }, sys.stdout)
 
