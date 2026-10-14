@@ -1,34 +1,28 @@
-# Use the model to build the machine, not to be the machine
+# Use the LLM to build the machine, not to be the machine
 
-Spend tokens freely to _make_ things: exploring a problem, drafting, writing
+"The model" here means a large language model (LLM), reached through an agent
+such as Claude Code or Codex, or through a provider's API.
+
+Use the model freely to _make_ things: exploring a problem, drafting, writing
 scripts, tests, and tools. Before putting a model on the _runtime path_ of
 anything that recurs — a model call that happens every time the process runs,
-rather than once while you build it — run it through the tests below. When an
-agent does the same shape of task a third time, often enough to be worth
-scripting, and the steps have stopped changing, turn that task into
+rather than once while you build it — check it against the criteria below.
+When an agent does the same shape of task a third time, often enough to be
+worth scripting, and the steps have stopped changing, turn that task into
 deterministic code and keep the model for the parts that need judgment. Keep
 what you build portable, so you can switch agents or models when you need to.
 
-The asymmetry is the point. Tokens spent building deterministic code are spent
-once: if prices rise or the model changes, that code keeps working. Tokens
-spent at runtime are owed again on every run, on whatever terms the provider
-sets then.
+The failure this guards against is reaching for the agent by default: leaning
+on a model for work a script would do faster, the same way every time, offline,
+and for anyone. The model's help while you build is spent once, and what it
+leaves behind keeps working whatever happens to the model. A model on the
+runtime path brings its latency, its variance, its outages, and its bill to
+every run.
 
 ## Why
 
-Cost is one reason, and an uncertain one, since nobody outside the provider
-knows whether today's prices will last. The other reasons hold at any price.
-
-### Cost
-
-- **Repetition flips the math.** One agent call is cheap next to an hour of
-  engineering time. The same call running on every commit, every ticket, or
-  every morning is a recurring bill, and when the work is mechanical, paying
-  it again and again buys nothing a script would not give you once.
-- **Pricing is not ours to control.** Flat-rate plans in particular may cost
-  the provider more than they charge heavy users. If a workflow, a habit, or
-  a product only makes sense at today's prices and limits, that dependence is
-  a risk even if prices fall overall.
+The reasons below hold whatever the model costs. Price is one more of them,
+and the least certain.
 
 ### Reliability
 
@@ -61,19 +55,30 @@ knows whether today's prices will last. The other reasons hold at any price.
   each is written for one vendor's agent, and logic that lives only there
   leaves with that vendor.
 
-## Tests
+### Cost
+
+- **Repetition flips the math.** One agent call is cheap next to an hour of
+  engineering time. The same call running on every commit, every ticket, or
+  every morning is a recurring bill, and when the work is mechanical, paying
+  it again and again buys nothing a script would not give you once.
+- **Pricing is not ours to control.** Flat-rate plans in particular may cost
+  the provider more than they charge heavy users. If a workflow, a habit, or
+  a product only makes sense at today's prices and limits, that dependence is
+  a risk even if prices fall overall.
+
+## Criteria
 
 Ask each question about a model call on the runtime path. A "no" is a warning
 sign.
 
-| Test       | Question                                                                   | A "no" means                                     |
+| Criterion  | Question                                                                   | A "no" means                                     |
 | ---------- | -------------------------------------------------------------------------- | ------------------------------------------------ |
-| **10x**    | Is it still worth it at ten times the price, or under a hard rate limit?   | It only pays off at today's prices and limits    |
 | **Need**   | Does it need something a script cannot do: messy input or judgment?        | Deterministic code could do the whole job        |
 | **Diff**   | If two runs on the same input disagreed, would that be harmless or caught? | Silent inconsistency in something that matters   |
 | **Outage** | Could the work continue if the model were unavailable for a day?           | The work stops, with no fallback                 |
 | **Share**  | Can a teammate with no LLM subscription or login of their own run it?      | Only people with their own LLM access can run it |
 | **Swap**   | Could you move it to another agent or model by changing configuration?     | It is locked to one vendor's harness             |
+| **10x**    | Is it still worth it at ten times the price, or under a hard rate limit?   | It only pays off at today's prices and limits    |
 
 A warning sign is not a veto. It is a reason to shrink the model's part until
 only the judgment step depends on it. The exception is Diff: if an
