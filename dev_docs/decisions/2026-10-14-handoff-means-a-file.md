@@ -24,11 +24,22 @@ of 4,927 assistant messages that would block. It was a 52-line prompt for
 another agent, which the rule forbids. The #96 session was not in that corpus,
 so recall is unmeasured.
 
+`dev_docs/.handoffs/` sat inside the checkout, and that failed two ways. The
+owner often writes a handoff just before a worktree is torn down, and a
+gitignored note in that worktree goes with it. A worktree-isolated session also
+cannot write into the main checkout: on 2026-10-14 the Write tool refused it
+with "Edit the worktree copy of this file instead", and a `PreToolUse` hook
+refused the shell route. A write to a directory beside the worktrees, outside
+every checkout, went through without a prompt.
+
 ## Decision
 
 "Handoff" names one act: write the note to a file and reply with a one-line
-pointer to it in one fenced block. The `portable.md` bullet opens with that
-definition. The report heading becomes "End a report on what the reader must
+pointer to it in one fenced block. The file goes in one directory per repo
+outside every checkout, which the machine-local guidance names, and
+`dev_docs/.handoffs/` keeps only older notes. The conventions move from its
+`README.md` into `skills/handoff/conventions.md`. The `portable.md` bullet
+opens with that definition. The report heading becomes "End a report on what the reader must
 do". The `!`-command hook is renamed `hooks/copyable-command.sh`. The
 `agent-guidance:handoff` skill carries the steps, and `hooks/handoff-inline.sh`
 blocks once on a fenced block or blockquote of more than three lines that
@@ -40,6 +51,10 @@ holds a cue phrase.
   so a request for a handoff lands on the file.
 - Good, because the skill's description triggers on the owner's phrasings, and
   `/handoff` invokes it directly.
+- Good, because a note outside every checkout survives a worktree teardown,
+  and every session reads the same directory whichever tree it stands in.
+- Bad, because the directory is outside the repo, so a machine whose local
+  guidance names none has no handoff directory, and the session must ask.
 - Bad, because the cue phrases are a judgment in regex form. A long quoted log
   that says "pick up" blocks once, at the cost of one forced turn.
 - Bad, because a handoff pasted as plain paragraphs has no block to detect, so
@@ -64,5 +79,9 @@ runs no `Stop` hook.
 - A skill alone, with no hook: rejected, because the incident was the agent
   not recognising the case, and a skill does not load for a case it does not
   recognise.
+- `/tmp/claude/<repo>/handoffs/`: rejected, because macOS empties `/tmp` at
+  boot, and a handoff written before a restart would be lost.
+- The worktree's own `dev_docs/.handoffs/`: rejected, because it goes with the
+  worktree on teardown.
 - Put the skill in `workflow-skills`: rejected, because the convention lives
   here and must reach Codex, which `workflow-skills` does not serve.

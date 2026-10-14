@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Write a handoff, the note another agent or a fresh session picks the work up from, to a file under dev_docs/.handoffs/ and reply with a one-line pointer to it. Use when the user says "handoff", "/handoff", "hand this off", "write a handoff", "a prompt for another agent", "pick it up with another agent", "so a fresh session can pick it up", or "before I /clear", and on your own call when you are about to give the user text for them to paste into another agent. Not for the report that ends a task, which writing_about_code.md governs, and not for a command handed to the user to run.
+description: Write a handoff, the note another agent or a fresh session picks the work up from, to the repo's handoff directory outside every checkout, and reply with a one-line pointer to it. Use when the user says "handoff", "/handoff", "hand this off", "write a handoff", "a prompt for another agent", "pick it up with another agent", "so a fresh session can pick it up", or "before I /clear", before tearing down a worktree whose work is not finished, and on your own call when you are about to give the user text for them to paste into another agent. Not for the report that ends a task, which writing_about_code.md governs, and not for a command handed to the user to run.
 ---
 
 # handoff
@@ -12,27 +12,25 @@ is the `A handoff is a file` bullet in `portable.md`; these are its steps.
 
 ## 1. Pick the path
 
-- **The repo has `dev_docs/.handoffs/`:** write
-  `dev_docs/.handoffs/YYYY-MM-DD-<short-topic>.md` there, in the repo where the
-  work lives.
-- **It does not, or this session cannot write there:** an isolated worktree
-  session cannot write into a sibling worktree, for one. Write
-  `/tmp/claude/handoffs/YYYY-MM-DD-<short-topic>.md`, which every session on
-  the host can read. Tell the user that path in the reply, and add a first
-  step to the note telling the receiver to move it into its own
-  `dev_docs/.handoffs/` when that exists.
+Write `<handoff directory>/YYYY-MM-DD-<short-topic>.md`. The handoff directory
+is one per repo, outside every checkout of it, and the machine-local guidance
+names it. Create it when it does not exist yet. If no guidance names one, ask
+the user where it goes; do not invent a path.
 
-Do not invent a path inside the work itself, such as a story directory or a
-package's `docs/`: nothing looks there for a handoff, and the note gets
+Never write the note inside a checkout: not the worktree, which is often torn
+down right after, and not a path inside the work, such as a story directory or
+a package's `docs/`, where nothing looks for a handoff and the note gets
 committed with the work.
+
+Look in the directory first. A handoff for the same work may already exist, and
+updating it beats leaving two that disagree.
 
 ## 2. Write the note
 
-Read `${CLAUDE_PLUGIN_ROOT}/dev_docs/.handoffs/README.md`, or the copy in the
-repo, before writing. It carries the conventions, and the ones a handoff most
-often misses are:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/handoff/conventions.md` before writing. The
+parts a handoff most often misses are:
 
-- the Obsidian front matter: `created`, `aim`, `branch`, `task`, `pr`,
+- the Obsidian front matter: `created`, `aim`, `repo`, `branch`, `task`, `pr`,
   `expires`, with any value holding a `#` quoted;
 - the aim first, then what the receiver cannot reconstruct from the repo: what
   was tried and rejected, the load-bearing measurement, the non-obvious
@@ -41,9 +39,8 @@ often misses are:
   commit;
 - the closing instruction to delete the file when the work is done.
 
-Write it for a reader with none of this session's context. Where the receiver
-must enter a worktree or a branch, name it in full, with `$HOME` rather than
-`~`.
+Write it for a reader with none of this session's context. Name the branch the
+receiver should enter in full, and any path with `$HOME` rather than `~`.
 
 ## 3. Reply with the pointer
 
@@ -52,14 +49,14 @@ copy would pick up:
 
 ````
 ```
-Read dev_docs/.handoffs/2026-10-14-kindle.md and follow it.
+Read <handoff directory>/2026-10-14-scene-3.md and follow it.
 ```
 ````
 
-Use the path as the receiver will resolve it: repo-relative when it starts in
-that repo, absolute for `/tmp/claude/handoffs/`. Above the block, one sentence
-on what the handoff covers is enough. Do not repeat the note's paths, task
-list or setup steps in the reply; they are in the file.
+Spell the directory out as an absolute path, because the receiver may start in
+any checkout. Above the
+block, one sentence on what the handoff covers is enough. Do not repeat the
+note's paths, task list or setup steps in the reply; they are in the file.
 
 For more than one piece of work, write one file per piece and give one pointer
 block per file.

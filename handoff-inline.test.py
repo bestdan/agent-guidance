@@ -83,9 +83,9 @@ check("a ~~~ fenced prompt blocks", "block",
 # The shape the rule asks for.
 check("the one-line pointer is quiet", "quiet", verdict(
     "Handoff written.\n\n```\n"
-    "Read dev_docs/.handoffs/2026-10-14-kindle.md and follow it.\n```"))
+    "Read /home/u/handoffs/2026-10-14-kindle.md and follow it.\n```"))
 check("a one-line quoted pointer is quiet", "quiet", verdict(
-    "> Read dev_docs/.handoffs/2026-10-14-kindle.md and follow it."))
+    "> Read /home/u/handoffs/2026-10-14-kindle.md and follow it."))
 
 # The boundary. Three non-blank lines fit; four do not.
 three = "```\npick up the work\nline two\n\nline three\n```"

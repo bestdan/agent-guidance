@@ -43,7 +43,9 @@ edits it, either name it for the moment it describes or keep it out of git.
   conventions and is deleted.
 
 Research feeds designs and decisions with evidence, and handoffs carry a
-session's state to the next one. Neither is guidance.
+session's state to the next one. Neither is guidance. Handoffs live outside the
+repo, in the directory the `agent-guidance:handoff` skill describes; a
+`dev_docs/.handoffs/` holds only older notes.
 
 ## Directories
 
@@ -54,7 +56,7 @@ session's state to the next one. Neither is guidance.
 | `dev_docs/designs/`    | proposals for changes not yet made                         | transient | `designs/README.md`                          |
 | `dev_docs/decisions/`  | why a choice was made and what would reopen it             | record    | `decisions/README.md`                        |
 | `dev_docs/research/`   | evidence gathered to answer a question                     | record    | `research/README.md`                         |
-| `dev_docs/.handoffs/`  | notes from one session to the next; gitignored             | record    | `.handoffs/README.md`                        |
+| `dev_docs/.handoffs/`  | legacy session notes from before 2026-10-14; gitignored    | record    | `.handoffs/README.md`                        |
 | `dev_docs/tasks/`      | tracker config and `/plan-with-docs` scaffolding           | transient | `workflow-skills` (`task`, `plan-with-docs`) |
 | `dev_docs/<skill>/`    | one skill's machine-local config, gitignored               | local     | the skill                                    |
 | `dev_docs/<kind>/`     | a class of dated reports the repo produces repeatedly      | record    | this file, below                             |
