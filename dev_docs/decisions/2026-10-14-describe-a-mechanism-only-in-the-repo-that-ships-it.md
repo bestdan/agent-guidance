@@ -57,8 +57,8 @@ with a `SessionStart` hook.
   `scratch.py` bullet describes `setup.sh`, and the git-fixture bullet
   describes `setup.sh` and `agents/test_prelude.sh`. In `portable-claude.md`,
   the env-prefix bullet describes `agents/guard_env_prefix_git.py`. A follow-up
-  cuts each one to the rule and the hook's name, and moves the behaviour to
-  `bestdan/dotfiles`.
+  cuts each one to the rule and the name of the hook or script that provides
+  it, and moves the behaviour to `bestdan/dotfiles` (#105).
 
 ## Revisit when
 
