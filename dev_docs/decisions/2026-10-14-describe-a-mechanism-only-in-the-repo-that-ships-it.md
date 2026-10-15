@@ -52,6 +52,13 @@ with a `SessionStart` hook.
   that has no delivery hook has to add one.
 - Bad, because an instruction file now sends its reader somewhere else for
   the steps, which costs one read.
+- Bad, because rules already in this plugin break it. In `portable.md`, the
+  `git status` bullet describes `agents/guard_noop_git_add.py`, the
+  `scratch.py` bullet describes `setup.sh`, and the git-fixture bullet
+  describes `setup.sh` and `agents/test_prelude.sh`. In `portable-claude.md`,
+  the env-prefix bullet describes `agents/guard_env_prefix_git.py`. A follow-up
+  cuts each one to the rule and the hook's name, and moves the behaviour to
+  `bestdan/dotfiles`.
 
 ## Revisit when
 
@@ -65,7 +72,9 @@ with a `SessionStart` hook.
 Nothing mechanical. A check in one repo cannot see the code in another, so it
 cannot tell a mechanism description from a rule. Review holds this up, using
 the test in the `portable.md` bullet: if a change to another repo's code can
-make a sentence false, the sentence belongs in that repo.
+make a sentence false, the sentence belongs in that repo. Naming the owning
+repo's doc, or the hook that enforces a rule, is exempt; describing what that
+hook does is not.
 
 ## Alternatives
 
