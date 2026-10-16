@@ -1,6 +1,7 @@
 ---
 created: 2026-10-15
 status: accepted
+supersedes: 2026-10-14-describe-a-mechanism-only-in-the-repo-that-ships-it.md
 convention: ../conventions.md
 ---
 
@@ -24,7 +25,7 @@ that enforces a rule. Both assume the reader can open the owning repo.
 
 ## Decision
 
-Text in this repo never names a private repo, and never points at a path,
+New and live text in this repo never names a private repo, and never points at a path,
 script, issue or PR inside one. Where a rule's enforcement or steps live in a
 private repo, the rule is stated alone. Code comments and strings a script
 emits count as text. A public repo may still be named and linked. The

@@ -336,7 +336,7 @@ every machine. Add here, install, then delete there.
 
 ## The publication line
 
-This repo is public. Text in it never names a private repo, and never points at
+This repo is public. New and live text in it never names a private repo, and never points at
 a path, script, issue or PR inside one. A public reader cannot follow such a
 pointer, and the name alone announces that the private repo exists. Where a
 rule's enforcement or steps live in a private repo, state the rule alone. Code
