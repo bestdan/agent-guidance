@@ -9,9 +9,10 @@ convention: ../conventions.md
 ## Context
 
 This repo is public. On 2026-10-15 its live text named private repos in
-about twenty places across `portable.md`, `portable-claude.md`, `README.md`,
-`dev_docs_layout.md`, `dev_docs/conventions.md`, `skills/plugin-delivery`, and
-the comments in `inject.sh` and `hooks/gh-body-guard.sh`. Some were bare
+`portable.md`, `portable-claude.md`, `README.md`, `dev_docs_layout.md`,
+`dev_docs/conventions.md`, `skills/plugin-delivery`,
+`.github/PULL_REQUEST_TEMPLATE.md`, and the comments in `inject.sh`,
+`inject.test.sh` and `hooks/gh-body-guard.sh`. Some were bare
 names. Others pointed at a path or a script inside one. A public reader can
 follow none of them, and every one announces that the private repo exists.
 
