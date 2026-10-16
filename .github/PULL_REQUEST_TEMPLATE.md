@@ -24,8 +24,9 @@
 
 - [ ] A rule added or reworded sits in the file its delivery requires: `portable.md` when a session
       must hold it mid-task, `portable-claude.md` when it names Claude Code machinery that
-      `sync_codex.sh` must leave out, `writing_about_code.md` when it is register read on demand.
-- [ ] A rule moving out of `bestdan/dotfiles` lands here first; the deletion there waits until the
-      plugin update is installed.
+      the Codex sync must leave out, `writing_about_code.md` when it is register read on demand.
+- [ ] A rule moving out of a machine's own instructions lands here first; the deletion there waits
+      until the plugin update is installed.
+- [ ] Nothing added names a private repo or points at a path, issue or PR inside one.
 - [ ] A choice a later reader would question has a record under `dev_docs/decisions/`.
 - [ ] A new convention ships with whatever enforces it, and a new enforcement says which rule it serves.
