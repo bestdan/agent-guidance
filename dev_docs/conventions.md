@@ -35,8 +35,8 @@ repo:
    `writing_about_code.md` then `reviewing.md`. The dispatcher pastes those
    paths into the `cat` that assembles `<INPUT>`, so every reviewer reads
    rubric, then conventions, then requests, then diff.
-3. **The Codex pointer.** `sync_codex.sh` in `bestdan/dotfiles` concatenates the
-   installed plugin's `portable.md` into `~/.codex/AGENTS.md`, and the two
+3. **The Codex pointer.** A machine-local sync concatenates the installed
+   plugin's `portable.md` into `~/.codex/AGENTS.md`, and the two
    `Rules` bullets in `portable.md` tell any harness without skills to read the
    files from the plugin root.
 
@@ -67,13 +67,12 @@ never need it — the skills expand `${CLAUDE_PLUGIN_ROOT}` and co-review pastes
 absolute paths before dispatch.
 
 That covers both hook registrations, `hooks/hooks.json` and `codex/hooks.json`.
-It does not cover the other Codex route: `sync_codex.sh` runs `cat` over
+It does not cover the other Codex route: the machine-local sync runs `cat` over
 `portable.md` itself rather than the hook, so the generated `~/.codex/AGENTS.md`
-carries no provenance section and no root. The script resolves the directory
-already, in `_codex_guidance_msg`, so closing the gap is a `dotfiles` change of
-one line. Until it lands, the bullets fail loud rather than silent: with no
-provenance section they say to ask for the path, not to write without the
-conventions.
+carries no provenance section and no root. Closing that gap is a change on the
+machine side, not here. Until it lands, the bullets fail loud rather than
+silent: with no provenance section they say to ask for the path, not to write
+without the conventions.
 
 ## Hooks
 
@@ -232,9 +231,8 @@ when the rule has to fire. A check under `scripts/` serves a rule that a
 finished tree can settle, which is what `prose-check.py` and
 `dev-docs-layout.py` do. A `PreToolUse` handler serves one that has to catch
 the work as it is written. The ticket-key prohibition is the second kind, and
-two placements for it look tempting and are wrong. A guard in
-`bestdan/dotfiles` reaches the two machines that repo is installed on. These
-rules reach cloud containers, Codex sessions, and any machine carrying the
+two placements for it look tempting and are wrong. A guard in a machine's own
+config reaches only the machines that config is installed on. These rules reach cloud containers, Codex sessions, and any machine carrying the
 plugin without it. A check beside `scripts/prose-check.py` reads a finished
 tree, and a repo's suite only ever sees that repo. It cannot catch a comment as
 it is written, in whatever repo a session is working in. That handler is
@@ -325,26 +323,36 @@ nothing.
 
 **A commit on `main` is not an install.** Every carrier reads the installed
 plugin: the skills through `${CLAUDE_PLUGIN_ROOT}`, co-review through the
-resolver, Codex through `sync_codex.sh`. A machine stays on its old copy until
+resolver, Codex through the machine-local sync. A machine stays on its old copy until
 `claude plugin update agent-guidance@agent-guidance` runs, and an installed copy
 older than the convention files makes the resolver report nothing to attach.
 `skills/plugin-delivery` carries why a release stalls and how to tell which
 commit a session loaded.
 
-**When moving a rule out of `dotfiles`, add it here first.** The Codex carrier
-and `dotfiles/agents/AGENTS.md` both route to the installed plugin, so a
-deletion that lands before the plugin addition is installed leaves a gap on
+**When moving a rule out of a machine's own instructions, add it here first.**
+The Codex carrier and those instructions both route to the installed plugin, so
+a deletion that lands before the plugin addition is installed leaves a gap on
 every machine. Add here, install, then delete there.
 
 ## The publication line
 
-This repo is public; `bestdan/dotfiles` is private. The two files moved from
-`dotfiles` were checked before the move to name no owner, repo, machine, or
-platform, and the one thing that fails that check is why the draft-versus-ready
-rule for PRs is split across the two repos. The rule itself is in
+This repo is public. Text in it never names a private repo, and never points at
+a path, script, issue or PR inside one. A public reader cannot follow such a
+pointer, and the name alone announces that the private repo exists. Where a
+rule's enforcement or steps live in a private repo, state the rule alone. Code
+comments and strings a script emits are text too. A public repo, such as
+`bestdan/workflow-skills`, may be named and linked; check with
+`gh repo view <owner>/<repo> --json visibility` before naming one. The
+describe-a-mechanism bullet in `portable.md` carries the same exception for
+its own pointers. The dated records under `decisions/` and `research/` were
+written before this rule and still name private repos; they are snapshots, and
+the rule does not rewrite them
+(`decisions/2026-10-15-a-public-repo-names-no-private-repo.md`).
+
+The draft-versus-ready rule for PRs is the worked case. The rule is in
 `portable.md`: read the owner from the `origin` remote, apply the rule you have
 for that owner, and treat an owner with no rule as an ask, never a guess. The
-owner table that supplies those rules stays in `dotfiles/agents/AGENTS.md`,
+owner table that supplies those rules stays in the machine-local instructions,
 because it names where the author works and which repos are kept private. The
 plugin's rule works without it: every owner the table does not name falls
 through to "ask", which is the safe answer.

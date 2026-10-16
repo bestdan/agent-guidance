@@ -52,9 +52,8 @@ commands a skill declares — not in an ordinary shell.** Run that line in a pla
 terminal, or through a session's generic shell tool, and it expands to nothing:
 `basename ""` prints an empty line, which reads as "no answer" rather than
 "wrong place to ask". An empty result means use one of the two routes below, not
-that the copy is missing. On a machine that syncs `bestdan/dotfiles`,
-`agents/agent-guidance-dir.sh` resolves the same directory from anywhere and
-additionally honours an `AGENT_GUIDANCE_DIR` override.
+that the copy is missing. Where a machine sets `AGENT_GUIDANCE_DIR`, it names
+the same directory from anywhere.
 
 `basename`, not `git log`: **the installed copy is an export, not a clone.** It
 has no `.git`, so every git command against it fails. Its directory name is the
@@ -80,11 +79,10 @@ Where the block is the _only_ route is **Codex**, whose generated
 
 ## Where each step fails
 
-**Step 1 has a known local cause, and `bestdan/dotfiles` fixes it.**
-`claude plugin marketplace add` strips `autoUpdate` from the registration it
-writes, so the clone never refreshes. `agents/ensure-marketplace-autoupdate.sh`
-there re-asserts the flag after every add. On a machine that does not sync those
-dotfiles, check `~/.claude/plugins/known_marketplaces.json` for the flag — the
+**Step 1 has a known local cause.** `claude plugin marketplace add` strips
+`autoUpdate` from the registration it writes, so the clone never refreshes. The
+flag has to be re-asserted after every add. Check
+`~/.claude/plugins/known_marketplaces.json` for it — the
 `extraKnownMarketplaces` entry in `settings.json` is not what decides it.
 
 **Step 2 is upstream, and is not promised a fix.** Reported four times, each read

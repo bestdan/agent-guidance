@@ -6,6 +6,12 @@ convention: ../../portable.md
 
 # Describe a mechanism only in the repo that ships it
 
+> [!NOTE] 2026-10-15: The pointer this record allows assumes a reader who can
+> open the owning repo. When the owning repo is private and the file that
+> would point at it is public, name nothing and state the rule alone
+> (`2026-10-15-a-public-repo-names-no-private-repo.md`). Where both repos are
+> readable, this record stands as written.
+
 ## Context
 
 Agent instructions reach a session from three repos: this plugin, a

@@ -18,14 +18,14 @@
 # than the wrong one. The README's Versioning section carries what that costs.
 #
 # This is the sole carrier of the portable half, on every machine including my
-# laptop. That is deliberate: if agents/AGENTS.md also imported portable.md,
-# every laptop session would load it twice. The machine-local half stays in
-# AGENTS.md and reaches only machines that sync the dotfiles.
+# laptop. That is deliberate: if the machine-local AGENTS.md also imported
+# portable.md, every laptop session would load it twice. The machine-local half
+# stays in that AGENTS.md and reaches only the machines it is installed on.
 #
 # Two files, not one. Some portable rules name Claude-only machinery
 # (AskUserQuestion, the Agent and Workflow tools, the model tiers) that Codex
 # cannot act on. Those live in portable-claude.md. Both files are injected here,
-# because every Claude session is a Claude session; sync_codex.sh concatenates
+# because every Claude session is a Claude session; the machine-local sync concatenates
 # only portable.md into ~/.codex/AGENTS.md. The order is fixed — portable.md,
 # then portable-claude.md — so the injected context is deterministic and a diff
 # of two sessions' context is a diff of the files, not of the hook.

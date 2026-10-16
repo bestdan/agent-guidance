@@ -9,9 +9,9 @@
 # afterwards only by someone who notices, and the rule in portable.md has been
 # the only thing standing between a session and that outcome.
 #
-# It is not purely cosmetic. dotfiles' sandbox-network-guard.sh anchors its
-# match on (^|[;&|]), so a network command inside a backtick is invisible to it
-# too: the substitution runs before the guard ever sees a command word.
+# It is not purely cosmetic. A network guard that anchors its match on
+# (^|[;&|]) cannot see a network command inside a backtick either: the
+# substitution runs before the guard ever sees a command word.
 #
 # Why this denies where hooks/dev-docs-context.sh advises. That hook carries
 # guidance, so blocking would have denied the write that FIXES a violation.
@@ -19,10 +19,9 @@
 # preference, and the corrective command is a different one --- `--body-file`
 # --- so denying this call cannot block its own remedy.
 #
-# There is deliberately no escape hatch, which is the other difference from
-# dotfiles' guard_pr_body.py. That guard polices style and offers a marker to
-# override it. A marker here would be a way to ask for the exact behaviour the
-# guard exists to prevent, and a safe spelling is always available: a file for
+# There is deliberately no escape hatch. A guard that polices style can offer a
+# marker to override it. A marker here would be a way to ask for the exact
+# behaviour the guard exists to prevent, and a safe spelling is always available: a file for
 # the flags that read one, single quotes for the flags that do not.
 #
 # Why the bare `Bash` matcher rather than an `if` rule. The dev_docs handler
