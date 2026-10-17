@@ -43,7 +43,7 @@ record. Directories are split by which kind they hold.
 ## Confirmation
 
 A layout test that checks record directories hold only dated files, in
-`dotfiles/scripts/dev_docs_layout.test.sh` today and a shared checker in this
+a private repo's layout test today and a shared checker in this
 plugin as a follow-up. Until then, review.
 
 ## Alternatives

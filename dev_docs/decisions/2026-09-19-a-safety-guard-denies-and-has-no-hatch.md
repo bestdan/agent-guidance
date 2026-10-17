@@ -19,7 +19,7 @@ reached, `gh` posts the output in place of the code span, and the call exits 0
 with nothing reported. The correction is a different command — `--body-file` —
 so refusing this one cannot refuse its own remedy.
 
-`bestdan/dotfiles`' `agents/guard_pr_body.py` is the nearest sibling and it does
+A PR-body guard in a private repo is the nearest sibling and it does
 offer an override: a `<!-- pr-guard: allow -->` marker in the body. That guard
 polices whether a PR body follows a style, where a considered exception is a
 real category.
@@ -41,7 +41,7 @@ contain an apostrophe, so the quoted form is a fix that expires.
 - Good, because the one failure mode the rule exists for cannot reach the API.
   It was previously invisible: `gh` reports success either way.
 - Good, because the guard also closes a hole in
-  `dotfiles/agents/sandbox-network-guard.sh`, which anchors on `(^|[;&|])` and
+  a sandbox network guard in that repo, which anchors on `(^|[;&|])` and
   so never sees a network command inside a backtick.
 - Good, because refusing without a hatch keeps the rule's meaning intact. A
   marker would be a way to request exactly the behaviour being prevented.
@@ -77,7 +77,7 @@ suite cannot reach that, because every case there feeds the script directly.
 - **Advise rather than deny, as the `dev_docs` handler does:** rejected; the
   behaviour is silent and irreversible once posted, so a pointer arrives too
   late to matter.
-- **An override marker, as `guard_pr_body.py` has:** rejected; there is no case
+- **An override marker, as the PR-body guard has:** rejected; there is no case
   where the guarded behaviour is wanted, and the safe spelling is always
   available.
 - **Widening the scan to `${...}`:** rejected; parameter expansion is not

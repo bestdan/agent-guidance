@@ -9,12 +9,12 @@ convention: ../../dev_docs_layout.md
 ## Context
 
 `dev_docs_layout.md` names a layout test as its first enforcement tier. The
-reference was `dotfiles/scripts/dev_docs_layout.test.sh`, which covered two
-of the five checks, walked with `rg`, and lived in a private repo no other
+reference was a layout test in a private repo, which covered two
+of the five checks, walked with `rg`, and lived where no other
 consumer could call. The convention is delivered by the plugin, so the check
 that enforces it has to reach the same repos the convention does. Each
 consumer already has a check suite and a way to find the installed plugin:
-`dotfiles` runs every `*.test.sh` from `scripts/run-tests.sh`,
+a private repo runs every `*.test.sh` from its test runner,
 `workflow-skills` runs a fixed list from `scripts/check.sh`, and both carry an
 `agent-guidance-dir.sh` resolver.
 
@@ -57,7 +57,7 @@ wired it; that is each consumer's migration issue.
 
 ## Alternatives
 
-- **Keep the `dotfiles` test as the reference:** private, two checks of five,
+- **Keep the private repo's test as the reference:** private, two checks of five,
   and unreachable from any other repo.
 - **A copy of the test in each repo:** the same drift the per-directory
   READMEs already pay for, on code rather than prose.

@@ -18,15 +18,15 @@ The trigger is mechanically detectable — an added comment line matching
 machine-decidable rule belonging in a check applies to it, and the only open
 question is which repo builds it.
 
-`bestdan/dotfiles` is the tempting answer, because the working `PreToolUse`
-guards are there: `agents/guard_pr_body.py` and `agents/guard_noop_git_add.py`,
+A private machine-config repo is the tempting answer, because the working `PreToolUse`
+guards are there: a PR-body guard and a no-op `git add` guard,
 with the registration and test harness around them.
 
 It is the wrong answer, and this repo had already reached that conclusion twice
 without generalising it. Issue #38 states it for the rule-reachability checker:
 "this repo owns the conventions, and a repo that inherits a rule set has no
 standing to validate it." Issue #39 states it for the backtick guard, from the
-audience side: a guard in `bestdan/dotfiles` reaches the two machines that repo
+audience side: a guard in that repo reaches the two machines that repo
 is installed on, while `portable.md`'s readers include cloud containers, Codex
 sessions, and any machine carrying the plugin without that repo.
 
@@ -53,7 +53,7 @@ rather than denying. The ticket-key check is issue #50.
 - Good, because a rule and the check that holds it up are read, reworded and
   reviewed together, so neither drifts without the other in the diff.
 - Good, because the check reaches every session the convention reaches, rather
-  than the two machines that install one particular dotfiles repo.
+  than the two machines that install one particular machine-config repo.
 - Good, because it states as a rule what #38 and #39 each argued separately, so
   the next check does not re-derive it.
 - Bad, because the Codex hook path here is declared but unverified (#39), so a
@@ -67,7 +67,7 @@ rather than denying. The ticket-key check is issue #50.
 
 - A convention's enforcement genuinely needs machine-local state — a path, a
   credential, a tool only some machines have — which is the one case this rule
-  cannot serve and `bestdan/dotfiles` can.
+  cannot serve and that repo can.
 - The plugin hook path stops reaching a consumer repo, which would leave the
   suite or the machine-local repo as the only carriers.
 
@@ -79,7 +79,7 @@ review.
 
 ## Alternatives
 
-- **A guard in `bestdan/dotfiles`:** filed as #857 and withdrawn. It reaches two
+- **A guard in the machine-config repo:** filed there and withdrawn. It reaches two
   machines, and it would let a rule's prose shrink toward an invariant its
   readers cannot rely on — #39's argument, which applies to any check placed
   away from its convention.

@@ -8,12 +8,12 @@ convention: ../conventions.md
 
 ## Context
 
-The reviewing and PR-authoring conventions moved out of `bestdan/dotfiles`
+The reviewing and PR-authoring conventions moved out of a private repo
 into this plugin as three content files: `writing_about_code.md` for the
 shared prose register, `authoring_pull_requests.md` for what a PR adds, and
 `reviewing.md` for what a review checks. A skill has to load them at the
 right moment, and a skill's content is charged to the session's context
-window every time it fires. `dotfiles/agents/AGENTS.md` had already drawn a
+window every time it fires. That repo's `AGENTS.md` had already drawn a
 distinction between the two verbs: the prose register "applies without being
 read", the PR file is "read at PR time, not at session start".
 

@@ -97,6 +97,11 @@ A decision is never rewritten. Three changes are allowed, and only these:
 Which one applies: if a reader who acted on this record would now do
 something different, supersede or deprecate. Otherwise a callout.
 
+One edit sits outside the rule, because this repo is public: a private repo's
+name, or a path, script, issue or PR inside one, is replaced with a
+description of it ("a private repo", "a PR-body guard"). The record keeps its
+meaning and gets no callout. The name stays in the git history.
+
 ## Template
 
 ```markdown

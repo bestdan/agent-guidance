@@ -8,8 +8,8 @@ feeds: ../../decisions/2026-09-16-conditional-guidance-rides-a-pretooluse-hook.m
 
 ## Question
 
-Betterment's `the-book` CLI delivers path-scoped standards to Claude Code by
-having a `SessionStart` hook regenerate `~/.claude/rules/the-book/` every
+An internal CLI at a workplace delivers path-scoped standards to Claude Code by
+having a `SessionStart` hook regenerate a subdirectory of `~/.claude/rules/` every
 session. A plugin cannot ship `.claude/rules/`
 (`../2026-09-16-paths-frontmatter-on-plugin-skills.md`), but a plugin hook
 could write there. That only works if a rule file written during
@@ -73,11 +73,11 @@ that the hook ran is the directory's appearance, not the log line.
   harness-owned there; this experiment ran on a laptop only.
 - Whether a `paths:` rule fires for a `Write` that creates a matching file
   that does not yet exist. The 2026-09-16 research found a `paths:` skill
-  fires after the write; `the-book` adds a `PreToolUse` hook on `Write` for
+  fires after the write; that CLI adds a `PreToolUse` hook on `Write` for
   exactly that gap, which is the same shape as this plugin's
   `hooks/dev-docs-context.sh`.
 - Project-level `.claude/rules/`. The user-level directory was tested because
-  it is the one `the-book` writes and the one a plugin hook could write without
+  it is the one that CLI writes and the one a plugin hook could write without
   leaving files in a consumer repo.
 
 ## Feeds

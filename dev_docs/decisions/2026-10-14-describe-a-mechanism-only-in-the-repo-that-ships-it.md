@@ -10,7 +10,7 @@ convention: ../../portable.md
 ## Context
 
 Agent instructions reach a session from three repos: this plugin, a
-machine's `AGENTS.md` in `bestdan/dotfiles`, and the plugins that ship
+machine's `AGENTS.md` in a private repo, and the plugins that ship
 tools, such as `bestdan/workflow-skills`. Each repo can describe any
 mechanism. Nothing links a description to the code it describes.
 
@@ -25,10 +25,10 @@ session has not entered, and co-review's route to a PR's branch. On
   raises a prompt that `claude -p` and Remote Control cannot answer. The line
   had been correct before the plugin's layout moved worktrees out of
   `.claude/worktrees/`. Nothing flagged it when the layout changed.
-- `agents/CLAUDE_ONLY.md` in dotfiles named `EnterWorktree` 8 times. Most of
+- A machine-local instruction file in that repo named `EnterWorktree` 8 times. Most of
   those lines described the plugin's behaviour, not anything specific to the
   machine.
-- The design for the next change to that code was in dotfiles, while every
+- The design for the next change to that code was in that repo, while every
   line it proposed lands in workflow-skills.
 
 The full inventory is in bestdan/workflow-skills#992.
@@ -54,12 +54,13 @@ with a `SessionStart` hook.
 - Bad, because an instruction file now sends its reader somewhere else for
   the steps, which costs one read.
 - Bad, because rules already in this plugin break it. In `portable.md`, the
-  `git status` bullet describes `agents/guard_noop_git_add.py`, the
-  `scratch.py` bullet describes `setup.sh`, and the git-fixture bullet
-  describes `setup.sh` and `agents/test_prelude.sh`. In `portable-claude.md`,
-  the env-prefix bullet describes `agents/guard_env_prefix_git.py`. A follow-up
+  `git status` bullet describes a no-op `git add` guard, the `scratch.py`
+  bullet describes a setup script, and the git-fixture bullet describes that
+  setup script and a test prelude. In `portable-claude.md`, the env-prefix
+  bullet describes an env-prefix `git` guard. All of them live in the
+  machine-local repo. A follow-up
   cuts each one to the rule and the name of the hook or script that provides
-  it, and moves the behaviour to `bestdan/dotfiles` (#105).
+  it, and moves the behaviour to the machine-local repo (#105).
 
 ## Revisit when
 
@@ -82,7 +83,7 @@ hook does is not.
 - **Keep the copies, and update them in the same change.** This is what
   happened, and it failed: the change to the layout did not touch
   `portable-claude.md`, because nothing tied the two together.
-- **Generate the copies from the source**, the way `sync_codex.sh` in dotfiles
-  builds `~/.codex/AGENTS.md` from this plugin. That works for whole files on
+- **Generate the copies from the source**, the way a sync script on the owner's
+  machines builds `~/.codex/AGENTS.md` from this plugin. That works for whole files on
   a machine that has the source installed. It does not work for single
   sentences inside a hand-written file.
