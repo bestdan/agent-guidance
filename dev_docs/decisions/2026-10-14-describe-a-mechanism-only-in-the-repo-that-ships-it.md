@@ -1,6 +1,7 @@
 ---
 created: 2026-10-14
-status: accepted
+status: superseded
+superseded_by: 2026-10-15-a-public-repo-names-no-private-repo.md
 convention: ../../portable.md
 ---
 

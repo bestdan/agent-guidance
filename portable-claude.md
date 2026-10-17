@@ -3,8 +3,8 @@
 The portable rules that name Claude Code machinery — `AskUserQuestion`, the
 `Agent` and `Workflow` tools, the model tiers, permission matching, plugins and
 skills. Codex cannot act on any of it, so this file reaches Claude Code alone:
-the `SessionStart` hook injects it, and `sync_codex.sh` deliberately does not
-concatenate it. Everything that holds under both harnesses is in `portable.md`.
+the `SessionStart` hook injects it, and the machine-local Codex sync
+deliberately does not concatenate it. Everything that holds under both harnesses is in `portable.md`.
 
 Marker for the delivery tests: `GUIDANCE-SENTINEL-CLAUDE`. It stays as a
 permanent delivery canary — its presence in a Claude session and its absence
@@ -31,7 +31,7 @@ from `~/.codex/AGENTS.md` are the two things the delivery tests assert.
 ## Rules
 
 - **To learn what a skill does, invoke it — don't read the plugin cache.** When you need a skill's behaviour or interface, call `/<plugin>:<skill>` (e.g. `/workflow-skills:promote-tasks`) or ask me. Don't go searching `~/.claude/plugins/cache/` with Bash: that layout is an installation detail that moves, and a failed search there reads as "the skill doesn't exist" rather than "I looked in the wrong place".
-- **"Papercut" is a term of art → the `/papercuts:papercut` skill.** Any request to record, capture, write up, or flush a "papercut" (or "paper cut") routes to `/papercuts:papercut` (from the `bestdan/papercuts-plugin` plugin), which gates capture and spools to the `bestdan/papercuts-ledger` ledger. Never satisfy it by filing an ad-hoc Linear issue or tracker task instead — the tracker is downstream of papercut triage, not the capture vehicle. If `/papercuts:papercut` genuinely doesn't fit the request, say so and ask rather than silently substituting a tracker.
+- **"Papercut" is a term of art → the `/papercuts:papercut` skill.** Any request to record, capture, write up, or flush a "papercut" (or "paper cut") routes to `/papercuts:papercut` (from the `bestdan/papercuts-plugin` plugin), which gates capture and spools to its ledger. Never satisfy it by filing an ad-hoc Linear issue or tracker task instead — the tracker is downstream of papercut triage, not the capture vehicle. If `/papercuts:papercut` genuinely doesn't fit the request, say so and ask rather than silently substituting a tracker.
 - **Never env-prefix `git` to configure it; use `git -c`.** Permission rules anchor on the command word, so a segment like `GIT_EDITOR=true git rebase --continue` can never match `Bash(git rebase:*)` (or its `rtk git` twin) and always prompts, no matter how complete the allowlist is. Write `git -c core.editor=true rebase --continue` instead — same effect, stays git-anchored and matchable. The principle generalizes: an env-var prefix on any command defeats command-anchored allow rules for that segment.
 - **Run network git (`git push` especially) as its own Bash call, never in a `&&` chain.** Permission rules match per `&&`/`;` segment and one uncovered segment (a `cd`, a test run) prompts the whole call — and because push needs the sandbox escape, the entire chain runs unsandboxed instead of just the push. Do the local work (tests, rebase) in sandboxed calls first, then push alone.
 - **No `cd "$(git rev-parse --show-toplevel)"`:** Don't wrap git (or any) commands in a `cd "$(...)"` to the repo root. The command substitution forces a permission prompt even for allowlisted commands. Run git directly from cwd. `git -C <path>` is for reads, or for a repo other than this one; it is never how you write into another worktree of this repo; enter that worktree instead (steps: bestdan/workflow-skills#992). See "Stand in the tree you write" in `portable.md` for why. A `Shell cwd was reset to <path>` notice on a Bash result is that rule being broken live: the run is writing to a tree it is not in, so stop rather than re-prefixing the next command.

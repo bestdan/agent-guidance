@@ -281,7 +281,7 @@ PY
 # own file, so a marker appearing in the other means the halves were merged.
 #
 # Headings are excluded because they are structure, not content. Both files
-# group their rules under the same section names as agents/AGENTS.md, so
+# group their rules under the same section names as the machine-local AGENTS.md, so
 # `## Rules` is in both by construction and says nothing about whether a rule
 # is. Every other line still has to be unique across the pair.
 check "no line appears in both payload files" "" \

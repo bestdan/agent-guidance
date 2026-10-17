@@ -7,8 +7,8 @@ directory is not yours.
 **Status: carrying real content.** The two payload files hold the real rules —
 `portable.md` everything that holds under any harness, `portable-claude.md` the
 rules that name Claude Code machinery. The split between them was projected
-once, during the migration out of `bestdan/dotfiles`, from a one-off inventory
-there that recorded per rule whether it is portable and which harnesses can act
+once, during the migration out of the author's machine-local instructions, from
+a one-off inventory that recorded per rule whether it is portable and which harnesses can act
 on it. That inventory is migration scaffolding with an end date; this repo is
 the standing source of truth for the rules themselves.
 
@@ -78,7 +78,7 @@ points at `codex/hooks.json`. That registers the same `inject.sh` on Codex's
 `SessionStart`, whose output contract matches Claude Code's, and hands it
 `portable.md` alone, so Codex never sees `portable-claude.md`. The hook is
 declared but not yet verified on a live Codex session; until it is, the
-consuming dotfiles repo also builds `~/.codex/AGENTS.md` from `portable.md`
+author's machine-local sync also builds `~/.codex/AGENTS.md` from `portable.md`
 at shell startup, so Codex loses nothing either way.
 
 ```

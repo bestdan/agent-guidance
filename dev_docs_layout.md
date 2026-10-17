@@ -277,8 +277,7 @@ docs of its own has no `dev_docs/`.
 
    A repo calls it as one entry in the suite it already has, a `*.test.sh` or
    a line in `check.sh`, and resolves the plugin root before the call:
-   `AGENT_GUIDANCE_DIR` when set, else the repo's own resolver
-   (`agents/agent-guidance-dir.sh` in `dotfiles`,
+   `AGENT_GUIDANCE_DIR` when set, else the repo's own resolver (for example
    `scripts/agent-guidance-dir.sh` in `workflow-skills`). A root that cannot be
    resolved, or an installed copy too old to ship the script, fails the entry
    rather than skipping it; a skipped check is green while checking nothing.
