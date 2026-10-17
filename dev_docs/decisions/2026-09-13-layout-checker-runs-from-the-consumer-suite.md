@@ -14,7 +14,7 @@ of the five checks, walked with `rg`, and lived where no other
 consumer could call. The convention is delivered by the plugin, so the check
 that enforces it has to reach the same repos the convention does. Each
 consumer already has a check suite and a way to find the installed plugin:
-a private repo runs every `*.test.sh` from its test runner,
+that private repo runs every `*.test.sh` from its test runner,
 `workflow-skills` runs a fixed list from `scripts/check.sh`, and both carry an
 `agent-guidance-dir.sh` resolver.
 

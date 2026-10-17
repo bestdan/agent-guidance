@@ -38,8 +38,8 @@ covers one directory. The `agent-guidance` copy already carries a
 
 - The private repo has `designs/` only, nine files. Several are standing decisions
   by their own status line ("accepted on merge — merging this document is the
-  decision"). `2026-09-05-agents-md-rule-inventory.md` is machine-readable
-  data with a YAML head, not a design.
+  decision"). One of them is machine-readable data with a YAML head, not a
+  design.
 - `workflow-skills` has both. `decisions/` (eight files) holds measurement
   records such as `python_type_checking.md` ("Measured 2026-09-04");
   `designs/` (five files) holds proposals. `workflow-review/` sits beside them
@@ -84,7 +84,7 @@ draft by saying so in prose.
   repo has three plans whose final card is "delete this directory", all present.
 - In the private repo, one plan directory holds only a `design.md`;
   another holds only a dated checkbox plan with no
-  front matter. Both pass `scripts/dev_docs_layout.test.sh`, which checks the
+  front matter. Both pass the private repo's layout test, which checks the
   directory name and nothing inside it.
 - `workflow-skills`' task cards omit `expires`, which its own schema requires;
   `validate.py` downgrades that to a warning.
@@ -123,8 +123,8 @@ the state-locality design as the source of both rules.
 
 ### Stale references
 
-The private repo's justfile cites `dev_docs/nightly_reports/`, which no
-longer exists. One of its designs says its tier-2 rule landed in its
+The private repo's justfile cites a report directory that no longer
+exists. One of its designs says its tier-2 rule landed in its
 `AGENTS.md`; the rule is now in
 `agent-guidance/portable.md`.
 
