@@ -344,9 +344,9 @@ comments and strings a script emits are text too. A public repo, such as
 `bestdan/workflow-skills`, may be named and linked; check with
 `gh repo view <owner>/<repo> --json visibility` before naming one. The
 describe-a-mechanism bullet in `portable.md` carries the same exception for
-its own pointers. The dated records under `decisions/` and `research/` were
-written before this rule and still name private repos; they are snapshots, and
-the rule does not rewrite them
+its own pointers. A dated record under `decisions/` or `research/` that names
+a private repo gets the name replaced with a description of it, the one edit
+those directories' READMEs allow a record
 (`decisions/2026-10-15-a-public-repo-names-no-private-repo.md`).
 
 The draft-versus-ready rule for PRs is the worked case. The rule is in
