@@ -8,9 +8,9 @@ convention: ../../dev_docs_layout.md
 
 ## Context
 
-`bestdan/finplan` is a monorepo whose root `dev_docs/` held about 60 files,
-roughly half of them about one package only. Its pilot (bestdan/finplan#1255,
-reported on #84) gave three packages their own `dev_docs/` and checked them by
+A private monorepo's root `dev_docs/` held about 60 files,
+roughly half of them about one package only. Its pilot (reported on
+#84) gave three packages their own `dev_docs/` and checked them by
 calling `scripts/dev-docs-layout.py` once for the root and once per
 `packages/*/dev_docs` from a wrapper of its own. That works unchanged, because
 the checker lists files relative to the root it is given. It has two gaps. A

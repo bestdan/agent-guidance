@@ -9,7 +9,7 @@ convention: ../../dev_docs_layout.md
 ## Context
 
 `workflow-skills` ignores `dev_docs/tasks/*` except `.task-config.yml`.
-`dotfiles` tracks its plan directories under a `gh-issue` handler.
+A private repo tracks its plan directories under a `gh-issue` handler.
 `papercuts-plugin` tracks the config in an otherwise empty directory. Under
 the `repo-pr` handler the task cards are the tracker; under any other
 handler the tracker owns the state and the scaffolding is a local working
@@ -26,7 +26,7 @@ work lands.
 
 - Good, because the committed state under `tasks/` is exactly the state the
   repo owns, which is the state-locality rule applied.
-- Bad, because `dotfiles` has tracked plans to untrack and finished plans to
+- Bad, because that repo has tracked plans to untrack and finished plans to
   delete.
 
 ## Revisit when
@@ -36,7 +36,7 @@ work lands.
 
 ## Confirmation
 
-The `tasks/` contents check in `dotfiles/scripts/dev_docs_layout.test.sh`
+The `tasks/` contents check in that repo's layout test
 covers what may be there, not whether it is ignored. Review for the ignore
 entry.
 

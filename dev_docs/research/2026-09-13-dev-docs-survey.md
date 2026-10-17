@@ -14,8 +14,8 @@ where do they disagree?
 ## Method
 
 Read on 2026-09-13 with `eza -Ta`, `rg`, and file reads, over local checkouts
-of `bestdan/agent-guidance`, `bestdan/dotfiles`, `bestdan/workflow-skills`,
-and `bestdan/papercuts-plugin`, including each repo's `.gitignore`,
+of `bestdan/agent-guidance`, `bestdan/workflow-skills`,
+`bestdan/papercuts-plugin`, and one private repo, including each repo's `.gitignore`,
 `dprint.json`, `AGENTS.md`, and the `workflow-skills` skills that prescribe a
 `dev_docs/` layout (`plan-with-docs`, `task`, `research-spike`, `auto-pilot`,
 `co-review`, `orchestrate-coders`). Three of the four repos were surveyed by
@@ -26,20 +26,20 @@ re-verified individually except where marked.
 
 ### The only consistent directory is `.handoffs/`
 
-All three repos that have it share a `README.md` copied from `dotfiles`, with
+All three repos that have it share a `README.md` copied from the private repo, with
 the same naming rule (`YYYY-MM-DD-<short-topic>.md`), the same front matter
 (`created`, `aim`, `branch`, `task`, `pr`, `expires`), and the same
 ignored-twice mechanism (`.gitignore` plus a `dprint.json` exclude). That
 README is the only written convention in any of the four repos, and it
 covers one directory. The `agent-guidance` copy already carries a
-"Divergence from the `dotfiles` original" section.
+"Divergence from the original" section.
 
 ### `designs/` and `decisions/` have no stated boundary
 
-- `dotfiles` has `designs/` only, nine files. Several are standing decisions
+- The private repo has `designs/` only, nine files. Several are standing decisions
   by their own status line ("accepted on merge — merging this document is the
-  decision"). `2026-09-05-agents-md-rule-inventory.md` is machine-readable
-  data with a YAML head, not a design.
+  decision"). One of them is machine-readable data with a YAML head, not a
+  design.
 - `workflow-skills` has both. `decisions/` (eight files) holds measurement
   records such as `python_type_checking.md` ("Measured 2026-09-04");
   `designs/` (five files) holds proposals. `workflow-review/` sits beside them
@@ -49,10 +49,10 @@ covers one directory. The `agent-guidance` copy already carries a
 
 ### Dating is applied to about half the records
 
-`dotfiles/designs/` is dated except `claude-settings-portable-sync-design.md`,
-whose body carries `_2026-07-02_`. `workflow-skills/decisions/` is 3 of 8
-dated, `designs/` 1 of 5. `dotfiles/papercuts_reports/` dates as a suffix
-(`papercuts_triage_2026-07-20.md`); every other directory uses a prefix.
+The private repo's `designs/` is dated except one file, whose body carries
+`_2026-07-02_`. `workflow-skills/decisions/` is 3 of 8
+dated, `designs/` 1 of 5. One of the private repo's report directories dates as a
+suffix; every other directory uses a prefix.
 `portable.md` already says "a file that records a moment must carry its date
 in the filename or path".
 
@@ -60,32 +60,31 @@ in the filename or path".
 
 `workflow-skills/decisions/` mixes `linear_read_fastpaths.md` with
 `2026-09-05-cloud-session-plugin-and-proxy.md`; its `designs/` mixes
-`research_spike_skill.md` with `auth-key-resolution.md`. `dotfiles/designs/`
-uses a `-design` suffix on three of nine files.
+`research_spike_skill.md` with `auth-key-resolution.md`. The private repo's
+`designs/` uses a `-design` suffix on three of nine files.
 
 ### Only `tasks/` and `.handoffs/` use front matter
 
 Designs and decisions carry status as prose: `**Status:** proposed`,
 `Date: 2026-08-01`, `Supersedes: …`. Amendment is done two ways in
-`dotfiles`: `designs/2026-09-04-agents-md-context-budget.md` is amended in
-place with a `> [!NOTE] Amended 2026-09-08` callout;
-`tasks/papercuts_oss_plan/papercuts_oss_task_11_assessment.md` supersedes an
-earlier draft by saying so in prose.
+the private repo: one design is amended in place with a
+`> [!NOTE] Amended 2026-09-08` callout; one task card supersedes an earlier
+draft by saying so in prose.
 
 ### `tasks/` tooling is consistent; the repos are not
 
 - Ignore policy differs. `workflow-skills` ignores `dev_docs/tasks/*` except
-  `.task-config.yml`. `dotfiles` tracks its plan directories under a
+  `.task-config.yml`. The private repo tracks its plan directories under a
   `gh-issue` handler. `papercuts-plugin` tracks `.task-config.yml` in an
   otherwise empty directory.
 - Graduate-then-delete is written in `skills/plan-with-docs` ("A plan isn't
   done until its scaffolding is gone") and honoured nowhere.
   `workflow-skills/tasks/autopilot_hardening_plan/` holds 26 cards marked
-  `done` beside the graduated `dev_docs/auto-pilot-hardening.md`. `dotfiles`
-  has three plans whose final card is "delete this directory", all present.
-- `dotfiles/tasks/cmux_session_checkpoint_plan/` holds only a `design.md`;
-  `papercut-dotfiles-dir_plan/` holds only a dated checkbox plan with no
-  front matter. Both pass `scripts/dev_docs_layout.test.sh`, which checks the
+  `done` beside the graduated `dev_docs/auto-pilot-hardening.md`. The private
+  repo has three plans whose final card is "delete this directory", all present.
+- In the private repo, one plan directory holds only a `design.md`;
+  another holds only a dated checkbox plan with no
+  front matter. Both pass the private repo's layout test, which checks the
   directory name and nothing inside it.
 - `workflow-skills`' task cards omit `expires`, which its own schema requires;
   `validate.py` downgrades that to a warning.
@@ -111,12 +110,12 @@ that "no research dir" and "wrong tree scanned" produce identical output.
 
 `papercuts-plugin` has no `AGENTS.md` either, and its root `README.md` does
 not mention `dev_docs`. `workflow-skills`' `AGENTS.md` carries a routing
-table to individual files; `dotfiles`' carries pointers. Neither describes
+table to individual files; the private repo's carries pointers. Neither describes
 the directories.
 
 ### Layout enforcement exists in one repo
 
-`dotfiles/scripts/dev_docs_layout.test.sh` checks that `dev_docs/tasks/`
+The private repo's layout test checks that `dev_docs/tasks/`
 contains only `*_plan/` directories and `.task-config*.yml` files, and that
 no unchecked `- [ ]` appears under `dev_docs/` outside a plan directory. It
 skips `.handoffs/` because `rg` skips hidden paths. Its comment header cites
@@ -124,9 +123,9 @@ the state-locality design as the source of both rules.
 
 ### Stale references
 
-`dotfiles/justfile:48` cites `dev_docs/nightly_reports/`, which no longer
-exists. `dotfiles/designs/2026-08-01-state-locality-design.md` §5 says its
-tier-2 rule landed in `agents/AGENTS.md`; the rule is now in
+The private repo's justfile cites a report directory that no longer
+exists. One of its designs says its tier-2 rule landed in its
+`AGENTS.md`; the rule is now in
 `agent-guidance/portable.md`.
 
 ## Feeds

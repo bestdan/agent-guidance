@@ -10,7 +10,7 @@ convention: ../../dev_docs_layout.md
 
 Issue #84 proposed one placement test for everything under a package's
 `dev_docs/`: a file goes in the package when every code path it describes is
-inside that package. The finplan pilot (bestdan/finplan#1255) applied it and
+inside that package. A pilot in a private monorepo applied it and
 found it held for live files but not for decisions. Most decisions mention
 both the package they constrain and the boundary it meets, such as core and
 the MCP server, so the test sent most of them to the root, where they sat

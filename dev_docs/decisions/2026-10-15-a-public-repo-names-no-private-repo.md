@@ -7,6 +7,11 @@ convention: ../conventions.md
 
 # A public repo names no private repo
 
+> [!NOTE] 2026-10-17: the dated records under `decisions/` and `research/`
+> no longer name private repos. #109 replaced each name with a description,
+> under an exception the two directories' READMEs now allow. The Consequences
+> bullet saying this decision does not rewrite them predates that.
+
 ## Context
 
 This repo is public. On 2026-10-15 its live text named private repos in

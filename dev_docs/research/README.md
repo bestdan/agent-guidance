@@ -36,7 +36,9 @@ should not repeat it. A quick fact goes in the design or the PR body.
 `YYYY-MM-DD-<slug>.md`, kebab-case. The date is when the research was done
 and matches `created`. A research record is a snapshot. `feeds` is the one
 field set after writing, when the design or decision it supports exists;
-nothing else changes, and research done again later is a new record.
+nothing else changes, and research done again later is a new record. The one
+exception is the edit `../decisions/README.md` allows a decision: a private
+repo's name, or a pointer into one, replaced with a description of it.
 
 A record that carries artifacts — the script that measured something, the
 capture it read, the numbers it produced — becomes `YYYY-MM-DD-<slug>/` with

@@ -8,7 +8,7 @@ convention: ../../dev_docs_layout.md
 
 ## Context
 
-`dotfiles` kept everything in `designs/`, including standing decisions and
+A private repo kept everything in `designs/`, including standing decisions and
 machine-readable data. `workflow-skills` had `decisions/` for measurements
 and `designs/` for proposals, with `workflow-review/` beside them, and no
 stated boundary. A reader could not tell from the path whether a file was
@@ -48,7 +48,7 @@ Review, and the layout test's residue check once the shared checker exists.
 
 ## Alternatives
 
-- **`designs/` doing all three jobs:** the `dotfiles` shape; guidance and
+- **`designs/` doing all three jobs:** that private repo's shape; guidance and
   history are indistinguishable.
 - **Keeping accepted designs as historical records:** Fuchsia's RFC model.
   Rejected because the history a design carries is its decisions, better

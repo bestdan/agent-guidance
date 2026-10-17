@@ -53,8 +53,8 @@ whether the clause before the match already has its verb, which is a parse.
 - Firings become routine on ordinary writes. The cost of an imprecise signal is
   paid per firing, so the consistent answer then is to drop it, not to tune it.
   `hooks/prose-context.sh` is what makes firings visible.
-- `bestdan/dotfiles` `guard_pr_body.py` adopts the pattern as a denial
-  (bestdan/dotfiles#914) and its escape marker gets used on correct bodies.
+- A PR-body guard in a private repo adopts the pattern as a denial and
+  its escape marker gets used on correct bodies.
 
 ## Confirmation
 

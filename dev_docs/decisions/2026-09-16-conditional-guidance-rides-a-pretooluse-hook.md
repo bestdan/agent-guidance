@@ -8,7 +8,7 @@ convention: ../conventions.md
 
 > [!NOTE] 2026-09-22: The rejected `SessionStart`-writes-rules alternative
 > below assumed the consumer repo as the destination. A hook can instead write
-> the user-level `~/.claude/rules/`, which is how Betterment's `the-book` CLI
+> the user-level `~/.claude/rules/`, which is how an internal CLI at a workplace
 > delivers its standards, and a `paths:`-scoped rule written there at
 > `SessionStart` does load in that same session on 2.1.280. An always-on rule
 > written the same way loads one session late. Measured in
