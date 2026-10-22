@@ -19,8 +19,9 @@ most of what follows protects it.
 
 Take every decision you were about to put to the user, except the ones no agent
 can answer: a fact about the user (a budget, a deadline, who owns something),
-what they intend or require, or a pure preference. Those go to the user
-directly, without a consult.
+what they intend or require, or a pure preference that matters. Those go to
+the user directly, without a consult. A low-stakes preference goes to neither,
+as the next section says.
 
 Outside that, consult on your own call when you have a concrete reason to doubt
 it: a second fix attempt has failed, you are choosing between approaches just
@@ -146,8 +147,11 @@ asked. In the reply:
 
 - **Decided without asking:** each one in a line — the decision, the pick, the
   consultant's confidence, and its crux quoted rather than paraphrased. A
-  low-stakes call carries `low-stakes` in place of the confidence and crux it
-  never had. These come first, so the user can overturn one before it matters.
+  low-stakes call sorted out before the brief carries `low-stakes` in place of
+  the confidence and crux it never had. One decided on the taste recheck in
+  step 4 keeps the consultant's confidence and crux and is also marked
+  `low-stakes`. These come first, so the user can overturn one before it
+  matters.
 - **Needs your call:** each remaining question, carrying your pick, the
   consultant's pick and confidence, and the crux.
 
