@@ -26,6 +26,21 @@ Outside that, consult on your own call when you have a concrete reason to doubt
 it: a second fix attempt has failed, you are choosing between approaches just
 before something hard to undo, or the user asked "are you sure?".
 
+### Low-stakes calls never reach the user
+
+Before the brief, sort out the decisions that do not matter. A decision is
+**low-stakes** when every option leaves the work correct, it is cheap to undo
+(step 4 defines that), and nothing outside the session depends on which way it
+goes. Wording, ordering, naming within a change, and whether a sentence leads
+with the rule or the example are the usual cases. A decision that changes
+behaviour, correctness, an interface, scope, or cost is not low-stakes, however
+small it looks.
+
+Decide a low-stakes call yourself on your leaning, and do not consult on it or
+ask about it. List it in a line under **Decided without asking** (step 5) so the
+user can overturn it. This includes taste: a low-stakes preference is not a
+reason to interrupt the user, even though a high-stakes one is.
+
 ## 1. Write down your leaning, and keep it out of the brief
 
 For each decision, record which option you would pick and how sure you are,
@@ -106,9 +121,17 @@ agreement when the consultant is at 70% or above, and as disagreement below.
 | your own call      | disagree, consultant ≥ 70%             | Stop and put it to the user with both picks and the crux. |
 | your own call      | disagree, consultant < 70%             | Keep your call; say you overrode the consultant, and why. |
 
-**Cheap to undo** means an edit or revert inside this session puts it back.
-Anything pushed or published, data deleted, a message sent, an interface others
-depend on, or money spent is hard to undo, however confident both of you are.
+**Cheap to undo** means an edit or revert inside this session puts it back. A
+commit pushed to the user's own unmerged branch also counts, because a revert
+is one more commit and the change has not landed anywhere. Anything else
+pushed or published, data deleted, a message sent, an interface others depend
+on, or money spent is hard to undo, however confident both of you are.
+
+**A verdict that calls itself taste is a low-stakes signal.** The consultant
+caps a call no fact decides at 65%, so every taste call lands in the "< 70%"
+row above. Before asking, recheck it against the low-stakes test in "Which
+decisions to consult on". If it passes, decide it on your leaning (the
+consultant's pick, if you had none) and report it as decided, not asked.
 
 One consult per batch: every decision headed to the user goes in a single
 brief. Do not consult the same decision again to get a different answer.
@@ -122,8 +145,9 @@ The user should see what was decided for them as clearly as what they are
 asked. In the reply:
 
 - **Decided without asking:** each one in a line — the decision, the pick, the
-  consultant's confidence, and its crux quoted rather than paraphrased. These
-  come first, so the user can overturn one before it matters.
+  consultant's confidence, and its crux quoted rather than paraphrased. A
+  low-stakes call carries `low-stakes` in place of the confidence and crux it
+  never had. These come first, so the user can overturn one before it matters.
 - **Needs your call:** each remaining question, carrying your pick, the
   consultant's pick and confidence, and the crux.
 
