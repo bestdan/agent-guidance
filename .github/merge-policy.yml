@@ -1,6 +1,6 @@
-# Which PRs an agent may land without the owner (graduated merge autonomy,
-# Phase 1). The lander reads this file from the PR's base branch, never its
-# head, and hands it to workflow-skills' scripts/merge-tier.py, which fails
+# Which PRs an agent may land without the owner. The lander reads this file
+# from the PR's base branch, never its head, and hands it to workflow-skills'
+# scripts/merge-tier.py, which fails
 # closed to `human` on anything outside the YAML subset it parses: flat
 # `key: value`, `key: [a, b]`, and `key:` followed by `  - item` lines.
 # `always_human` is checked before `auto`, and a path matching neither is
@@ -9,6 +9,8 @@
 # Tests, and the hook and script programs they cover. A broken-link fix has no
 # path of its own: links live in markdown, and every markdown file is human
 # below, so a link fix lands with the owner like any other rule-file edit.
+# A test edit can also weaken the coverage that makes green checks mean
+# something. That risk is accepted; size_cap bounds how much one PR can change.
 auto:
   - "*.test.sh"
   - "*.test.py"
@@ -27,11 +29,16 @@ always_human:
   # wiring for both harnesses, and the plugin metadata.
   - inject.sh
   - hooks/hooks.json
+  # The one hook that denies a tool call, on every Bash call of every install.
+  # The other hooks advise; this one refuses, so a change to it is the owner's.
+  - hooks/gh-body-guard.py
+  - hooks/gh-body-guard.sh
   - codex/**
   - plugin.json
   - .claude-plugin/**
   # The gate `auto` relies on: a PR that edits these could make "checks green"
-  # vacuous. The policy file itself is under .github/**.
+  # vacuous. .github/** and merge-tier.py both already cover the policy file;
+  # it is listed so the file reads complete.
   - .github/**
   - .github/merge-policy.yml
   - scripts/run-tests.sh
