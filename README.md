@@ -39,7 +39,7 @@ rather than as a placeholder.
 | `hooks/handoff-inline.sh`    | Claude Code, when a reply ends           | a handoff pasted into the reply as a long quote or code block                   |
 | `dev_docs_layout.md`         | every harness, by name                   | how a repo's `dev_docs/` is laid out: directories, naming, front matter         |
 | `build_the_machine.md`       | every harness, by name                   | when a model belongs on a workflow's runtime path, and keeping agents swappable |
-| `scripts/dev-docs-layout.py` | any repo's check suite                   | checks a repo's `dev_docs/` against that layout; exits 1 on a violation         |
+| `scripts/dev-docs-layout.py` | any repo's check suite                   | checks a repo's `dev_docs/` against that layout; `--write-index` regenerates it |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`, and the hooks that run before a call on `PreToolUse`, across

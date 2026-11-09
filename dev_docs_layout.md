@@ -259,8 +259,13 @@ docs of its own has no `dev_docs/`.
    is `YYYY-MM-DD-<slug>.md`, a `YYYY-MM-DD-<slug>/` bundle, or `README.md`;
    that a bundle holds a `README.md` record and nothing outside `references/`,
    with no flat `YYYY-MM-DD-<slug>.md` beside a bundle of the same name;
-   that a record's `created` matches its date; and that a decision has a
-   `## Revisit when` section. It finds every package's `dev_docs/` under the
+   that a record's `created` matches its date; that a decision has a
+   `## Revisit when` section; that every record has exactly one `#` title
+   and a decision or design a status its README allows; that a front-matter
+   field naming a file (`convention`, `supersedes`, `superseded_by`, `feeds`)
+   resolves; that `supersedes` and `superseded_by` name each other; that every
+   relative markdown link resolves; and that a directory README's index block,
+   when it has one, is current. It finds every package's `dev_docs/` under the
    root it is given and checks each the same way, except that a package's
    holding `tasks/` or `.handoffs/` fails; a `dev_docs/` inside another
    `dev_docs/` is not a package. Undated subdirectories of `dev_docs/research/`
@@ -291,6 +296,27 @@ docs of its own has no `dev_docs/`.
 
    `dev-docs-layout.test.sh` in this repo pins each check at its boundary and
    runs the checker over this repo's own `dev_docs/`.
+
+   **The index.** A record directory's `README.md` opts into a generated index
+   by carrying the two markers below, under a heading of its choosing. The
+   block between them lists the directory's records newest first, linked by
+   their `#` titles: decisions split into live and superseded or deprecated,
+   research with each record's `question`, designs with `tracks`. Nobody edits
+   it by hand. `scripts/dev-docs-layout.py --write-index [ROOT]` rewrites
+   every block, and the plain check fails while one is out of date, so a
+   record added, retitled, superseded or deleted without regenerating the
+   index fails the same suite entry as any other layout violation. The
+   generated tables are already in the form dprint leaves them.
+
+   ```markdown
+   <!-- dev-docs-index:start -->
+   <!-- dev-docs-index:end -->
+   ```
+
+   The canonical directory READMEs carry the markers, with this repo's index
+   between them. A repo that copies one empties the block and runs
+   `--write-index`; everything outside the markers stays identical to the
+   canonical copy.
 2. **This file**, reached by name from `portable.md`.
 3. **Review.** A reviewer who sees a dated file rewritten, an undated record,
    or a design still present after its change landed says so.

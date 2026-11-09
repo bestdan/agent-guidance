@@ -48,9 +48,22 @@ verdict() {
 
 # record DIR NAME CREATED [BODY]: writes a record file with front matter.
 record() {
-  local dir=$1 name=$2 created=$3 body=${4:-}
+  local dir=$1 name=$2 created=$3 body=${4:-} status=''
+  # A decision or a design carries a status, which check_record_body requires,
+  # so each fixture gets the starting one for its directory unless the body
+  # supplies its own front matter.
+  case "$dir" in
+    */decisions | */decisions/*) status='status: accepted\n' ;;
+    */designs | */designs/*) status='status: proposed\n' ;;
+  esac
   mkdir -p "$dir"
-  printf -- '---\ncreated: %s\n---\n\n# Title\n\n%s\n' "$created" "$body" > "$dir/$name"
+  printf -- "---\ncreated: %s\n${status}---\n\n# Title\n\n%s\n" "$created" "$body" > "$dir/$name"
+}
+
+# raw FILE CONTENT: writes CONTENT, interpreting printf escapes, to FILE.
+raw() {
+  mkdir -p "$(dirname "$1")"
+  printf -- "$2" > "$1"
 }
 
 # --- 0. nothing to check, and the usage contract ---
@@ -253,7 +266,7 @@ check "a record with no front matter fails" 1 "$(verdict "$fx")"
 
 fx="$(fixture created-quoted)"
 mkdir -p "$fx/dev_docs/research"
-printf -- '---\ncreated: "2026-09-13"\nquestion: "why?"\n---\n' > "$fx/dev_docs/research/2026-09-13-a-survey.md"
+printf -- '---\ncreated: "2026-09-13"\nquestion: "why?"\n---\n\n# A survey\n' > "$fx/dev_docs/research/2026-09-13-a-survey.md"
 check "a quoted created value is read" 0 "$(verdict "$fx")"
 
 # --- 5. a decision has a Revisit when section ---
@@ -364,7 +377,145 @@ mkdir -p "$fx/packages/core/dev_docs/tasks"
 : > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
 check "a package holding only tasks/.task-config.yml fails in a repository" 1 "$(verdict "$fx")"
 
-# --- 9. this repository's own dev_docs/ passes ---
+# --- 9. a record has one title, and a decision or design a known status ---
+# The index lists each record by its `# ` heading, so a record needs exactly
+# one. A README's template shows a heading inside a fence, which is not one.
+fx="$(fixture title-none)"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\n---\n\nNo heading.\n'
+check "a record with no title fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture title-two)"
+record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13 '# A second title'
+check "a record with two titles fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture title-fenced)"
+record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13 '```markdown\n# Not a title\n```'
+check "a heading inside a fence is not a second title" 0 "$(verdict "$fx")"
+
+fx="$(fixture status-bad)"
+raw "$fx/dev_docs/decisions/2026-09-13-a-choice.md" '---\ncreated: 2026-09-13\nstatus: proposed\n---\n\n# A choice\n\n## Revisit when\n'
+check "a decision with status: proposed fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture status-missing)"
+raw "$fx/dev_docs/designs/2026-09-13-a-change.md" '---\ncreated: 2026-09-13\n---\n\n# A change\n'
+check "a design with no status fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture status-comment)"
+raw "$fx/dev_docs/decisions/2026-09-13-a-choice.md" '---\ncreated: 2026-09-13\nstatus: accepted # accepted | superseded\n---\n\n# A choice\n\n## Revisit when\n'
+check "a trailing YAML comment is not part of the status" 0 "$(verdict "$fx")"
+
+# --- 10. path fields and supersession ---
+# decide FILE FRONT: a decision titled by its stem, with FRONT as extra
+# front-matter lines.
+decide() {
+  local stem
+  stem="$(basename "$1" .md)"
+  [ "$stem" = README ] && stem="$(basename "$(dirname "$1")")"
+  raw "$1" "---\ncreated: ${stem:0:10}\n$2---\n\n# $stem\n\n## Revisit when\n"
+}
+fx="$(fixture path-dangling)"
+decide "$fx/dev_docs/decisions/2026-09-13-a-choice.md" 'status: accepted\nconvention: ../gone.md\n'
+check "a convention: that does not exist fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture feeds-dangling)"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\nfeeds: ../designs/2026-09-13-gone.md\n---\n\n# A survey\n'
+check "a research feeds: that does not exist fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture supersede-ok)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
+check "a reciprocal supersedes/superseded_by pair passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture supersede-bundle)"
+decide "$fx/dev_docs/decisions/2026-09-13-old/README.md" 'status: superseded\nsuperseded_by: ../2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old/\n'
+check "a bundle on one side of the pair is the same record either way" 0 "$(verdict "$fx")"
+
+fx="$(fixture supersede-oneway)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\n'
+check "superseded_by with no supersedes back fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture supersede-no-target)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\n'
+check "status: superseded with no superseded_by fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture supersede-still-accepted)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: accepted\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
+check "superseded_by on a record still accepted fails" 1 "$(verdict "$fx")"
+
+# --- 11. relative links resolve ---
+fx="$(fixture links-ok)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 \
+  '[a](2026-09-13-a.md#findings) [web](https://example.com) [top](#a) `[code](gone.md)`\n\n[ref]: 2026-09-13-a.md'
+check "a resolving link, a URL, an anchor and a link in a code span pass" 0 "$(verdict "$fx")"
+
+fx="$(fixture links-broken)"
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 'See [the design](../designs/2026-09-01-gone.md).'
+check "a link to a file that does not exist fails" 1 "$(verdict "$fx")"
+check "the failure names the line and the target" ok \
+  "$(grep -q 'line 7: link to ../designs/2026-09-01-gone.md' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture links-ref-broken)"
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 '[ref]: ../gone.md'
+check "a reference definition to a missing file fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture links-fenced)"
+raw "$fx/dev_docs/research/README.md" '# Research\n\n```markdown\n[x](../designs/<name>.md)\n```\n'
+check "a link inside a README template fence is not checked" 0 "$(verdict "$fx")"
+
+# --- 12. the generated index ---
+# A README opts in by carrying the markers. The check fails while the block
+# differs from what the records generate, --write-index makes it match, and a
+# second write changes nothing.
+markers='# Decisions\n\n## Index\n\n<!-- dev-docs-index:start -->\n<!-- dev-docs-index:end -->\n'
+fx="$(fixture index)"
+idx="$fx/dev_docs/decisions/README.md"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
+raw "$idx" "$markers"
+check "a README whose index block is empty fails" 1 "$(verdict "$fx")"
+check "the failure says how to regenerate it" ok \
+  "$(grep -q 'run scripts/dev-docs-layout.py --write-index' "$fx.out" && echo ok || echo missing)"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "--write-index exits 0" 0 $?
+check "after --write-index the check passes" 0 "$(verdict "$fx")"
+check "the live decision is in the main table" ok \
+  "$(grep -q '^| 2026-09-14 | \[2026-09-14-new\](2026-09-14-new.md) |$' "$idx" && echo ok || echo missing)"
+check "the superseded one names what replaced it" ok \
+  "$(grep -q 'superseded by \[2026-09-14-new\](2026-09-14-new.md)' "$idx" && echo ok || echo missing)"
+check "the text outside the markers is kept" ok \
+  "$(head -1 "$idx" | grep -qx '# Decisions' && echo ok || echo missing)"
+before="$(cksum < "$idx")"
+python3 "$check_py" --write-index "$fx" > "$fx.write.out" 2>&1
+check "a second --write-index changes nothing" "$before" "$(cksum < "$idx")"
+check "and reports no rewrite" 0 "$(grep -c rewrote "$fx.write.out")"
+decide "$fx/dev_docs/decisions/2026-09-15-newest.md" 'status: accepted\n'
+check "a record added after the write makes the index stale" 1 "$(verdict "$fx")"
+
+fx="$(fixture index-none)"
+record "$fx/dev_docs/decisions" 2026-09-13-a-choice.md 2026-09-13 '## Revisit when'
+raw "$fx/dev_docs/decisions/README.md" '# Decisions\n'
+check "a README without markers has no index and passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture index-malformed)"
+raw "$fx/dev_docs/research/README.md" '# Research\n\n<!-- dev-docs-index:start -->\n'
+check "a start marker with no end fails" 1 "$(verdict "$fx")"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "and --write-index leaves it alone" 0 "$(grep -c 'dev-docs-index:end' "$fx/dev_docs/research/README.md")"
+
+fx="$(fixture index-empty-designs)"
+raw "$fx/dev_docs/designs/README.md" '# Designs\n\n<!-- dev-docs-index:start -->\n<!-- dev-docs-index:end -->\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "an empty designs/ says none are open" ok \
+  "$(grep -q 'No designs are open.' "$fx/dev_docs/designs/README.md" && echo ok || echo missing)"
+
+python3 "$check_py" --bogus "$fx" > /dev/null 2>&1
+check "an unknown flag exits 2" 2 $?
+
+# --- 13. this repository's own dev_docs/ passes ---
 # The enforcing case. Everything above proves the checker is right; this one
 # makes it bind.
 python3 "$check_py" "$self" > "$work/corpus.out" 2>&1
