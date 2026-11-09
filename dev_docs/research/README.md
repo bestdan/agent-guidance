@@ -43,8 +43,9 @@ and matches `created`. A research record is a snapshot. `feeds` is the one
 field set after writing, when the design or decision it supports exists;
 nothing else changes, and research done again later is a new record. The
 exceptions are the edits `../decisions/README.md` allows a decision: a private
-repo's name, or a pointer into one, replaced with a description of it, and a
-link to a deleted file reduced to its name. When a design that `feeds` names
+repo's name, or a pointer into one, replaced with a description of it; a
+link to a deleted file reduced to its name; and markup the layout checker
+rejects fixed without changing what the record says. When a design that `feeds` names
 graduates and is deleted, point `feeds` at the decision it became; the layout
 checker fails a `feeds` that does not resolve.
 

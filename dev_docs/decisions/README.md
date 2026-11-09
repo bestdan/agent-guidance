@@ -113,6 +113,11 @@ graduated, becomes the bare name in backticks followed by "deleted on
 graduation" or the like. The layout checker fails a link that does not
 resolve and does not follow a name in backticks.
 
+A third, for the same reason: markup the layout checker rejects is fixed
+without changing what the record says. A second `#` heading becomes `##`, and
+a link-shaped quotation that is not a link of this record (replacement text
+quoted for another file, a `[…](…)` placeholder) goes in a code span.
+
 ## Template
 
 ```markdown
