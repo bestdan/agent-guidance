@@ -388,9 +388,13 @@ fx="$(fixture title-two)"
 record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13 '# A second title'
 check "a record with two titles fails" 1 "$(verdict "$fx")"
 
+# raw, not record: record passes its body through %s, which leaves \n as two
+# characters, and this case needs the fence on lines of its own.
 fx="$(fixture title-fenced)"
-record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13 '```markdown\n# Not a title\n```'
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\n---\n\n# Title\n\n```markdown\n# Not a title\n```\n'
 check "a heading inside a fence is not a second title" 0 "$(verdict "$fx")"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\n---\n\n# Title\n\nmarkdown\n# Not a title\n'
+check "the same heading outside the fence is a second title" 1 "$(verdict "$fx")"
 
 fx="$(fixture status-bad)"
 raw "$fx/dev_docs/decisions/2026-09-13-a-choice.md" '---\ncreated: 2026-09-13\nstatus: proposed\n---\n\n# A choice\n\n## Revisit when\n'
@@ -448,9 +452,15 @@ check "superseded_by on a record still accepted fails" 1 "$(verdict "$fx")"
 # --- 11. relative links resolve ---
 fx="$(fixture links-ok)"
 record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
-record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 \
-  '[a](2026-09-13-a.md#findings) [web](https://example.com) [top](#a) `[code](gone.md)`\n\n[ref]: 2026-09-13-a.md'
-check "a resolving link, a URL, an anchor and a link in a code span pass" 0 "$(verdict "$fx")"
+raw "$fx/dev_docs/research/2026-09-13-b.md" \
+  '---\ncreated: 2026-09-13\n---\n\n# B\n\n[a](2026-09-13-a.md#findings) [web](https://example.com) [top](#a) `[code](gone.md)` [root](/dev_docs/elsewhere.md)\n\n[ref]: 2026-09-13-a.md\n[angle]: <2026-09-13-a.md>\n[^1]: a footnote, not a target\n'
+check "a resolving link, URL, anchor, code span, root-relative link, reference and footnote pass" 0 "$(verdict "$fx")"
+
+fx="$(fixture links-ref-angle-broken)"
+raw "$fx/dev_docs/research/2026-09-13-b.md" '---\ncreated: 2026-09-13\n---\n\n# B\n\n[x]: <../gone dir/a.md>\n'
+verdict "$fx" > /dev/null
+check "a missing angle-bracket reference target is named whole" ok \
+  "$(grep -qF 'link to ../gone dir/a.md, which does not exist' "$fx.out" && echo ok || echo missing)"
 
 fx="$(fixture links-broken)"
 record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 'See [the design](../designs/2026-09-01-gone.md).'
@@ -571,6 +581,22 @@ else
   printf 'skip dprint cross-check of the wide-title index (dprint unavailable)\n'
 fi
 
+# The zero-width classes, as literal UTF-8, each one dprint counts differently
+# from a code-point count: a Thai vowel mark, an enclosing mark, a Hangul
+# medial jamo, a word joiner and a byte-order mark; with a soft hyphen, a VS16
+# emoji and a ZWJ emoji sequence, which it counts as a code-point count would.
+# Only dprint can judge these, so the case needs it.
+fx="$(fixture index-zero-width)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\n---\n\n# กั a⃝ 가ᅡ a⁠b a﻿b a­b ❤️ 👩‍💻\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/research/INDEX.md"
+if command -v dprint > /dev/null 2>&1 && (cd "$self" && dprint fmt --stdin INDEX.md < "$idx" > "$fx.dprint" 2> /dev/null); then
+  check "dprint leaves an index of zero-width characters unchanged" ok \
+    "$(cmp -s "$idx" "$fx.dprint" && echo ok || echo changed)"
+else
+  printf 'skip dprint cross-check of the zero-width index (dprint unavailable)\n'
+fi
+
 # A quoted value followed by a YAML comment loses both the comment and the
 # quotes, as the parser's contract says; a `#` inside the quotes is kept.
 fx="$(fixture index-quoted-comment)"
@@ -578,6 +604,10 @@ raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\nquestion:
 python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
 check "a quoted question with a trailing comment is listed bare" ok \
   "$(grep -qF '| why # here? |' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" "---\ncreated: 2026-09-13\nquestion: 'it''s here'\n---\n\n# A\n"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a single-quoted question with a doubled quote loses its outer quotes" ok \
+  "$(grep -qF "| it''s here |" "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
 
 # Write mode checks nothing, but it says which record it left out and why.
 fx="$(fixture index-skip)"

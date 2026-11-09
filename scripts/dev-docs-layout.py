@@ -5,7 +5,9 @@ Run: scripts/dev-docs-layout.py [--write-index] [ROOT]
 
 With --write-index it checks nothing: it writes INDEX.md in every record
 directory (check 9), creating it where it is absent, and names each file it
-wrote. INDEX.md is the only file it writes.
+wrote. INDEX.md is the only file it writes. It always exits 0: a record it
+could not index (its date is not a calendar date, or it is unreadable) is named
+on stderr, and the plain check is what fails on it.
 
 ROOT is the repository root and defaults to the current directory. A ROOT with
 no dev_docs/ anywhere under it has nothing to check and passes. Every violation
@@ -115,7 +117,9 @@ CODE_SPAN = re.compile(r"(`+).*?\1")
 INLINE_LINK = re.compile(
     r"!?\[[^\]]*\]\(\s*(?:<([^>\n]+)>|((?:[^()\s<>]|\([^()\s]*\))+))"
     r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*\)")
-REF_LINK = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)")
+# A reference definition, but not a footnote (`[^1]: text`), whose text is
+# prose rather than a target. Group 1 or 2 is the target.
+REF_LINK = re.compile(r"^\s{0,3}\[(?!\^)[^\]]+\]:\s*(?:<([^>\n]+)>|(\S+))")
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 DECISION_STATUSES = ("accepted", "superseded", "deprecated")
 DESIGN_STATUSES = ("proposed",)
@@ -235,7 +239,9 @@ def created_value(text: str):
 def fields(text: str) -> dict:
     """Top-level `key: value` pairs of the front matter, with a trailing YAML
     comment and surrounding quotes removed. Enough for the flat fields records
-    carry; not a YAML parser."""
+    carry; not a YAML parser. YAML escapes are not interpreted, so `'it''s'`
+    reads as `it''s` and `"a \\"b\\""` keeps its backslashes. Only an index
+    cell shows such a value, and the check reads it the same way."""
     out = {}
     for line in front_matter(text) or []:
         m = FIELD.match(line)
@@ -249,6 +255,8 @@ def fields(text: str) -> dict:
             value = value[1:close]
         else:
             value = re.sub(r"\s+#.*$", "", value).strip()
+            if len(value) > 1 and value[0] in ("\"", "'") and value[-1] == value[0]:
+                value = value[1:-1]
         out[m.group(1)] = value
     return out
 
@@ -492,7 +500,7 @@ def link_targets(text: str):
             yield n, m.group(1) or m.group(2)
         m = REF_LINK.match(bare)
         if m:
-            yield n, m.group(1)
+            yield n, m.group(1) or m.group(2)
 
 
 def check_links(root: pathlib.Path, files, report):
@@ -508,7 +516,9 @@ def check_links(root: pathlib.Path, files, report):
         except OSError:
             continue
         for n, target in link_targets(text):
-            if target.startswith("#") or SCHEME.match(target):
+            # A root-relative target resolves against the repository on GitHub,
+            # which a package's base cannot stand in for, so it is not checked.
+            if target.startswith(("#", "/")) or SCHEME.match(target):
                 continue
             path = urllib.parse.unquote(target.split("#", 1)[0].split("?", 1)[0])
             if path and not (root / rel).parent.joinpath(path).exists():
@@ -521,12 +531,18 @@ def cell(text: str) -> str:
 
 def display_width(text: str) -> int:
     """Terminal columns TEXT takes, which is what dprint pads a table cell to:
-    a wide or full-width character counts two, a combining mark, zero-width
-    space or joiner, or variation selector counts none."""
+    a wide or full-width character counts two; a nonspacing or enclosing mark,
+    a Hangul medial or final jamo, a zero-width space, joiner, word joiner or
+    byte-order mark, or a variation selector counts none. Each rule was checked
+    against dprint's markdown plugin 0.22.1; a soft hyphen, which it counts as
+    one, stays one."""
     total = 0
     for c in text:
         o = ord(c)
-        if unicodedata.combining(c) or 0x200B <= o <= 0x200F or 0xFE00 <= o <= 0xFE0F:
+        if (unicodedata.category(c) in ("Mn", "Me") or unicodedata.combining(c)
+                or 0x1160 <= o <= 0x11FF or 0xD7B0 <= o <= 0xD7FF
+                or 0x200B <= o <= 0x200F or 0x2060 <= o <= 0x2064 or o == 0xFEFF
+                or 0xFE00 <= o <= 0xFE0F):
             continue
         total += 2 if unicodedata.east_asian_width(c) in ("W", "F") else 1
     return total
