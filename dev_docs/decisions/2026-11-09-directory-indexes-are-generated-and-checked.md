@@ -25,21 +25,22 @@ backticks that no longer resolve: a design deleted on graduation and a record
 in another repo. Records are never rewritten, so those two are correct as
 history.
 
-Check 3 of the layout checker allows only dated records and `README.md` in a
-record directory, so a separate `INDEX.md` would fail it.
+The directory READMEs are canonical copies that other repos copy, and each
+repo's records are its own, so an index cannot live in the copied text
+without every copy carrying this repo's list.
 
 ## Decision
 
-Each record directory's `README.md` carries a block between
-`<!-- dev-docs-index:start -->` and `<!-- dev-docs-index:end -->`, generated
-from the records by `scripts/dev-docs-layout.py --write-index`. The plain
-check regenerates the block in memory and fails when it differs from the
-file. The same checker now also requires one `#` title per record and a known
-`status` on decisions and designs, checks that front-matter path fields
-resolve and that a supersession pair names each other, and fails a relative
-markdown link that does not resolve. A filename in backticks is not checked.
-The markers are opt-in, so a repo that has not added them is not failed for
-lacking an index.
+Each record directory carries an `INDEX.md`, generated from its records by
+`scripts/dev-docs-layout.py --write-index`, which creates any that is
+missing. The plain check regenerates each one in memory and fails when it
+differs from the file, and check 3 allows `INDEX.md` beside `README.md`. The
+directory's README links it near the top and carries nothing generated. The
+same checker now also requires one `#` title per record and a known `status`
+on decisions and designs, checks that front-matter path fields resolve and
+that a supersession pair names each other, and fails a relative markdown link
+that does not resolve. A filename in backticks is not checked. A directory
+with no `INDEX.md` is not failed for lacking one.
 
 ## Consequences
 
@@ -49,9 +50,14 @@ lacking an index.
 - Good, because the index is only as right as the front matter, and the
   front matter is now checked, so a dangling `superseded_by` or a broken link
   fails before it reaches the index.
-- Good, because the text outside the markers stays identical to the canonical
-  README, so a future check of copies against the canonical text needs only
-  to drop the block.
+- Good, because a repo copies a canonical README unchanged, and its link to
+  `INDEX.md` fails the link check until that repo generates its own, so a
+  copy never points at a missing index or at this repo's.
+- Good, because the generated file is wholly the tool's, so nobody has to
+  know which part of a hand-written file not to touch, and a stale index
+  shows as a diff to one generated file.
+- Bad, because browsing a directory on GitHub renders the README, not the
+  index; the README's link is one click away from it.
 - Bad, because a consumer whose records break one of the new rules fails at
   its next plugin update, before it has opted into an index at all. The
   rules were chosen so that this repo's 56 files pass without edits.
@@ -66,8 +72,8 @@ lacking an index.
   than the drift it catches.
 - Stale backtick citations turn up in review often enough to justify a check
   that knows which ones are deliberate history.
-- Every consumer carries the markers, at which point a record directory
-  without an index could fail rather than pass.
+- Every consumer carries an `INDEX.md`, at which point a record directory
+  without one could fail rather than pass.
 
 ## Confirmation
 
@@ -80,8 +86,10 @@ stale index here fails CI.
 - **A separate generator script with its own `--check`:** two scripts would
   share the file listing and the record parsing, and a consumer would wire two
   entries into its suite instead of one.
-- **A separate `INDEX.md`:** fails check 3, and splits a directory's rules
-  from the list of what follows them.
+- **A generated block between markers in each README:** the canonical README
+  would carry this repo's index into every copy, and each copy would have to
+  empty and regenerate it; generated and hand-written text would share a
+  file.
 - **Checking filenames in backticks:** fails on legitimate history in
   immutable records, two cases in this repo alone.
 - **A site generator such as log4brains or adr-tools' table of contents:**

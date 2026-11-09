@@ -467,50 +467,64 @@ raw "$fx/dev_docs/research/README.md" '# Research\n\n```markdown\n[x](../designs
 check "a link inside a README template fence is not checked" 0 "$(verdict "$fx")"
 
 # --- 12. the generated index ---
-# A README opts in by carrying the markers. The check fails while the block
-# differs from what the records generate, --write-index makes it match, and a
+# A directory opts in by having an INDEX.md, which --write-index creates. The
+# check fails while the file differs from what the records generate, and a
 # second write changes nothing.
-markers='# Decisions\n\n## Index\n\n<!-- dev-docs-index:start -->\n<!-- dev-docs-index:end -->\n'
 fx="$(fixture index)"
-idx="$fx/dev_docs/decisions/README.md"
+idx="$fx/dev_docs/decisions/INDEX.md"
 decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
 decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
-raw "$idx" "$markers"
-check "a README whose index block is empty fails" 1 "$(verdict "$fx")"
-check "the failure says how to regenerate it" ok \
-  "$(grep -q 'run scripts/dev-docs-layout.py --write-index' "$fx.out" && echo ok || echo missing)"
-python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a directory with no INDEX.md has no index and passes" 0 "$(verdict "$fx")"
+python3 "$check_py" --write-index "$fx" > "$fx.write.out" 2>&1
 check "--write-index exits 0" 0 $?
+check "--write-index creates INDEX.md" ok "$([ -f "$idx" ] && echo ok || echo missing)"
+check "it names the file it wrote" 1 "$(grep -c '^wrote dev_docs/decisions/INDEX.md$' "$fx.write.out")"
 check "after --write-index the check passes" 0 "$(verdict "$fx")"
+check "the index is titled for its directory" ok \
+  "$(head -1 "$idx" | grep -qx '# Decisions index' && echo ok || echo missing)"
 check "the live decision is in the main table" ok \
   "$(grep -q '^| 2026-09-14 | \[2026-09-14-new\](2026-09-14-new.md) |$' "$idx" && echo ok || echo missing)"
 check "the superseded one names what replaced it" ok \
   "$(grep -q 'superseded by \[2026-09-14-new\](2026-09-14-new.md)' "$idx" && echo ok || echo missing)"
-check "the text outside the markers is kept" ok \
-  "$(head -1 "$idx" | grep -qx '# Decisions' && echo ok || echo missing)"
 before="$(cksum < "$idx")"
 python3 "$check_py" --write-index "$fx" > "$fx.write.out" 2>&1
 check "a second --write-index changes nothing" "$before" "$(cksum < "$idx")"
-check "and reports no rewrite" 0 "$(grep -c rewrote "$fx.write.out")"
+check "and reports no write" 0 "$(grep -c wrote "$fx.write.out")"
+printf '\nA hand edit.\n' >> "$idx"
+check "a hand edit to INDEX.md fails" 1 "$(verdict "$fx")"
+check "the failure says to regenerate rather than edit" ok \
+  "$(grep -q 'run scripts/dev-docs-layout.py --write-index rather than editing it' "$fx.out" && echo ok || echo missing)"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
 decide "$fx/dev_docs/decisions/2026-09-15-newest.md" 'status: accepted\n'
 check "a record added after the write makes the index stale" 1 "$(verdict "$fx")"
 
-fx="$(fixture index-none)"
-record "$fx/dev_docs/decisions" 2026-09-13-a-choice.md 2026-09-13 '## Revisit when'
-raw "$fx/dev_docs/decisions/README.md" '# Decisions\n'
-check "a README without markers has no index and passes" 0 "$(verdict "$fx")"
-
-fx="$(fixture index-malformed)"
-raw "$fx/dev_docs/research/README.md" '# Research\n\n<!-- dev-docs-index:start -->\n'
-check "a start marker with no end fails" 1 "$(verdict "$fx")"
+# A README that links its INDEX.md, copied into a repo that has not generated
+# one, fails the link check until --write-index runs. That is what keeps a
+# copied README from pointing at nothing.
+fx="$(fixture index-linked)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/research/README.md" '# Research\n\nListed in [`INDEX.md`](INDEX.md).\n'
+check "a README linking an INDEX.md that does not exist fails" 1 "$(verdict "$fx")"
 python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
-check "and --write-index leaves it alone" 0 "$(grep -c 'dev-docs-index:end' "$fx/dev_docs/research/README.md")"
+check "and passes once --write-index has made it" 0 "$(verdict "$fx")"
 
 fx="$(fixture index-empty-designs)"
-raw "$fx/dev_docs/designs/README.md" '# Designs\n\n<!-- dev-docs-index:start -->\n<!-- dev-docs-index:end -->\n'
+raw "$fx/dev_docs/designs/README.md" '# Designs\n'
 python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
 check "an empty designs/ says none are open" ok \
-  "$(grep -q 'No designs are open.' "$fx/dev_docs/designs/README.md" && echo ok || echo missing)"
+  "$(grep -q 'No designs are open.' "$fx/dev_docs/designs/INDEX.md" && echo ok || echo missing)"
+
+fx="$(fixture index-not-tooling)"
+mkdir -p "$fx/dev_docs/tasks" "$fx/dev_docs/.handoffs"
+: > "$fx/dev_docs/tasks/a-card.md"
+: > "$fx/dev_docs/.handoffs/a-note.md"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "--write-index writes no INDEX.md into tasks/ or a dot-directory" ok \
+  "$([ ! -e "$fx/dev_docs/tasks/INDEX.md" ] && [ ! -e "$fx/dev_docs/.handoffs/INDEX.md" ] && echo ok || echo wrote)"
+
+fx="$(fixture index-misnamed)"
+raw "$fx/dev_docs/research/index.md" '# lowercase\n'
+check "only INDEX.md is exempt from the record pattern, not index.md" 1 "$(verdict "$fx")"
 
 python3 "$check_py" --bogus "$fx" > /dev/null 2>&1
 check "an unknown flag exits 2" 2 $?
