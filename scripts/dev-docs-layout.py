@@ -90,6 +90,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import unicodedata
 import urllib.parse
 
 CONVENTION = "dev_docs_layout.md in the agent-guidance plugin"
@@ -108,7 +109,12 @@ REVISIT = re.compile(r"^## Revisit when\s*$")
 FIELD = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*?)\s*$")
 H1 = re.compile(r"^# (.+?)\s*#*\s*$")
 CODE_SPAN = re.compile(r"(`+).*?\1")
-INLINE_LINK = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
+# The target is <...> (which may hold spaces and parentheses) or a bare run
+# allowing one level of balanced parentheses; the title is any of CommonMark's
+# three forms. Group 1 or 2 is the target.
+INLINE_LINK = re.compile(
+    r"!?\[[^\]]*\]\(\s*(?:<([^>\n]+)>|((?:[^()\s<>]|\([^()\s]*\))+))"
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*\)")
 REF_LINK = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)")
 SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 DECISION_STATUSES = ("accepted", "superseded", "deprecated")
@@ -236,8 +242,11 @@ def fields(text: str) -> dict:
         if not m:
             continue
         value = m.group(2)
-        if value[:1] in "\"'" and value[-1:] == value[:1] and len(value) > 1:
-            value = value[1:-1]
+        quote = value[:1]
+        close = value.find(quote, 1) if quote in ("\"", "'") else -1
+        rest = value[close + 1:].strip() if close > 0 else None
+        if rest is not None and (rest == "" or rest.startswith("#")):
+            value = value[1:close]
         else:
             value = re.sub(r"\s+#.*$", "", value).strip()
         out[m.group(1)] = value
@@ -480,7 +489,7 @@ def link_targets(text: str):
     for n, line in prose_lines(text):
         bare = CODE_SPAN.sub("", line)
         for m in INLINE_LINK.finditer(bare):
-            yield n, m.group(1)
+            yield n, m.group(1) or m.group(2)
         m = REF_LINK.match(bare)
         if m:
             yield n, m.group(1)
@@ -510,13 +519,28 @@ def cell(text: str) -> str:
     return text.replace("|", "\\|")
 
 
+def display_width(text: str) -> int:
+    """Terminal columns TEXT takes, which is what dprint pads a table cell to:
+    a wide or full-width character counts two, a combining mark, zero-width
+    space or joiner, or variation selector counts none."""
+    total = 0
+    for c in text:
+        o = ord(c)
+        if unicodedata.combining(c) or 0x200B <= o <= 0x200F or 0xFE00 <= o <= 0xFE0F:
+            continue
+        total += 2 if unicodedata.east_asian_width(c) in ("W", "F") else 1
+    return total
+
+
 def table(header, rows):
-    """A markdown table padded the way dprint pads one, so the generated block
+    """A markdown table padded the way dprint pads one, so the generated file
     is already in the form the formatter would leave it."""
-    widths = [max(3, len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(header)]
+    widths = [max(3, display_width(h), *(display_width(r[i]) for r in rows))
+              for i, h in enumerate(header)]
 
     def line(cells):
-        return "| " + " | ".join(c.ljust(w) for c, w in zip(cells, widths)) + " |"
+        return "| " + " | ".join(c + " " * (w - display_width(c))
+                                 for c, w in zip(cells, widths)) + " |"
 
     return [line(header), line(["-" * w for w in widths]), *(line(r) for r in rows)]
 
@@ -599,7 +623,10 @@ def check_index(root: pathlib.Path, files, records, report):
             report(rel, "out of date; it is generated, so run scripts/dev-docs-layout.py --write-index rather than editing it")
 
 
-def check_records(root: pathlib.Path, files, report):
+def check_records(root: pathlib.Path, files, report, on_skip=None):
+    """Checks 3 to 6, and returns the records an index can list. ON_SKIP, when
+    given, is called with the path of each record left out because its date
+    is not a calendar date or it could not be read."""
     # Bundle directories seen, and whether each one's README.md turned up: a
     # bundle without its record is artifacts nothing explains.
     bundles = {}
@@ -614,6 +641,8 @@ def check_records(root: pathlib.Path, files, report):
         r = check_record_body(root, rel, date, directory, report)
         if r is not None:
             records.append(r)
+        elif on_skip is not None:
+            on_skip(rel)
 
     for rel in files:
         parts = rel.parts
@@ -695,7 +724,18 @@ def main(argv):
         for package in sorted(listing):
             base = root / package
             files = sorted(listing[package])
-            records = check_records(base, files, lambda rel, message: None)
+            # Write mode checks nothing, but a record left out of the index is
+            # said out loud, with the reason the check would give.
+            seen = {}
+
+            def note(rel, message, seen=seen):
+                seen.setdefault(rel, []).append(message)
+
+            def skipped(rel, seen=seen, package=package):
+                why = "; ".join(seen.get(rel, [])) or "unreadable"
+                print(f"skipped {(package / rel).as_posix()}: not indexed, {why}", file=sys.stderr)
+
+            records = check_records(base, files, note, skipped)
             for rel in write_index(base, files, records):
                 print(f"wrote {(package / rel).as_posix()}")
         return 0

@@ -462,6 +462,29 @@ fx="$(fixture links-ref-broken)"
 record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 '[ref]: ../gone.md'
 check "a reference definition to a missing file fails" 1 "$(verdict "$fx")"
 
+# CommonMark allows three title forms and balanced parentheses in a target. A
+# form the pattern misses is a broken link the check never sees; a target it
+# cuts short is a false failure.
+fx="$(fixture links-forms-ok)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/foo_(bar).md" '# Notes\n'
+raw "$fx/dev_docs/a b.md" '# Notes\n'
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 \
+  "[s](2026-09-13-a.md 'single') [p](2026-09-13-a.md (paren)) [d](2026-09-13-a.md \"double\") [b](../foo_(bar).md) [a](<../a b.md>)"
+check "every title form, balanced parentheses and an angle target pass" 0 "$(verdict "$fx")"
+
+for form in "'t'" '(t)' '"t"'; do
+  fx="$(fixture "links-title-$RANDOM")"
+  record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 "[x](gone.md $form)"
+  check "a missing target with a $form title fails" 1 "$(verdict "$fx")"
+done
+
+fx="$(fixture links-paren-broken)"
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 '[x](../gone_(x).md)'
+verdict "$fx" > /dev/null
+check "a missing target with parentheses is named whole" ok \
+  "$(grep -qF 'link to ../gone_(x).md, which does not exist' "$fx.out" && echo ok || echo missing)"
+
 fx="$(fixture links-fenced)"
 raw "$fx/dev_docs/research/README.md" '# Research\n\n```markdown\n[x](../designs/<name>.md)\n```\n'
 check "a link inside a README template fence is not checked" 0 "$(verdict "$fx")"
@@ -507,6 +530,61 @@ raw "$fx/dev_docs/research/README.md" '# Research\n\nListed in [`INDEX.md`](INDE
 check "a README linking an INDEX.md that does not exist fails" 1 "$(verdict "$fx")"
 python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
 check "and passes once --write-index has made it" 0 "$(verdict "$fx")"
+
+fx="$(fixture index-spike)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/research/my-spike/ledger.md" '# Ledger\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a research spike gets its own section in the index" ok \
+  "$(grep -q '^## Research spikes$' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+check "and is linked as a directory" ok \
+  "$(grep -qF -- '- [`my-spike/`](my-spike/)' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+check "the spike link resolves, so the check passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture index-deprecated)"
+decide "$fx/dev_docs/decisions/2026-09-13-dropped.md" 'status: deprecated\n'
+decide "$fx/dev_docs/decisions/2026-09-14-live.md" 'status: accepted\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/decisions/INDEX.md"
+check "a deprecated decision is listed as deprecated" ok \
+  "$(grep -q '^| 2026-09-13 | \[2026-09-13-dropped\](2026-09-13-dropped.md) | deprecated *|$' "$idx" && echo ok || echo missing)"
+check "below the superseded-and-deprecated heading, not in the main table" ok \
+  "$(awk '/^## Superseded and deprecated$/{s=1} /2026-09-13-dropped/{print (s ? "ok" : "main")}' "$idx")"
+
+# dprint pads a table cell to its display width, so a wide title padded by
+# character count is one the formatter rewrites and the check then calls
+# stale. Cross-checked against dprint itself when it is installed.
+fx="$(fixture index-wide)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\n---\n\n# 日本語のタイトル ✅ done\n'
+record "$fx/dev_docs/research" 2026-09-14-b.md 2026-09-14
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/research/INDEX.md"
+wide="$(grep -F '日本語' "$idx")"
+narrow="$(grep -F '2026-09-14-b' "$idx")"
+check "a wide title pads to the same display width as a narrow one" \
+  "$(printf '%s' "$narrow" | wc -m | tr -d ' ')" \
+  "$(printf '%s' "$wide" | python3 -c 'import sys, unicodedata as u; s = sys.stdin.read(); print(sum(2 if u.east_asian_width(c) in "WF" else 1 for c in s))')"
+if command -v dprint > /dev/null 2>&1 && (cd "$self" && dprint fmt --stdin INDEX.md < "$idx" > "$fx.dprint" 2> /dev/null); then
+  check "dprint leaves the wide-title index unchanged" ok \
+    "$(cmp -s "$idx" "$fx.dprint" && echo ok || echo changed)"
+else
+  printf 'skip dprint cross-check of the wide-title index (dprint unavailable)\n'
+fi
+
+# A quoted value followed by a YAML comment loses both the comment and the
+# quotes, as the parser's contract says; a `#` inside the quotes is kept.
+fx="$(fixture index-quoted-comment)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\nquestion: "why # here?" # a note\n---\n\n# A\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a quoted question with a trailing comment is listed bare" ok \
+  "$(grep -qF '| why # here? |' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+
+# Write mode checks nothing, but it says which record it left out and why.
+fx="$(fixture index-skip)"
+raw "$fx/dev_docs/research/2026-02-30-a.md" '---\ncreated: 2026-02-30\n---\n\n# A\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2> "$fx.err"
+check "--write-index names a record it could not index, with the reason" ok \
+  "$(grep -qF 'skipped dev_docs/research/2026-02-30-a.md: not indexed, 2026-02-30 is not a calendar date' "$fx.err" && echo ok || echo missing)"
 
 fx="$(fixture index-empty-designs)"
 raw "$fx/dev_docs/designs/README.md" '# Designs\n'
