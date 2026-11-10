@@ -6,7 +6,7 @@ duplicates hides the few tests that catch bugs. Each rule below comes with a
 case to follow and a case to avoid, because a concrete rule changes what gets
 written and "write good tests" does not.
 
-A repo's own testing docs win where they are stricter or more specific, per the
+A repo's own testing docs win where they disagree with this file, per the
 `## Precedence` section of `portable.md`.
 
 ## The rules

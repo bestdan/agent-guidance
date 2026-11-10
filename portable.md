@@ -72,7 +72,7 @@ Nothing enforces this split. Both instruction sets land in the same context wind
 - Don't refactor surrounding code unless asked.
 - Don't introduce new dependencies without discussing first.
 - Don't add unasked-for functionality.
-- Don't disable or delete tests to make things pass. Removing a redundant test is a different change and is allowed: its PR names the test that still covers the behaviour.
+- Don't disable or delete tests to make things pass. Removing a redundant test is a different change and is allowed: its PR names the test that still covers the behaviour, or says why the behaviour needs no test.
 - Don't create new files when editing existing ones will do.
 - Don't use `find -exec` — use `rg`, `fd`, or file pattern options instead.
 - Don't write commit messages that describe _what_ changed — focus on _why_.

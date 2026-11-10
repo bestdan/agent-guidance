@@ -21,7 +21,8 @@ Read both, in this order, before writing a finding:
 
 When the diff adds or changes tests, also read
 `${CLAUDE_PLUGIN_ROOT}/testing.md`. Its `## Reviewing tests` section is the
-checklist for each added test.
+per-test checklist for rules 1–6. Check the change as a whole against rules
+7–10.
 
 Do not read `authoring_pull_requests.md`. It states the same conventions as
 things to do, for the `agent-guidance:authoring` skill; `reviewing.md` already
