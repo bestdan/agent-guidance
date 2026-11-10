@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Checks a repo's dev_docs/ against the layout in dev_docs_layout.md.
 
-Run: scripts/dev-docs-layout.py [ROOT]
+Run: scripts/dev-docs-layout.py [--write-index] [ROOT]
+
+With --write-index it checks nothing: it writes INDEX.md in every record
+directory (check 9), creating it where it is absent, and names each file it
+wrote. INDEX.md is the only file it writes. It exits 0 unless it cannot read
+or write an INDEX.md: a record it could not index (its date is not a calendar
+date, or it is unreadable) is named on stderr, and the plain check is what
+fails on it.
 
 ROOT is the repository root and defaults to the current directory. A ROOT with
 no dev_docs/ anywhere under it has nothing to check and passes. Every violation
@@ -26,7 +33,8 @@ The checks, each one the Enforcement section of dev_docs_layout.md names:
    show the syntax.
 3. Every entry in a record or design directory, which is every directory under
    dev_docs/ other than tasks/, is YYYY-MM-DD-<slug>.md, a YYYY-MM-DD-<slug>/
-   bundle directory, or README.md. Slugs are kebab-case, lowercase, ASCII.
+   bundle directory, README.md, or the generated INDEX.md. Slugs are
+   kebab-case, lowercase, ASCII.
 4. A bundle directory holds README.md, which is the record, and references/,
    which holds its artifacts and is not inspected further. No flat
    YYYY-MM-DD-<slug>.md sits beside a bundle of the same name: the directory
@@ -35,7 +43,24 @@ The checks, each one the Enforcement section of dev_docs_layout.md names:
    gitignored, or not added yet, is indistinguishable from one with none.
 5. A record's `created` front-matter field equals the date in its filename, or
    in its bundle directory's name.
-6. A decision record has a `## Revisit when` section.
+6. A decision record has a `## Revisit when` section. Every record has exactly
+   one `# ` heading outside code blocks, which the index lists as its title. A
+   decision's `status` is accepted, superseded or deprecated, and a design's
+   is proposed. A front-matter field that names a file (a decision's
+   `convention`, `supersedes` and `superseded_by`; research's `feeds`)
+   resolves from the record's own directory, unless it is a URL.
+7. A decision's `supersedes` and `superseded_by` name each other, a record
+   with `superseded_by` is `status: superseded`, and one that is superseded
+   names its replacement.
+8. Every relative link in a dev_docs/ markdown file, inline or a reference
+   definition, resolves to a file; the anchor is not checked. Links in code
+   spans and fenced blocks are not links. A filename quoted in backticks is
+   not a link and is not checked: records cite deleted designs and other
+   repos' records that way, and a record cannot be rewritten to drop one.
+9. A record directory's INDEX.md is exactly what --write-index would write
+   there: the directory's records, newest first, each linked by its title. A
+   directory without an INDEX.md has no index and is not checked; running
+   --write-index once is how a repo opts in.
 
 Undated subdirectories of research/ are skipped by checks 2 and 3: the
 research-spike skill owns those trees, keeps a question ledger with checkboxes
@@ -61,14 +86,18 @@ so its contents are no check's to judge, and outside a repository nothing else
 would filter them out.
 """
 
+import dataclasses
 import datetime
 import os
 import pathlib
 import re
 import subprocess
 import sys
+import unicodedata
+import urllib.parse
 
 CONVENTION = "dev_docs_layout.md in the agent-guidance plugin"
+USAGE = "Run: scripts/dev-docs-layout.py [--write-index] [ROOT]"
 
 SLUG = r"(\d{4}-\d{2}-\d{2})-(?:[a-z0-9]+(?:-[a-z0-9]+)*)"
 RECORD_NAME = re.compile(rf"^{SLUG}\.md$")
@@ -80,6 +109,30 @@ CHECKBOX = re.compile(r"^\s*[-*+] \[ \]")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 CREATED = re.compile(r"^created:\s*(.*?)\s*$")
 REVISIT = re.compile(r"^## Revisit when\s*$")
+FIELD = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*?)\s*$")
+H1 = re.compile(r"^# (.+?)(?:\s+#+)?\s*$")
+CODE_SPAN = re.compile(r"(`+).*?\1")
+# The target is <...> (which may hold spaces and parentheses) or a bare run
+# allowing one level of balanced parentheses; the title is any of CommonMark's
+# three forms. Group 1 or 2 is the target.
+INLINE_LINK = re.compile(
+    r"!?\[[^\]]*\]\(\s*(?:<([^>\n]+)>|((?:[^()\s<>]|\([^()\s]*\))+))"
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*\)")
+# A reference definition, but not a footnote (`[^1]: text`), whose text is
+# prose rather than a target. Group 1 or 2 is the target.
+REF_LINK = re.compile(r"^\s{0,3}\[(?!\^)[^\]]+\]:\s*(?:<([^>\n]+)>|(\S+))")
+SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+DECISION_STATUSES = ("accepted", "superseded", "deprecated")
+DESIGN_STATUSES = ("proposed",)
+# Front-matter fields that name another file, relative to the record's own
+# directory, per directory.
+PATH_FIELDS = {
+    "decisions": ("convention", "supersedes", "superseded_by"),
+    "research": ("feeds",),
+}
+INDEX = "INDEX.md"
+INDEX_NOTE = ("<!-- Generated by scripts/dev-docs-layout.py --write-index from each "
+              "record's front matter and title. Edit the records, not this file. -->")
 # Entries only the repository root's dev_docs/ may hold.
 ROOT_ONLY = ("tasks", ".handoffs")
 
@@ -182,6 +235,58 @@ def created_value(text: str):
         if m:
             return m.group(1).strip("\"'")
     return None
+
+
+def fields(text: str) -> dict:
+    """Top-level `key: value` pairs of the front matter, with a trailing YAML
+    comment and surrounding quotes removed. Enough for the flat fields records
+    carry; not a YAML parser. YAML escapes are not interpreted, so `'it''s'`
+    reads as `it''s` and `"a \\"b\\""` keeps its backslashes. Only an index
+    cell shows such a value, and the check reads it the same way."""
+    out = {}
+    for line in front_matter(text) or []:
+        m = FIELD.match(line)
+        if not m:
+            continue
+        value = m.group(2)
+        quote = value[:1]
+        close = value.find(quote, 1) if quote in ("\"", "'") else -1
+        rest = value[close + 1:].strip() if close > 0 else None
+        if rest is not None and (rest == "" or rest.startswith("#")):
+            value = value[1:close]
+        else:
+            value = re.sub(r"\s+#.*$", "", value).strip()
+            if len(value) > 1 and value[0] in ("\"", "'") and value[-1] == value[0]:
+                value = value[1:-1]
+        out[m.group(1)] = value
+    return out
+
+
+def prose_lines(text: str):
+    """(line number, line) for each line outside the front matter and outside
+    fenced code blocks, so a README's template is not read as content."""
+    lines = text.splitlines()
+    start = 0
+    fm = front_matter(text)
+    if fm is not None:
+        start = len(fm) + 2
+    fence = None
+    for n in range(start, len(lines)):
+        line = lines[n]
+        m = FENCE.match(line)
+        if m:
+            marker = m.group(1)
+            if fence is None:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence):
+                fence = None
+            continue
+        if fence is None:
+            yield n + 1, line
+
+
+def titles(text: str):
+    return [m.group(1) for _, ln in prose_lines(text) if (m := H1.match(ln))]
 
 
 def in_tool_entry(rel: pathlib.Path) -> bool:
@@ -318,9 +423,233 @@ def check_record_body(root: pathlib.Path, rel: pathlib.Path, date: str,
         report(rel, f"created: {created} does not match the record's date {date}")
     if directory == "decisions" and not any(REVISIT.match(ln) for ln in text.splitlines()):
         report(rel, "no `## Revisit when` section; a decision says what would reopen it")
+    heads = titles(text)
+    if len(heads) != 1:
+        report(rel, f"{len(heads)} `# ` headings outside code blocks; a record has exactly one, its title, which the index lists")
+    meta = fields(text)
+    allowed = {"decisions": DECISION_STATUSES, "designs": DESIGN_STATUSES}.get(directory)
+    status = meta.get("status", "")
+    if allowed and status not in allowed:
+        shown = f"status: {status}" if status else "no `status:`"
+        report(rel, f"{shown}; a record in {directory}/ is one of {', '.join(allowed)}")
+    for key in PATH_FIELDS.get(directory, ()):
+        value = meta.get(key, "")
+        if value and not SCHEME.match(value) and not (root / rel).parent.joinpath(value).exists():
+            report(rel, f"{key}: {value} does not exist, relative to this record")
+    return Record(rel, date, directory, heads[0] if heads else rel.stem, meta)
 
 
-def check_records(root: pathlib.Path, files, report):
+@dataclasses.dataclass
+class Record:
+    rel: pathlib.Path
+    date: str
+    directory: str
+    title: str
+    meta: dict
+
+    @property
+    def link(self) -> str:
+        """The link a README in the record's directory uses for it."""
+        if self.rel.name == "README.md":
+            return f"{self.rel.parent.name}/"
+        return self.rel.name
+
+
+def record_key(path: pathlib.Path) -> str:
+    """The identity of the record PATH names, so a bundle directory, its
+    README.md, and a trailing slash all compare equal. Compare only keys built
+    from paths of the same kind, all absolute or all relative to one base."""
+    path = pathlib.Path(os.path.normpath(path))
+    if path.name == "README.md":
+        path = path.parent
+    elif path.suffix == ".md":
+        path = path.with_suffix("")
+    return path.as_posix()
+
+
+def check_supersession(root: pathlib.Path, records, report):
+    """Check 7: supersedes and superseded_by name each other, and status agrees
+    with superseded_by. A dangling target is check_record_body's to report."""
+    by_key = {record_key(root / r.rel): r for r in records if r.directory == "decisions"}
+    for key, r in sorted(by_key.items()):
+        status = r.meta.get("status", "")
+        newer = r.meta.get("superseded_by", "")
+        older = r.meta.get("supersedes", "")
+        if status == "superseded" and not newer:
+            report(r.rel, "status: superseded with no `superseded_by:`; name the record that replaced it")
+        if newer and status != "superseded":
+            report(r.rel, f"superseded_by: {newer} but status: {status or '(none)'}; a replaced record is status: superseded")
+        for field, back, value in (("superseded_by", "supersedes", newer),
+                                   ("supersedes", "superseded_by", older)):
+            if not value:
+                continue
+            other = by_key.get(record_key((root / r.rel).parent / value))
+            if other is None:
+                continue
+            target = other.meta.get(back, "")
+            if not target or record_key((root / other.rel).parent / target) != key:
+                report(r.rel, f"{field}: {value}, but that record's `{back}:` does not name this one")
+
+
+def link_targets(text: str):
+    """(line number, target) for each link in prose: inline, image and
+    reference-definition links, with code spans removed first so a link shown
+    as code is not read as one."""
+    for n, line in prose_lines(text):
+        bare = CODE_SPAN.sub("", line)
+        for m in INLINE_LINK.finditer(bare):
+            yield n, m.group(1) or m.group(2)
+        m = REF_LINK.match(bare)
+        if m:
+            yield n, m.group(1) or m.group(2)
+
+
+def check_links(root: pathlib.Path, files, report):
+    """Check 8: every relative link in a dev_docs/ markdown file resolves. The
+    anchor is not checked, only the file. Plans, spikes and references/ are
+    other owners' content and are skipped as the other checks skip them."""
+    for rel in files:
+        if (rel.suffix != ".md" or in_plan_dir(rel) or in_research_spike(rel)
+                or in_references(rel) or rel.parts[1:2] == ("tasks",)):
+            continue
+        try:
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for n, target in link_targets(text):
+            # A root-relative target resolves against the repository on GitHub,
+            # which a package's base cannot stand in for, so it is not checked.
+            if target.startswith(("#", "/")) or SCHEME.match(target):
+                continue
+            path = urllib.parse.unquote(target.split("#", 1)[0].split("?", 1)[0])
+            if path and not (root / rel).parent.joinpath(path).exists():
+                report(rel, f"line {n}: link to {target}, which does not exist")
+
+
+def cell(text: str) -> str:
+    return text.replace("|", "\\|")
+
+
+def label(text: str) -> str:
+    """TEXT as a table cell's link text: a backslash, `[` or `]` is escaped
+    too, so an unbalanced bracket in a title cannot end the link early."""
+    return cell(text.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]"))
+
+
+def display_width(text: str) -> int:
+    """Terminal columns TEXT takes, which is what dprint pads a table cell to:
+    a wide or full-width character counts two; a nonspacing or enclosing mark,
+    a Hangul medial or final jamo, a zero-width space, joiner, word joiner or
+    byte-order mark, or a variation selector counts none. Each rule was checked
+    against dprint's markdown plugin 0.22.1; a soft hyphen, which it counts as
+    one, stays one."""
+    total = 0
+    for c in text:
+        o = ord(c)
+        if (unicodedata.category(c) in ("Mn", "Me") or unicodedata.combining(c)
+                or 0x1160 <= o <= 0x11FF or 0xD7B0 <= o <= 0xD7FF
+                or 0x200B <= o <= 0x200F or 0x2060 <= o <= 0x2064 or o == 0xFEFF
+                or 0xFE00 <= o <= 0xFE0F):
+            continue
+        total += 2 if unicodedata.east_asian_width(c) in ("W", "F") else 1
+    return total
+
+
+def table(header, rows):
+    """A markdown table padded the way dprint pads one, so the generated file
+    is already in the form the formatter would leave it."""
+    widths = [max(3, display_width(h), *(display_width(r[i]) for r in rows))
+              for i, h in enumerate(header)]
+
+    def line(cells):
+        return "| " + " | ".join(c + " " * (w - display_width(c))
+                                 for c, w in zip(cells, widths)) + " |"
+
+    return [line(header), line(["-" * w for w in widths]), *(line(r) for r in rows)]
+
+
+def render_index(directory: str, records, spikes) -> str:
+    """The INDEX.md for DIRECTORY, newest record first."""
+    records = sorted(records, key=lambda r: (r.date, r.rel.as_posix()), reverse=True)
+    out = [f"# {directory.capitalize()} index", "", INDEX_NOTE, ""]
+    if directory == "decisions":
+        live = [r for r in records if r.meta.get("status") not in ("superseded", "deprecated")]
+        gone = [r for r in records if r not in live]
+        by_key = {record_key(r.rel): r for r in records}
+        out += table(["Date", "Decision"],
+                     [[r.date, f"[{label(r.title)}]({r.link})"] for r in live]) if live else ["No decisions yet."]
+        if gone:
+            rows = []
+            for r in gone:
+                newer = by_key.get(record_key(r.rel.parent / r.meta.get("superseded_by", "")))
+                if r.meta.get("status") == "deprecated":
+                    fate = "deprecated"
+                elif newer:
+                    fate = f"superseded by [{label(newer.title)}]({newer.link})"
+                else:
+                    fate = "superseded"
+                rows.append([r.date, f"[{label(r.title)}]({r.link})", fate])
+            out += ["", "## Superseded and deprecated", ""]
+            out += table(["Date", "Decision", "Status"], rows)
+    elif directory == "research":
+        out += table(["Date", "Research", "Question"],
+                     [[r.date, f"[{label(r.title)}]({r.link})", cell(r.meta.get("question", ""))]
+                      for r in records]) if records else ["No research records yet."]
+        if spikes:
+            out += ["", "## Research spikes", "", "Each keeps its own ledger.", ""]
+            out += [f"- [`{s}/`]({s}/)" for s in sorted(spikes)]
+    elif directory == "designs":
+        rows = []
+        for r in records:
+            tracks = r.meta.get("tracks", "")
+            rows.append([r.date, f"[{label(r.title)}]({r.link})",
+                         f"<{tracks}>" if SCHEME.match(tracks) else cell(tracks)])
+        out += table(["Date", "Design", "Tracks"], rows) if rows else ["No designs are open."]
+    else:
+        out += table(["Date", "Record"],
+                     [[r.date, f"[{label(r.title)}]({r.link})"] for r in records]) if records else ["No records yet."]
+    return "\n".join(out) + "\n"
+
+
+def record_directories(files):
+    """The record directories under dev_docs/ that hold any listed file:
+    every directory but tasks/ and a dot-prefixed one, which belong to tools."""
+    return sorted({rel.parts[1] for rel in files
+                   if len(rel.parts) >= 3 and rel.parts[1] != "tasks"
+                   and not rel.parts[1].startswith(".")})
+
+
+def indexes(files, records):
+    """(INDEX.md path, its text as generated) for every record directory."""
+    spikes = {}
+    for rel in files:
+        if in_research_spike(rel):
+            spikes.setdefault(rel.parts[1], set()).add(rel.parts[2])
+    return [(pathlib.Path("dev_docs", d, INDEX),
+             render_index(d, [r for r in records if r.directory == d], spikes.get(d, set())))
+            for d in record_directories(files)]
+
+
+def check_index(root: pathlib.Path, files, records, report):
+    """Check 9: a record directory's INDEX.md is exactly what the records
+    generate. A directory without one has no index and is not checked."""
+    present = set(files)
+    for rel, text in indexes(files, records):
+        if rel not in present:
+            continue
+        try:
+            current = (root / rel).read_text(encoding="utf-8")
+        except OSError as e:
+            report(rel, f"unreadable: {e}")
+            continue
+        if current != text:
+            report(rel, "out of date; it is generated, so run scripts/dev-docs-layout.py --write-index rather than editing it")
+
+
+def check_records(root: pathlib.Path, files, report, on_skip=None):
+    """Checks 3 to 6, and returns the records an index can list. ON_SKIP, when
+    given, is called with the path of each record left out because its date
+    is not a calendar date or it could not be read."""
     # Bundle directories seen, and whether each one's README.md turned up: a
     # bundle without its record is artifacts nothing explains.
     bundles = {}
@@ -329,6 +658,15 @@ def check_records(root: pathlib.Path, files, report):
     # encounter, because the flat file and the bundle's files interleave in the
     # listing and the verdict must not depend on which came first.
     flats = set()
+    records = []
+
+    def body(rel, date, directory):
+        r = check_record_body(root, rel, date, directory, report)
+        if r is not None:
+            records.append(r)
+        elif on_skip is not None:
+            on_skip(rel)
+
     for rel in files:
         parts = rel.parts
         if len(parts) < 3 or parts[1] == "tasks":
@@ -344,7 +682,7 @@ def check_records(root: pathlib.Path, files, report):
                     continue
                 if len(parts) == 4 and parts[3] == "README.md":
                     bundles[bundle_dir] = True
-                    check_record_body(root, rel, bundle.group(1), directory, report)
+                    body(rel, bundle.group(1), directory)
                     continue
                 report(rel, f"a record bundle holds README.md and references/, nothing else; see {CONVENTION}")
                 continue
@@ -352,27 +690,47 @@ def check_records(root: pathlib.Path, files, report):
                 continue
             report(rel, f"a subdirectory is not allowed under dev_docs/{directory}/")
             continue
-        if name == "README.md":
+        if name in ("README.md", INDEX):
             continue
         m = RECORD_NAME.match(name)
         if not m:
-            report(rel, f"not YYYY-MM-DD-<slug>.md (kebab-case, lowercase) or README.md; dev_docs/{directory}/ holds records")
+            report(rel, f"not YYYY-MM-DD-<slug>.md (kebab-case, lowercase), README.md or {INDEX}; dev_docs/{directory}/ holds records")
             continue
         flats.add(rel.with_suffix(""))
-        check_record_body(root, rel, m.group(1), directory, report)
+        body(rel, m.group(1), directory)
     for bundle, has_readme in sorted(bundles.items()):
         if not has_readme:
             report(bundle, "a record bundle's README.md is the record; this one has artifacts and no record")
         if bundle in flats:
             report(bundle, f"also exists as {bundle.name}.md; a record is a flat file or a bundle, never both; see {CONVENTION}")
+    return records
+
+
+def write_index(root: pathlib.Path, files, records) -> list:
+    """Writes INDEX.md in every record directory under root's dev_docs/ whose
+    generated text differs from what is there, creating it where it is absent.
+    Returns the paths it wrote."""
+    changed = []
+    for rel, text in indexes(files, records):
+        path = root / rel
+        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+            path.write_text(text, encoding="utf-8")
+            changed.append(rel)
+    return changed
 
 
 def main(argv):
-    if len(argv) > 2 or argv[1:] in (["-h"], ["--help"]):
+    args = argv[1:]
+    if args in (["-h"], ["--help"]):
         print(__doc__.strip().splitlines()[0])
-        print("Run: scripts/dev-docs-layout.py [ROOT]")
-        return 0 if argv[1:] in (["-h"], ["--help"]) else 2
-    root = pathlib.Path(argv[1] if len(argv) == 2 else ".").resolve()
+        print(USAGE)
+        return 0
+    write = "--write-index" in args
+    args = [a for a in args if a != "--write-index"]
+    if len(args) > 1 or any(a.startswith("-") for a in args):
+        print(USAGE)
+        return 2
+    root = pathlib.Path(args[0] if args else ".").resolve()
 
     listing = git_listing(root)
     if listing is None:
@@ -383,6 +741,26 @@ def main(argv):
         listing.setdefault(pathlib.Path("."), [])
     if not listing:
         print(f"{root}: no dev_docs/, nothing to check")
+        return 0
+
+    if write:
+        for package in sorted(listing):
+            base = root / package
+            files = sorted(listing[package])
+            # Write mode checks nothing, but a record left out of the index is
+            # said out loud, with the reason the check would give.
+            seen = {}
+
+            def note(rel, message, seen=seen):
+                seen.setdefault(rel, []).append(message)
+
+            def skipped(rel, seen=seen, package=package):
+                why = "; ".join(seen.get(rel, [])) or "unreadable"
+                print(f"skipped {(package / rel).as_posix()}: not indexed, {why}", file=sys.stderr)
+
+            records = check_records(base, files, note, skipped)
+            for rel in write_index(base, files, records):
+                print(f"wrote {(package / rel).as_posix()}")
         return 0
 
     violations = []
@@ -400,7 +778,10 @@ def main(argv):
         else:
             check_root_only(base, report)
         check_checkboxes(base, files, report)
-        check_records(base, files, report)
+        records = check_records(base, files, report)
+        check_supersession(base, records, report)
+        check_links(base, files, report)
+        check_index(base, files, records, report)
 
     for v in violations:
         print(v)

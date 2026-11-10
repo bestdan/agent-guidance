@@ -256,11 +256,17 @@ docs of its own has no `dev_docs/`.
    run by each repo's check suite. It checks that `dev_docs/tasks/` holds only
    what its section allows; that no unchecked checkbox sits outside
    `dev_docs/tasks/*_plan/`; that every entry in a record or design directory
-   is `YYYY-MM-DD-<slug>.md`, a `YYYY-MM-DD-<slug>/` bundle, or `README.md`;
+   is `YYYY-MM-DD-<slug>.md`, a `YYYY-MM-DD-<slug>/` bundle, `README.md`, or
+   the generated `INDEX.md`;
    that a bundle holds a `README.md` record and nothing outside `references/`,
    with no flat `YYYY-MM-DD-<slug>.md` beside a bundle of the same name;
-   that a record's `created` matches its date; and that a decision has a
-   `## Revisit when` section. It finds every package's `dev_docs/` under the
+   that a record's `created` matches its date; that a decision has a
+   `## Revisit when` section; that every record has exactly one `#` title
+   and a decision or design a status its README allows; that a front-matter
+   field naming a file (`convention`, `supersedes`, `superseded_by`, `feeds`)
+   resolves; that `supersedes` and `superseded_by` name each other; that every
+   relative markdown link resolves; and that a directory's `INDEX.md`, when it
+   has one, is current. It finds every package's `dev_docs/` under the
    root it is given and checks each the same way, except that a package's
    holding `tasks/` or `.handoffs/` fails; a `dev_docs/` inside another
    `dev_docs/` is not a package. Undated subdirectories of `dev_docs/research/`
@@ -291,6 +297,23 @@ docs of its own has no `dev_docs/`.
 
    `dev-docs-layout.test.sh` in this repo pins each check at its boundary and
    runs the checker over this repo's own `dev_docs/`.
+
+   **The index.** Each record directory can carry an `INDEX.md` that lists its
+   records newest first, linked by their `#` titles: decisions split into live
+   and superseded or deprecated, research with each record's `question`,
+   designs with `tracks`. It is generated and nobody edits it by hand.
+   `scripts/dev-docs-layout.py --write-index [ROOT]` writes one in every record
+   directory, creating any that is missing, and the plain check fails while
+   one differs from what the records generate. So a record added, retitled,
+   superseded or deleted without regenerating the index fails the same suite
+   entry as any other layout violation. The generated tables are already in
+   the form dprint leaves them. A directory with no `INDEX.md` is not checked
+   for one, and running `--write-index` once is how a repo opts in.
+
+   The canonical directory READMEs link `INDEX.md` near the top and carry
+   nothing generated, so a repo copies one unchanged. The link fails the link
+   check until that repo runs `--write-index`, which keeps a copied README from
+   pointing at an index that does not exist.
 2. **This file**, reached by name from `portable.md`.
 3. **Review.** A reviewer who sees a dated file rewritten, an undated record,
    or a design still present after its change landed says so.

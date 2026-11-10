@@ -11,6 +11,11 @@ time: a survey of how something is done today, a comparison of options, a
 measurement. It feeds a design or a decision and is cited from there, so the
 design stays short and the evidence stays checkable.
 
+The records in this directory are listed, newest first, in
+[`INDEX.md`](INDEX.md). `scripts/dev-docs-layout.py --write-index` at the
+plugin root generates it from each record's front matter and title, and the
+layout check fails while it is out of date, so it is never edited by hand.
+
 The record is what was found, not what to do about it. A recommendation
 belongs in the design or decision that cites the research, so the evidence
 can be re-read without the conclusion colouring it.
@@ -36,9 +41,13 @@ should not repeat it. A quick fact goes in the design or the PR body.
 `YYYY-MM-DD-<slug>.md`, kebab-case. The date is when the research was done
 and matches `created`. A research record is a snapshot. `feeds` is the one
 field set after writing, when the design or decision it supports exists;
-nothing else changes, and research done again later is a new record. The one
-exception is the edit `../decisions/README.md` allows a decision: a private
-repo's name, or a pointer into one, replaced with a description of it.
+nothing else changes, and research done again later is a new record. The
+exceptions are the edits `../decisions/README.md` allows a decision: a private
+repo's name, or a pointer into one, replaced with a description of it; a
+link to a deleted file reduced to its name; and markup the layout checker
+rejects fixed without changing what the record says. When a design that
+`feeds` names graduates and is deleted, point `feeds` at the decision it
+became; the layout checker fails a `feeds` that does not resolve.
 
 A record that carries artifacts — the script that measured something, the
 capture it read, the numbers it produced — becomes `YYYY-MM-DD-<slug>/` with

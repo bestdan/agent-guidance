@@ -48,9 +48,23 @@ verdict() {
 
 # record DIR NAME CREATED [BODY]: writes a record file with front matter.
 record() {
-  local dir=$1 name=$2 created=$3 body=${4:-}
+  local dir=$1 name=$2 created=$3 body=${4:-} status=''
+  # A decision or a design carries a status, which check_record_body requires,
+  # so each fixture gets the starting one for its directory unless the body
+  # supplies its own front matter.
+  case "$dir" in
+    */decisions | */decisions/*) status='status: accepted\n' ;;
+    */designs | */designs/*) status='status: proposed\n' ;;
+  esac
   mkdir -p "$dir"
-  printf -- '---\ncreated: %s\n---\n\n# Title\n\n%s\n' "$created" "$body" > "$dir/$name"
+  printf -- "---\ncreated: %s\n${status}---\n\n# Title\n\n%s\n" "$created" "$body" > "$dir/$name"
+}
+
+# raw FILE CONTENT: writes CONTENT, interpreting backslash escapes (printf
+# %b), to FILE. CONTENT is an argument, not the format, so a `%` in it is kept.
+raw() {
+  mkdir -p "$(dirname "$1")"
+  printf -- '%b' "$2" > "$1"
 }
 
 # --- 0. nothing to check, and the usage contract ---
@@ -253,7 +267,7 @@ check "a record with no front matter fails" 1 "$(verdict "$fx")"
 
 fx="$(fixture created-quoted)"
 mkdir -p "$fx/dev_docs/research"
-printf -- '---\ncreated: "2026-09-13"\nquestion: "why?"\n---\n' > "$fx/dev_docs/research/2026-09-13-a-survey.md"
+printf -- '---\ncreated: "2026-09-13"\nquestion: "why?"\n---\n\n# A survey\n' > "$fx/dev_docs/research/2026-09-13-a-survey.md"
 check "a quoted created value is read" 0 "$(verdict "$fx")"
 
 # --- 5. a decision has a Revisit when section ---
@@ -364,7 +378,280 @@ mkdir -p "$fx/packages/core/dev_docs/tasks"
 : > "$fx/packages/core/dev_docs/tasks/.task-config.yml"
 check "a package holding only tasks/.task-config.yml fails in a repository" 1 "$(verdict "$fx")"
 
-# --- 9. this repository's own dev_docs/ passes ---
+# --- 9. a record has one title, and a decision or design a known status ---
+# The index lists each record by its `# ` heading, so a record needs exactly
+# one. A README's template shows a heading inside a fence, which is not one.
+fx="$(fixture title-none)"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\n---\n\nNo heading.\n'
+check "a record with no title fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture title-two)"
+record "$fx/dev_docs/research" 2026-09-13-a-survey.md 2026-09-13 '# A second title'
+check "a record with two titles fails" 1 "$(verdict "$fx")"
+
+# raw, not record: record passes its body through %s, which leaves \n as two
+# characters, and this case needs the fence on lines of its own.
+fx="$(fixture title-fenced)"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\n---\n\n# Title\n\n```markdown\n# Not a title\n```\n'
+check "a heading inside a fence is not a second title" 0 "$(verdict "$fx")"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\n---\n\n# Title\n\nmarkdown\n# Not a title\n'
+check "the same heading outside the fence is a second title" 1 "$(verdict "$fx")"
+
+fx="$(fixture status-bad)"
+raw "$fx/dev_docs/decisions/2026-09-13-a-choice.md" '---\ncreated: 2026-09-13\nstatus: proposed\n---\n\n# A choice\n\n## Revisit when\n'
+check "a decision with status: proposed fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture status-missing)"
+raw "$fx/dev_docs/designs/2026-09-13-a-change.md" '---\ncreated: 2026-09-13\n---\n\n# A change\n'
+check "a design with no status fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture status-comment)"
+raw "$fx/dev_docs/decisions/2026-09-13-a-choice.md" '---\ncreated: 2026-09-13\nstatus: accepted # accepted | superseded\n---\n\n# A choice\n\n## Revisit when\n'
+check "a trailing YAML comment is not part of the status" 0 "$(verdict "$fx")"
+
+# --- 10. path fields and supersession ---
+# decide FILE FRONT: a decision titled by its stem, with FRONT as extra
+# front-matter lines.
+decide() {
+  local stem
+  stem="$(basename "$1" .md)"
+  [ "$stem" = README ] && stem="$(basename "$(dirname "$1")")"
+  raw "$1" "---\ncreated: ${stem:0:10}\n$2---\n\n# $stem\n\n## Revisit when\n"
+}
+fx="$(fixture path-dangling)"
+decide "$fx/dev_docs/decisions/2026-09-13-a-choice.md" 'status: accepted\nconvention: ../gone.md\n'
+check "a convention: that does not exist fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture feeds-dangling)"
+raw "$fx/dev_docs/research/2026-09-13-a-survey.md" '---\ncreated: 2026-09-13\nfeeds: ../designs/2026-09-13-gone.md\n---\n\n# A survey\n'
+check "a research feeds: that does not exist fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture supersede-ok)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
+check "a reciprocal supersedes/superseded_by pair passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture supersede-bundle)"
+decide "$fx/dev_docs/decisions/2026-09-13-old/README.md" 'status: superseded\nsuperseded_by: ../2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old/\n'
+check "a bundle on one side of the pair is the same record either way" 0 "$(verdict "$fx")"
+
+fx="$(fixture supersede-oneway)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\n'
+check "superseded_by with no supersedes back fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture supersede-no-target)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\n'
+check "status: superseded with no superseded_by fails" 1 "$(verdict "$fx")"
+
+fx="$(fixture supersede-still-accepted)"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: accepted\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
+check "superseded_by on a record still accepted fails" 1 "$(verdict "$fx")"
+
+# --- 11. relative links resolve ---
+fx="$(fixture links-ok)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/research/2026-09-13-b.md" \
+  '---\ncreated: 2026-09-13\n---\n\n# B\n\n[a](2026-09-13-a.md#findings) [web](https://example.com) [top](#a) `[code](gone.md)` [root](/dev_docs/elsewhere.md)\n\n[ref]: 2026-09-13-a.md\n[angle]: <2026-09-13-a.md>\n[^1]: a footnote, not a target\n'
+check "a resolving link, URL, anchor, code span, root-relative link, reference and footnote pass" 0 "$(verdict "$fx")"
+
+fx="$(fixture links-ref-angle-broken)"
+raw "$fx/dev_docs/research/2026-09-13-b.md" '---\ncreated: 2026-09-13\n---\n\n# B\n\n[x]: <../gone dir/a.md>\n'
+verdict "$fx" > /dev/null
+check "a missing angle-bracket reference target is named whole" ok \
+  "$(grep -qF 'link to ../gone dir/a.md, which does not exist' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture links-broken)"
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 'See [the design](../designs/2026-09-01-gone.md).'
+check "a link to a file that does not exist fails" 1 "$(verdict "$fx")"
+check "the failure names the line and the target" ok \
+  "$(grep -q 'line 7: link to ../designs/2026-09-01-gone.md' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture links-ref-broken)"
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 '[ref]: ../gone.md'
+check "a reference definition to a missing file fails" 1 "$(verdict "$fx")"
+
+# CommonMark allows three title forms and balanced parentheses in a target. A
+# form the pattern misses is a broken link the check never sees; a target it
+# cuts short is a false failure.
+fx="$(fixture links-forms-ok)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/foo_(bar).md" '# Notes\n'
+raw "$fx/dev_docs/a b.md" '# Notes\n'
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 \
+  "[s](2026-09-13-a.md 'single') [p](2026-09-13-a.md (paren)) [d](2026-09-13-a.md \"double\") [b](../foo_(bar).md) [a](<../a b.md>)"
+check "every title form, balanced parentheses and an angle target pass" 0 "$(verdict "$fx")"
+
+for form in "'t'" '(t)' '"t"'; do
+  fx="$(fixture "links-title-$RANDOM")"
+  record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 "[x](gone.md $form)"
+  check "a missing target with a $form title fails" 1 "$(verdict "$fx")"
+done
+
+fx="$(fixture links-paren-broken)"
+record "$fx/dev_docs/research" 2026-09-13-b.md 2026-09-13 '[x](../gone_(x).md)'
+verdict "$fx" > /dev/null
+check "a missing target with parentheses is named whole" ok \
+  "$(grep -qF 'link to ../gone_(x).md, which does not exist' "$fx.out" && echo ok || echo missing)"
+
+fx="$(fixture links-fenced)"
+raw "$fx/dev_docs/research/README.md" '# Research\n\n```markdown\n[x](../designs/<name>.md)\n```\n'
+check "a link inside a README template fence is not checked" 0 "$(verdict "$fx")"
+
+# --- 12. the generated index ---
+# A directory opts in by having an INDEX.md, which --write-index creates. The
+# check fails while the file differs from what the records generate, and a
+# second write changes nothing.
+fx="$(fixture index)"
+idx="$fx/dev_docs/decisions/INDEX.md"
+decide "$fx/dev_docs/decisions/2026-09-13-old.md" 'status: superseded\nsuperseded_by: 2026-09-14-new.md\n'
+decide "$fx/dev_docs/decisions/2026-09-14-new.md" 'status: accepted\nsupersedes: 2026-09-13-old.md\n'
+check "a directory with no INDEX.md has no index and passes" 0 "$(verdict "$fx")"
+python3 "$check_py" --write-index "$fx" > "$fx.write.out" 2>&1
+check "--write-index exits 0" 0 $?
+check "--write-index creates INDEX.md" ok "$([ -f "$idx" ] && echo ok || echo missing)"
+check "it names the file it wrote" 1 "$(grep -c '^wrote dev_docs/decisions/INDEX.md$' "$fx.write.out")"
+check "after --write-index the check passes" 0 "$(verdict "$fx")"
+check "the index is titled for its directory" ok \
+  "$(head -1 "$idx" | grep -qx '# Decisions index' && echo ok || echo missing)"
+check "the live decision is in the main table" ok \
+  "$(grep -q '^| 2026-09-14 | \[2026-09-14-new\](2026-09-14-new.md) |$' "$idx" && echo ok || echo missing)"
+check "the superseded one names what replaced it" ok \
+  "$(grep -q 'superseded by \[2026-09-14-new\](2026-09-14-new.md)' "$idx" && echo ok || echo missing)"
+before="$(cksum < "$idx")"
+python3 "$check_py" --write-index "$fx" > "$fx.write.out" 2>&1
+check "a second --write-index changes nothing" "$before" "$(cksum < "$idx")"
+check "and reports no write" 0 "$(grep -c wrote "$fx.write.out")"
+printf '\nA hand edit.\n' >> "$idx"
+check "a hand edit to INDEX.md fails" 1 "$(verdict "$fx")"
+check "the failure says to regenerate rather than edit" ok \
+  "$(grep -q 'run scripts/dev-docs-layout.py --write-index rather than editing it' "$fx.out" && echo ok || echo missing)"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+decide "$fx/dev_docs/decisions/2026-09-15-newest.md" 'status: accepted\n'
+check "a record added after the write makes the index stale" 1 "$(verdict "$fx")"
+
+# A README that links its INDEX.md, copied into a repo that has not generated
+# one, fails the link check until --write-index runs. That is what keeps a
+# copied README from pointing at nothing.
+fx="$(fixture index-linked)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/research/README.md" '# Research\n\nListed in [`INDEX.md`](INDEX.md).\n'
+check "a README linking an INDEX.md that does not exist fails" 1 "$(verdict "$fx")"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "and passes once --write-index has made it" 0 "$(verdict "$fx")"
+
+fx="$(fixture index-spike)"
+record "$fx/dev_docs/research" 2026-09-13-a.md 2026-09-13
+raw "$fx/dev_docs/research/my-spike/ledger.md" '# Ledger\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a research spike gets its own section in the index" ok \
+  "$(grep -q '^## Research spikes$' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+check "and is linked as a directory" ok \
+  "$(grep -qF -- '- [`my-spike/`](my-spike/)' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+check "the spike link resolves, so the check passes" 0 "$(verdict "$fx")"
+
+fx="$(fixture index-deprecated)"
+decide "$fx/dev_docs/decisions/2026-09-13-dropped.md" 'status: deprecated\n'
+decide "$fx/dev_docs/decisions/2026-09-14-live.md" 'status: accepted\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/decisions/INDEX.md"
+check "a deprecated decision is listed as deprecated" ok \
+  "$(grep -q '^| 2026-09-13 | \[2026-09-13-dropped\](2026-09-13-dropped.md) | deprecated *|$' "$idx" && echo ok || echo missing)"
+check "below the superseded-and-deprecated heading, not in the main table" ok \
+  "$(awk '/^## Superseded and deprecated$/{s=1} /2026-09-13-dropped/{print (s ? "ok" : "main")}' "$idx")"
+
+# A `#` ending a title is part of it unless a space comes before it, as in
+# CommonMark, and a bracket in a title is escaped so it cannot end the link.
+fx="$(fixture index-title-markup)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\n---\n\n# Prefer C#\n'
+raw "$fx/dev_docs/research/2026-09-14-b.md" '---\ncreated: 2026-09-14\n---\n\n# Why a ] breaks ##\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/research/INDEX.md"
+check "a title ending in C# keeps its #" ok \
+  "$(grep -qF '[Prefer C#](2026-09-13-a.md)' "$idx" && echo ok || echo missing)"
+check "a closing # sequence after a space is dropped, and ] is escaped" ok \
+  "$(grep -qF '[Why a \] breaks](2026-09-14-b.md)' "$idx" && echo ok || echo missing)"
+check "the escaped index passes the check" 0 "$(verdict "$fx")"
+
+# dprint pads a table cell to its display width, so a wide title padded by
+# character count is one the formatter rewrites and the check then calls
+# stale. Cross-checked against dprint itself when it is installed.
+fx="$(fixture index-wide)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\n---\n\n# 日本語のタイトル ✅ done\n'
+record "$fx/dev_docs/research" 2026-09-14-b.md 2026-09-14
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/research/INDEX.md"
+wide="$(grep -F '日本語' "$idx")"
+narrow="$(grep -F '2026-09-14-b' "$idx")"
+check "a wide title pads to the same display width as a narrow one" \
+  "$(printf '%s' "$narrow" | wc -m | tr -d ' ')" \
+  "$(printf '%s' "$wide" | python3 -c 'import sys, unicodedata as u; s = sys.stdin.read(); print(sum(2 if u.east_asian_width(c) in "WF" else 1 for c in s))')"
+if command -v dprint > /dev/null 2>&1 && (cd "$self" && dprint fmt --stdin INDEX.md < "$idx" > "$fx.dprint" 2> /dev/null); then
+  check "dprint leaves the wide-title index unchanged" ok \
+    "$(cmp -s "$idx" "$fx.dprint" && echo ok || echo changed)"
+else
+  printf 'skip dprint cross-check of the wide-title index (dprint unavailable)\n'
+fi
+
+# The zero-width classes, as literal UTF-8, each one dprint counts differently
+# from a code-point count: a Thai vowel mark, an enclosing mark, a Hangul
+# medial jamo, a word joiner and a byte-order mark; with a soft hyphen, a VS16
+# emoji and a ZWJ emoji sequence, which it counts as a code-point count would.
+# Only dprint can judge these, so the case needs it.
+fx="$(fixture index-zero-width)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\n---\n\n# กั a⃝ 가ᅡ a⁠b a﻿b a­b ❤️ 👩‍💻\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/research/INDEX.md"
+if command -v dprint > /dev/null 2>&1 && (cd "$self" && dprint fmt --stdin INDEX.md < "$idx" > "$fx.dprint" 2> /dev/null); then
+  check "dprint leaves an index of zero-width characters unchanged" ok \
+    "$(cmp -s "$idx" "$fx.dprint" && echo ok || echo changed)"
+else
+  printf 'skip dprint cross-check of the zero-width index (dprint unavailable)\n'
+fi
+
+# A quoted value followed by a YAML comment loses both the comment and the
+# quotes, as the parser's contract says; a `#` inside the quotes is kept.
+fx="$(fixture index-quoted-comment)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\nquestion: "why # here?" # a note\n---\n\n# A\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a quoted question with a trailing comment is listed bare" ok \
+  "$(grep -qF '| why # here? |' "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" "---\ncreated: 2026-09-13\nquestion: 'it''s here'\n---\n\n# A\n"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "a single-quoted question with a doubled quote loses its outer quotes" ok \
+  "$(grep -qF "| it''s here |" "$fx/dev_docs/research/INDEX.md" && echo ok || echo missing)"
+
+# Write mode checks nothing, but it says which record it left out and why.
+fx="$(fixture index-skip)"
+raw "$fx/dev_docs/research/2026-02-30-a.md" '---\ncreated: 2026-02-30\n---\n\n# A\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2> "$fx.err"
+check "--write-index names a record it could not index, with the reason" ok \
+  "$(grep -qF 'skipped dev_docs/research/2026-02-30-a.md: not indexed, 2026-02-30 is not a calendar date' "$fx.err" && echo ok || echo missing)"
+
+fx="$(fixture index-empty-designs)"
+raw "$fx/dev_docs/designs/README.md" '# Designs\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "an empty designs/ says none are open" ok \
+  "$(grep -q 'No designs are open.' "$fx/dev_docs/designs/INDEX.md" && echo ok || echo missing)"
+
+fx="$(fixture index-not-tooling)"
+mkdir -p "$fx/dev_docs/tasks" "$fx/dev_docs/.handoffs"
+: > "$fx/dev_docs/tasks/a-card.md"
+: > "$fx/dev_docs/.handoffs/a-note.md"
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+check "--write-index writes no INDEX.md into tasks/ or a dot-directory" ok \
+  "$([ ! -e "$fx/dev_docs/tasks/INDEX.md" ] && [ ! -e "$fx/dev_docs/.handoffs/INDEX.md" ] && echo ok || echo wrote)"
+
+fx="$(fixture index-misnamed)"
+raw "$fx/dev_docs/research/index.md" '# lowercase\n'
+check "only INDEX.md is exempt from the record pattern, not index.md" 1 "$(verdict "$fx")"
+
+python3 "$check_py" --bogus "$fx" > /dev/null 2>&1
+check "an unknown flag exits 2" 2 $?
+
+# --- 13. this repository's own dev_docs/ passes ---
 # The enforcing case. Everything above proves the checker is right; this one
 # makes it bind.
 python3 "$check_py" "$self" > "$work/corpus.out" 2>&1

@@ -12,6 +12,11 @@ revisit the choice. It is not guidance for the reader who wants to know what
 to do today; that reader gets a convention, which is the live file the
 decision supports.
 
+The records in this directory are listed, newest first, in
+[`INDEX.md`](INDEX.md). `scripts/dev-docs-layout.py --write-index` at the
+plugin root generates it from each record's front matter and title, and the
+layout check fails while it is out of date, so it is never edited by hand.
+
 The format is an architecture decision record (ADR) in the sense
 [Nygard](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
 gave it, with the consequences and confirmation sections
@@ -101,6 +106,17 @@ One edit sits outside the rule, because this repo is public: a private repo's
 name, or a path, script, issue or PR inside one, is replaced with a
 description of it ("a private repo", "a PR-body guard"). The record keeps its
 meaning and gets no callout. The name stays in the git history.
+
+A second edit sits outside the rule, because the record keeps its meaning:
+a relative link whose target has been deleted, usually a design that
+graduated, becomes the bare name in backticks followed by "deleted on
+graduation" or the like. The layout checker fails a link that does not
+resolve and does not follow a name in backticks.
+
+A third edit sits outside the rule for that reason too: markup the layout
+checker rejects is fixed without changing what the record says. A second `#` heading becomes `##`, and
+a link-shaped quotation that is not a link of this record (replacement text
+quoted for another file, a `[…](…)` placeholder) goes in a code span.
 
 ## Template
 
