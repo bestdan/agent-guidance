@@ -107,14 +107,14 @@ name, or a path, script, issue or PR inside one, is replaced with a
 description of it ("a private repo", "a PR-body guard"). The record keeps its
 meaning and gets no callout. The name stays in the git history.
 
-A second edit sits outside it for the same reason, that the record keeps its
-meaning: a relative link whose target has been deleted, usually a design that
+A second edit sits outside the rule, because the record keeps its meaning:
+a relative link whose target has been deleted, usually a design that
 graduated, becomes the bare name in backticks followed by "deleted on
 graduation" or the like. The layout checker fails a link that does not
 resolve and does not follow a name in backticks.
 
-A third, for the same reason: markup the layout checker rejects is fixed
-without changing what the record says. A second `#` heading becomes `##`, and
+A third edit sits outside the rule for that reason too: markup the layout
+checker rejects is fixed without changing what the record says. A second `#` heading becomes `##`, and
 a link-shaped quotation that is not a link of this record (replacement text
 quoted for another file, a `[…](…)` placeholder) goes in a code span.
 

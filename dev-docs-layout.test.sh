@@ -60,10 +60,11 @@ record() {
   printf -- "---\ncreated: %s\n${status}---\n\n# Title\n\n%s\n" "$created" "$body" > "$dir/$name"
 }
 
-# raw FILE CONTENT: writes CONTENT, interpreting printf escapes, to FILE.
+# raw FILE CONTENT: writes CONTENT, interpreting backslash escapes (printf
+# %b), to FILE. CONTENT is an argument, not the format, so a `%` in it is kept.
 raw() {
   mkdir -p "$(dirname "$1")"
-  printf -- "$2" > "$1"
+  printf -- '%b' "$2" > "$1"
 }
 
 # --- 0. nothing to check, and the usage contract ---
@@ -560,6 +561,19 @@ check "a deprecated decision is listed as deprecated" ok \
   "$(grep -q '^| 2026-09-13 | \[2026-09-13-dropped\](2026-09-13-dropped.md) | deprecated *|$' "$idx" && echo ok || echo missing)"
 check "below the superseded-and-deprecated heading, not in the main table" ok \
   "$(awk '/^## Superseded and deprecated$/{s=1} /2026-09-13-dropped/{print (s ? "ok" : "main")}' "$idx")"
+
+# A `#` ending a title is part of it unless a space comes before it, as in
+# CommonMark, and a bracket in a title is escaped so it cannot end the link.
+fx="$(fixture index-title-markup)"
+raw "$fx/dev_docs/research/2026-09-13-a.md" '---\ncreated: 2026-09-13\n---\n\n# Prefer C#\n'
+raw "$fx/dev_docs/research/2026-09-14-b.md" '---\ncreated: 2026-09-14\n---\n\n# Why a ] breaks ##\n'
+python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
+idx="$fx/dev_docs/research/INDEX.md"
+check "a title ending in C# keeps its #" ok \
+  "$(grep -qF '[Prefer C#](2026-09-13-a.md)' "$idx" && echo ok || echo missing)"
+check "a closing # sequence after a space is dropped, and ] is escaped" ok \
+  "$(grep -qF '[Why a \] breaks](2026-09-14-b.md)' "$idx" && echo ok || echo missing)"
+check "the escaped index passes the check" 0 "$(verdict "$fx")"
 
 # dprint pads a table cell to its display width, so a wide title padded by
 # character count is one the formatter rewrites and the check then calls

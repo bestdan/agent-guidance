@@ -45,9 +45,9 @@ nothing else changes, and research done again later is a new record. The
 exceptions are the edits `../decisions/README.md` allows a decision: a private
 repo's name, or a pointer into one, replaced with a description of it; a
 link to a deleted file reduced to its name; and markup the layout checker
-rejects fixed without changing what the record says. When a design that `feeds` names
-graduates and is deleted, point `feeds` at the decision it became; the layout
-checker fails a `feeds` that does not resolve.
+rejects fixed without changing what the record says. When a design that
+`feeds` names graduates and is deleted, point `feeds` at the decision it
+became; the layout checker fails a `feeds` that does not resolve.
 
 A record that carries artifacts — the script that measured something, the
 capture it read, the numbers it produced — becomes `YYYY-MM-DD-<slug>/` with

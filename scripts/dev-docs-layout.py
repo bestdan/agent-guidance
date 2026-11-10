@@ -5,9 +5,10 @@ Run: scripts/dev-docs-layout.py [--write-index] [ROOT]
 
 With --write-index it checks nothing: it writes INDEX.md in every record
 directory (check 9), creating it where it is absent, and names each file it
-wrote. INDEX.md is the only file it writes. It always exits 0: a record it
-could not index (its date is not a calendar date, or it is unreadable) is named
-on stderr, and the plain check is what fails on it.
+wrote. INDEX.md is the only file it writes. It exits 0 unless it cannot read
+or write an INDEX.md: a record it could not index (its date is not a calendar
+date, or it is unreadable) is named on stderr, and the plain check is what
+fails on it.
 
 ROOT is the repository root and defaults to the current directory. A ROOT with
 no dev_docs/ anywhere under it has nothing to check and passes. Every violation
@@ -109,7 +110,7 @@ FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 CREATED = re.compile(r"^created:\s*(.*?)\s*$")
 REVISIT = re.compile(r"^## Revisit when\s*$")
 FIELD = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*?)\s*$")
-H1 = re.compile(r"^# (.+?)\s*#*\s*$")
+H1 = re.compile(r"^# (.+?)(?:\s+#+)?\s*$")
 CODE_SPAN = re.compile(r"(`+).*?\1")
 # The target is <...> (which may hold spaces and parentheses) or a bare run
 # allowing one level of balanced parentheses; the title is any of CommonMark's
@@ -529,6 +530,12 @@ def cell(text: str) -> str:
     return text.replace("|", "\\|")
 
 
+def label(text: str) -> str:
+    """TEXT as a table cell's link text: a backslash, `[` or `]` is escaped
+    too, so an unbalanced bracket in a title cannot end the link early."""
+    return cell(text.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]"))
+
+
 def display_width(text: str) -> int:
     """Terminal columns TEXT takes, which is what dprint pads a table cell to:
     a wide or full-width character counts two; a nonspacing or enclosing mark,
@@ -570,7 +577,7 @@ def render_index(directory: str, records, spikes) -> str:
         gone = [r for r in records if r not in live]
         by_key = {record_key(r.rel): r for r in records}
         out += table(["Date", "Decision"],
-                     [[r.date, f"[{cell(r.title)}]({r.link})"] for r in live]) if live else ["No decisions yet."]
+                     [[r.date, f"[{label(r.title)}]({r.link})"] for r in live]) if live else ["No decisions yet."]
         if gone:
             rows = []
             for r in gone:
@@ -578,15 +585,15 @@ def render_index(directory: str, records, spikes) -> str:
                 if r.meta.get("status") == "deprecated":
                     fate = "deprecated"
                 elif newer:
-                    fate = f"superseded by [{cell(newer.title)}]({newer.link})"
+                    fate = f"superseded by [{label(newer.title)}]({newer.link})"
                 else:
                     fate = "superseded"
-                rows.append([r.date, f"[{cell(r.title)}]({r.link})", fate])
+                rows.append([r.date, f"[{label(r.title)}]({r.link})", fate])
             out += ["", "## Superseded and deprecated", ""]
             out += table(["Date", "Decision", "Status"], rows)
     elif directory == "research":
         out += table(["Date", "Research", "Question"],
-                     [[r.date, f"[{cell(r.title)}]({r.link})", cell(r.meta.get("question", ""))]
+                     [[r.date, f"[{label(r.title)}]({r.link})", cell(r.meta.get("question", ""))]
                       for r in records]) if records else ["No research records yet."]
         if spikes:
             out += ["", "## Research spikes", "", "Each keeps its own ledger.", ""]
@@ -595,12 +602,12 @@ def render_index(directory: str, records, spikes) -> str:
         rows = []
         for r in records:
             tracks = r.meta.get("tracks", "")
-            rows.append([r.date, f"[{cell(r.title)}]({r.link})",
+            rows.append([r.date, f"[{label(r.title)}]({r.link})",
                          f"<{tracks}>" if SCHEME.match(tracks) else cell(tracks)])
         out += table(["Date", "Design", "Tracks"], rows) if rows else ["No designs are open."]
     else:
         out += table(["Date", "Record"],
-                     [[r.date, f"[{cell(r.title)}]({r.link})"] for r in records]) if records else ["No records yet."]
+                     [[r.date, f"[{label(r.title)}]({r.link})"] for r in records]) if records else ["No records yet."]
     return "\n".join(out) + "\n"
 
 
