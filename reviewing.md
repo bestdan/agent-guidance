@@ -21,6 +21,7 @@ extra reading, never the rule itself.
 - **Test-coverage gaps that matter.** A behaviour the change adds or alters
   with no test that would fail if it broke. A test whose assertions would pass
   with the guarded behaviour removed is the same gap with a comment on it.
+  What makes an added test worth keeping is [`testing.md`](testing.md).
 - **Security and performance** where the change touches them.
 - **Insider prose**, in any text the change adds: prose written from inside the
   work for a reader who was not there. The two shapes and the exemption are the
