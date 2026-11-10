@@ -19,6 +19,10 @@ Read both, in this order, before writing a finding:
    and body as review scope, the blocking decoration, the conventional-comment
    label, and how to anchor a finding.
 
+When the diff adds or changes tests, also read
+`${CLAUDE_PLUGIN_ROOT}/testing.md`. Its `## Reviewing tests` section is the
+checklist for each added test.
+
 Do not read `authoring_pull_requests.md`. It states the same conventions as
 things to do, for the `agent-guidance:authoring` skill; `reviewing.md` already
 carries the checkable form of each one.
