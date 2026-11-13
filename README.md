@@ -42,6 +42,7 @@ rather than as a placeholder.
 | `testing.md`                 | every harness, by name                        | what makes a test worth writing, and when deleting one is the right change                                         |
 | `build_the_machine.md`       | every harness, by name                        | when a model belongs on a workflow's runtime path, and keeping agents swappable                                    |
 | `scripts/dev-docs-layout.py` | any repo's check suite                        | checks a repo's `dev_docs/` against that layout, exiting 1 on a violation; `--write-index` regenerates the indexes |
+| `actions/dev-docs`           | any repo's CI, as `@main`                     | exports `AGENT_GUIDANCE_DIR` and runs that checker, so CI needs no plugin install                                  |
 
 The plugin is the repository root. `hooks/hooks.json` registers `inject.sh` on
 Claude Code's `SessionStart`, and the hooks that run before a call on `PreToolUse`, across
