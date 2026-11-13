@@ -23,7 +23,8 @@ Consumers reference the composite action `actions/dev-docs` at `@main`. It
 exports `AGENT_GUIDANCE_DIR` as the copy the runner downloaded and, unless
 told not to, runs the checker over the workspace. This repo's CI runs each
 PR's checker over every public consumer's `main`, so a change that would turn
-one red fails the PR rather than the consumer.
+one red fails the PR rather than the consumer. The workflow lists those
+consumers by hand: a public repo that adopts the action gets a step there.
 
 ## Consequences
 
@@ -39,8 +40,9 @@ one red fails the PR rather than the consumer.
 - Bad, because the consumer check clones a repository this PR does not own,
   so a consumer's own unrelated violation on `main` fails this repo's CI until
   it is fixed there.
-- Bad, because `@main` departs from pinning actions to a commit, which is the
-  usual practice for a dependency nobody here controls.
+- Bad, because `@main` departs from the usual practice of pinning an action
+  to a commit, which exists to stop a dependency changing under its consumer;
+  here the owner of both sides wants exactly that.
 
 ## Revisit when
 
@@ -53,7 +55,10 @@ one red fails the PR rather than the consumer.
 
 The `dev-docs-action` job in `.github/workflows/tests.yml` runs the action
 over this repo and over a tree with a violation, and the `consumers` job runs
-the PR's checker over each public consumer's `main`.
+the PR's checker over each public consumer's `main`. The `dev-docs-action` job
+runs the PR's own copy (`uses: ./actions/dev-docs`), because a `uses:` ref
+cannot be an expression; the path a consumer's `@main` download takes is first
+exercised by that consumer's next run after a merge.
 
 ## Alternatives
 

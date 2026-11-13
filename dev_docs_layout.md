@@ -306,7 +306,8 @@ docs of its own has no `dev_docs/`.
 
    Consumers reference `@main`, so a checker change reaches them on merge.
    This repo's CI runs each PR's checker over the public consumers' `main`
-   first, so a change that would turn one red fails here.
+   first, so a change that would turn one red fails here; the workflow lists
+   them by hand, so a public repo that adopts the action gets a step there.
    `dev-docs-layout.test.sh` pins each check at its boundary and runs the
    checker over this repo's own `dev_docs/`.
 
