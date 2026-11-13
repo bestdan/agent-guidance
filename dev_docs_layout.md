@@ -287,16 +287,29 @@ docs of its own has no `dev_docs/`.
    `scripts/agent-guidance-dir.sh` in `workflow-skills`). A root that cannot be
    resolved, or an installed copy too old to ship the script, fails the entry
    rather than skipping it; a skipped check is green while checking nothing.
-   CI that has no plugin install clones `bestdan/agent-guidance` and exports
-   `AGENT_GUIDANCE_DIR`.
 
    ```sh
    root="${AGENT_GUIDANCE_DIR:-$(scripts/agent-guidance-dir.sh)}" || exit 1
    python3 "$root/scripts/dev-docs-layout.py" "$(git rev-parse --show-toplevel)"
    ```
 
-   `dev-docs-layout.test.sh` in this repo pins each check at its boundary and
-   runs the checker over this repo's own `dev_docs/`.
+   CI has no plugin install, so it uses the action at `actions/dev-docs`. The
+   action exports `AGENT_GUIDANCE_DIR` and, unless `check: "false"`, runs the
+   checker over the workspace. A repo whose suite already runs the checker
+   sets `check: "false"` so it runs once:
+
+   ```yaml
+   - uses: bestdan/agent-guidance/actions/dev-docs@main
+     with:
+       check: "false"
+   ```
+
+   Consumers reference `@main`, so a checker change reaches them on merge.
+   This repo's CI runs each PR's checker over the public consumers' `main`
+   first, so a change that would turn one red fails here; the workflow lists
+   them by hand, so a public repo that adopts the action gets a step there.
+   `dev-docs-layout.test.sh` pins each check at its boundary and runs the
+   checker over this repo's own `dev_docs/`.
 
    **The index.** Each record directory can carry an `INDEX.md` that lists its
    records newest first, linked by their `#` titles: decisions split into live

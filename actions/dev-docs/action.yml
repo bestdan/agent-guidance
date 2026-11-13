@@ -1,0 +1,35 @@
+name: dev_docs layout
+description: >-
+  Check a repository's dev_docs/ against agent-guidance's layout convention,
+  using the checker from the ref this action is referenced at.
+inputs:
+  check:
+    description: >-
+      Run the checker over `root`. Set "false" when the repository's own check
+      suite runs it through AGENT_GUIDANCE_DIR, so it runs once.
+    default: "true"
+  root:
+    description: The repository to check.
+    default: ${{ github.workspace }}
+outputs:
+  dir:
+    description: The agent-guidance root the action came from.
+    value: ${{ steps.dir.outputs.dir }}
+runs:
+  using: composite
+  steps:
+    # The runner downloads the whole repository at the referenced ref, so the
+    # plugin root is two levels above this file and carries everything a
+    # consumer's resolver checks for (.claude-plugin/plugin.json, portable.md).
+    - id: dir
+      shell: bash
+      run: |
+        dir="$(cd "$GITHUB_ACTION_PATH/../.." && pwd)"
+        echo "dir=$dir" >>"$GITHUB_OUTPUT"
+        echo "AGENT_GUIDANCE_DIR=$dir" >>"$GITHUB_ENV"
+    - if: inputs.check == 'true'
+      shell: bash
+      env:
+        DIR: ${{ steps.dir.outputs.dir }}
+        ROOT: ${{ inputs.root }}
+      run: python3 "$DIR/scripts/dev-docs-layout.py" "$ROOT"

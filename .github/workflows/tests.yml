@@ -13,6 +13,58 @@ jobs:
       - name: Run test suites
         run: scripts/run-tests.sh
 
+  # The action consumers reference as bestdan/agent-guidance/actions/dev-docs@main,
+  # run here from the PR's own copy.
+  dev-docs-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check this repo
+        id: own
+        uses: ./actions/dev-docs
+      - name: The exported root is a plugin root
+        env:
+          DIR: ${{ steps.own.outputs.dir }}
+        run: |
+          test "$AGENT_GUIDANCE_DIR" = "$DIR"
+          test -f "$DIR/.claude-plugin/plugin.json"
+          test -f "$DIR/portable.md"
+      - name: Make a tree with a violation
+        run: |
+          mkdir -p "$RUNNER_TEMP/bad/dev_docs/decisions"
+          touch "$RUNNER_TEMP/bad/dev_docs/decisions/notes.txt"
+      - name: Check that tree
+        id: bad
+        continue-on-error: true
+        uses: ./actions/dev-docs
+        with:
+          root: ${{ runner.temp }}/bad
+      # The root step set its output, so the failure came from the check step,
+      # which "Check this repo" already showed can run.
+      - name: The violation failed the action
+        env:
+          OUTCOME: ${{ steps.bad.outcome }}
+          BAD_DIR: ${{ steps.bad.outputs.dir }}
+          OWN_DIR: ${{ steps.own.outputs.dir }}
+        run: |
+          test "$OUTCOME" = failure
+          test -n "$BAD_DIR"
+          test "$BAD_DIR" = "$OWN_DIR"
+
+  # Consumers track main, so a stricter checker reaches them on merge. Run the
+  # PR's checker over each public consumer's main first, so a change that would
+  # turn one red fails here instead. A private consumer is left out: the
+  # default token cannot clone it. The list is kept by hand: a public repo that
+  # adopts the action gets a step here.
+  consumers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check bestdan/workflow-skills main
+        run: |
+          git clone --depth 1 https://github.com/bestdan/workflow-skills.git "$RUNNER_TEMP/workflow-skills"
+          python3 scripts/dev-docs-layout.py "$RUNNER_TEMP/workflow-skills"
+
   fmt:
     runs-on: ubuntu-latest
     steps:
