@@ -4,6 +4,7 @@
 
 | Date       | Decision                                                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-13 | [A repo that adopts a plugin-enforced convention can enforce it without the plugin](2026-11-13-adopting-repos-can-enforce-without-the-plugin.md)              |
 | 2026-11-12 | [Consumers run the dev_docs layout checker from main, and this repo checks them before a merge](2026-11-12-consumers-track-the-checker-at-main.md)            |
 | 2026-11-09 | [A directory's index is generated from its records, and the layout check fails while it is stale](2026-11-09-directory-indexes-are-generated-and-checked.md)  |
 | 2026-10-15 | [A public repo names no private repo](2026-10-15-a-public-repo-names-no-private-repo.md)                                                                      |

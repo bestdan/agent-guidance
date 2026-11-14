@@ -348,7 +348,8 @@ docs of its own has no `dev_docs/`.
    plugin sees the same file pass. The `actions/dev-docs` action does not
    settle this on its own: it runs only on GitHub Actions, depends on this
    repo at `@main`, and reports a stale index after the push rather than
-   letting the contributor regenerate it before.
+   letting the contributor regenerate it before. Why:
+   [`2026-11-13-adopting-repos-can-enforce-without-the-plugin.md`](dev_docs/decisions/2026-11-13-adopting-repos-can-enforce-without-the-plugin.md).
 2. **This file**, reached by name from `portable.md`.
 3. **Review.** A reviewer who sees a dated file rewritten, an undated record,
    or a design still present after its change landed says so.
