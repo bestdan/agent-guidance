@@ -12,9 +12,10 @@ the change lands. Nothing here is a description of the system as it is; that
 is a convention's job.
 
 The records in this directory are listed, newest first, in
-[`INDEX.md`](INDEX.md). `scripts/dev-docs-layout.py --write-index` at the
-plugin root generates it from each record's front matter and title, and the
-layout check fails while it is out of date, so it is never edited by hand.
+[`INDEX.md`](INDEX.md). It is generated from each record's front matter and
+title, the comment at its top names the command that regenerates it in this
+repo, and the repo's check fails while it is out of date, so it is never edited
+by hand.
 
 ## When to write one
 

@@ -12,9 +12,10 @@ measurement. It feeds a design or a decision and is cited from there, so the
 design stays short and the evidence stays checkable.
 
 The records in this directory are listed, newest first, in
-[`INDEX.md`](INDEX.md). `scripts/dev-docs-layout.py --write-index` at the
-plugin root generates it from each record's front matter and title, and the
-layout check fails while it is out of date, so it is never edited by hand.
+[`INDEX.md`](INDEX.md). It is generated from each record's front matter and
+title, the comment at its top names the command that regenerates it in this
+repo, and the repo's check fails while it is out of date, so it is never edited
+by hand.
 
 The record is what was found, not what to do about it. A recommendation
 belongs in the design or decision that cites the research, so the evidence

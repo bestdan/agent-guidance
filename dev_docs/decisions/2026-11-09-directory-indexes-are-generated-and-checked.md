@@ -6,6 +6,10 @@ convention: ../../dev_docs_layout.md
 
 # A directory's index is generated from its records, and the layout check fails while it is stale
 
+> [!NOTE] 2026-11-13: an index's header may now name a repo's own generator in
+> place of `scripts/dev-docs-layout.py --write-index`, and check 9 accepts it.
+> See [the decision on enforcing without the plugin](2026-11-13-adopting-repos-can-enforce-without-the-plugin.md).
+
 ## Context
 
 `dev_docs/decisions/` in this repo holds 40 records written over five weeks;
