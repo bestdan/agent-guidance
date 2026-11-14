@@ -558,8 +558,10 @@ check "the failure names the vendored command" ok \
 python3 "$check_py" --write-index "$fx" > /dev/null 2>&1
 check "a write regenerates the table and keeps the vendored header" ok \
   "$(grep -qxF "$vendored" "$idx" && grep -q '2026-09-15-b' "$idx" && echo ok || echo missing)"
-sed -i.bak 's/Edit the records, not this file/Hand edits welcome/' "$idx"
+sed -i.bak 's/Edit the records, not this file/Hand edits welcome/' "$idx" && rm "$idx.bak"
 check "a header changed anywhere but its command fails" 1 "$(verdict "$fx")"
+check "and fails as out of date, not as a stray file" ok \
+  "$(grep -q 'INDEX.md: out of date' "$fx.out" && ! grep -q 'INDEX.md.bak' "$fx.out" && echo ok || echo missing)"
 
 # A README that links its INDEX.md, copied into a repo that has not generated
 # one, fails the link check until --write-index runs. That is what keeps a
