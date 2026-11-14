@@ -13,9 +13,10 @@ to do today; that reader gets a convention, which is the live file the
 decision supports.
 
 The records in this directory are listed, newest first, in
-[`INDEX.md`](INDEX.md). `scripts/dev-docs-layout.py --write-index` at the
-plugin root generates it from each record's front matter and title, and the
-layout check fails while it is out of date, so it is never edited by hand.
+[`INDEX.md`](INDEX.md). It is generated from each record's front matter and
+title, the comment at its top names the command that regenerates it in this
+repo, and the repo's check fails while it is out of date, so it is never edited
+by hand.
 
 The format is an architecture decision record (ADR) in the sense
 [Nygard](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)

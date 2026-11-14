@@ -323,10 +323,32 @@ docs of its own has no `dev_docs/`.
    the form dprint leaves them. A directory with no `INDEX.md` is not checked
    for one, and running `--write-index` once is how a repo opts in.
 
-   The canonical directory READMEs link `INDEX.md` near the top and carry
-   nothing generated, so a repo copies one unchanged. The link fails the link
-   check until that repo runs `--write-index`, which keeps a copied README from
-   pointing at an index that does not exist.
+   The index's header comment names the command that regenerates it, and that
+   line is the one the check lets differ: an existing index keeps the command
+   it names, through both the check and `--write-index`. A repo with its own
+   generator names that one there, and the plugin's check still accepts the
+   file.
+
+   The canonical directory READMEs link `INDEX.md` near the top, carry nothing
+   generated, and name no script, so a repo copies one unchanged. The link
+   fails the link check until that repo generates the index, which keeps a
+   copied README from pointing at an index that does not exist.
+
+   **A repo whose contributors don't all have the plugin.** A generated
+   `INDEX.md`, like any convention whose enforcement lives in this plugin, has
+   to be regenerated and checked by everyone who adds a record. When every
+   contributor runs the plugin, calling the checker from the plugin root, as
+   above, is enough. When some do not, the first record one of them adds
+   leaves the index stale, nothing they run tells them, and they cannot
+   regenerate it. So such a repo carries the generator itself, in its own
+   language and tooling, and its own check suite fails on a stale index. The
+   index's header names that generator, and the plugin's
+   `scripts/dev-docs-layout.py` stays the reference for the output: a vendored
+   generator's index is one check 9 accepts, so a contributor who does run the
+   plugin sees the same file pass. The `actions/dev-docs` action does not
+   settle this on its own: it runs only on GitHub Actions, depends on this
+   repo at `@main`, and reports a stale index after the push rather than
+   letting the contributor regenerate it before.
 2. **This file**, reached by name from `portable.md`.
 3. **Review.** A reviewer who sees a dated file rewritten, an undated record,
    or a design still present after its change landed says so.
