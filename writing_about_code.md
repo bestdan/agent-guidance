@@ -110,6 +110,20 @@ actually misleads is two of them in one sentence — "running the gate on 543 an
 thing twice, and `#` does not distinguish a PR from an issue. A quantity carries its unit, and a comparison carries its
 baseline: "2.1s at p99", not "2.1"; "faster than the loop it replaces", not "faster".
 
+A reference that has a web page is a link. The reader acts on a list of PRs or tickets by opening them, and a bare
+`PRE-1056` makes them copy the key and search for it. Write `[PRE-1056](<tracker URL>)` and
+`[PR #543](https://github.com/<owner>/<repo>/pull/543)`, with the reference as the link text so the line still reads
+well. Build the URL from what you know: the `origin` remote for GitHub, and the tracker site the machine-local guidance
+names. Get the URL from the tool that owns the item when you cannot build it. A guessed host is a broken link that
+looks real, which is worse than no link. A local file is a link too, when the harness can resolve its path. Write a
+file under the working directory relative to it, as `path:line`. Write a file anywhere else, such as another repo or a
+plugin cache, by its full absolute path. `hooks/check.sh`, meant as a path in another repo, does not resolve from here
+and shows as plain text.
+
+This rule says how to write a reference, not whether to write one. A code comment still carries no ticket key and no PR
+number. On a public surface, link only public pages: an internal tracker URL and an absolute local path stay out, as
+"Anything public is permanent" says.
+
 ## A command's output is not a result
 
 Report the outcome of the task you were asked to do. A command run along the way may print state
