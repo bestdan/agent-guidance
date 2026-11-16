@@ -110,6 +110,13 @@ actually misleads is two of them in one sentence — "running the gate on 543 an
 thing twice, and `#` does not distinguish a PR from an issue. A quantity carries its unit, and a comparison carries its
 baseline: "2.1s at p99", not "2.1"; "faster than the loop it replaces", not "faster".
 
+A reference that has a web page is a link. The reader acts on a list of PRs or tickets by opening them, and a bare
+`PRE-1056` makes them copy the key and search for it. Write `[PRE-1056](<tracker URL>)` and
+`[PR #543](https://github.com/<owner>/<repo>/pull/543)`, with the reference as the link text so the line still reads
+well. Build the URL from what you know: the `origin` remote for GitHub, and the tracker site the machine-local guidance
+names. Get the URL from the tool that owns the item when you cannot build it. A guessed host is a broken link that
+looks real, which is worse than no link. A file in the working tree stays `path:line`, which the harness already links.
+
 ## A command's output is not a result
 
 Report the outcome of the task you were asked to do. A command run along the way may print state
