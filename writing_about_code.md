@@ -118,7 +118,8 @@ names. Get the URL from the tool that owns the item when you cannot build it. A 
 looks real, which is worse than no link. A local file is a link too, when the harness can resolve its path. Write a
 file under the working directory relative to it, as `path:line`. Write a file anywhere else, such as another repo or a
 plugin cache, by its full absolute path. `hooks/check.sh`, meant as a path in another repo, does not resolve from here
-and shows as plain text.
+and shows as plain text. Give every path in its full form, relative or absolute as above, each time: "`lint.sh` in the
+same directory" names a file the reader cannot click, however close the previous path was.
 
 This rule says how to write a reference, not whether to write one. A code comment still carries no ticket key and no PR
 number. On a public surface, link only public pages: an internal tracker URL and an absolute local path stay out, as
