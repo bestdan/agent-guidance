@@ -115,10 +115,14 @@ A reference that has a web page is a link. The reader acts on a list of PRs or t
 `[PR #543](https://github.com/<owner>/<repo>/pull/543)`, with the reference as the link text so the line still reads
 well. Build the URL from what you know: the `origin` remote for GitHub, and the tracker site the machine-local guidance
 names. Get the URL from the tool that owns the item when you cannot build it. A guessed host is a broken link that
-looks real, which is worse than no link. A local file is a link too, but the harness links a path only when it resolves
-to a file. Write a file under the working directory relative to it, as `path:line`. Write a file anywhere else, such as
-another repo or a plugin cache, by its full absolute path. `hooks/check.sh`, meant as a path in another repo, resolves
-to nothing from here and is plain text.
+looks real, which is worse than no link. A local file is a link too, when the harness can resolve its path. Write a
+file under the working directory relative to it, as `path:line`. Write a file anywhere else, such as another repo or a
+plugin cache, by its full absolute path. `hooks/check.sh`, meant as a path in another repo, does not resolve from here
+and shows as plain text.
+
+This rule says how to write a reference, not whether to write one. A code comment still carries no ticket key and no PR
+number. On a public surface, link only public pages: an internal tracker URL and an absolute local path stay out, as
+"Anything public is permanent" says.
 
 ## A command's output is not a result
 
