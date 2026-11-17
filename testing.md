@@ -21,18 +21,55 @@ it fail. If you can't, don't write it.
 - **Don't:** a test that builds an object and asserts it is not `None`. No
   plausible edit to the code makes it fail.
 
-### 2. One case per code path
+### 2. Test the states that can happen, and the ones that could start to
+
+A state that a type, a schema or a constructor rules out needs no test: no
+input reaches it, so no bug lives there. A state that is ruled out only by
+what today's callers happen to pass, or by today's data, is different. If a
+caller could start passing it, and the result would be harmful, test the
+guard. The realistic change from rule 1 is then a change to the caller, not to
+this code.
+
+- **Do:** a fee calculation that only today's callers keep from seeing a
+  negative balance gets a test that a negative balance raises, instead of
+  quietly charging a negative fee.
+- **Don't:** a test that a function typed to take an `AccountType` enum
+  rejects the string `"checking"`, or that a non-nullable field set by the
+  constructor is never `None`.
+
+### 3. One case per code path, chosen at its boundaries
 
 Inputs that take the same branch belong in one parametrized or table test, or
 are dropped. The spellings of one flag (`-v`, `--verbose`) are one path, not
-two tests.
+two tests. Where a branch turns on a threshold, the rows sit at the threshold
+and one step either side of it. A value from the middle of a range catches
+nothing that the boundary rows miss.
 
-- **Do:** one table test with a row for each branch: empty input, a single
-  item, the item that trips the limit.
+Tests that build the same setup and differ only in what they assert are one
+test. Merge them into one test with several assertions. Building the setup
+again costs a run for each copy and catches no extra bug.
+
+- **Do:** one table test whose rows are empty input, a single item, the
+  last item under the limit, and the item at the limit. Assert the totals,
+  the status and the audit record against one built ledger.
 - **Don't:** `test_parses_one`, `test_parses_two`, `test_parses_three`, each
-  walking the same loop.
+  walking the same loop, or three tests that each build the same ledger to
+  check one field apiece.
 
-### 3. Don't test the language, the framework or other people's tools
+### 4. Test each behaviour at the lowest level that can see it
+
+The logic is tested where it lives, and the levels above trust that test. A
+test at a higher level covers what only that level can see: that the parts are
+wired together, and that a result passes through them. It does not repeat the
+cases below it. Each repeat costs the higher level's price and catches nothing
+the lower test misses.
+
+- **Do:** a unit table test covers every tax bracket. One API test checks
+  that a request comes back with the bracket the calculator chose.
+- **Don't:** an end-to-end test for every bracket, re-running the unit
+  table through the HTTP stack and the database.
+
+### 5. Don't test the language, the framework or other people's tools
 
 The standard library, the web framework, the validation library and another
 tool's CLI have their own test suites. Test what your code does with them.
@@ -43,7 +80,7 @@ tool's CLI have their own test suites. Test what your code does with them.
   dict lookup returns the value set, or that `git status` exits 0 in a clean
   repo.
 
-### 4. Don't mirror data or prose
+### 6. Don't mirror data or prose
 
 No assertion that a constant equals the literal it was copied from, and no grep
 of a doc or a prompt for a sentence. Such a test fails on every intended edit
@@ -55,18 +92,28 @@ or is generated from the code.
 - **Don't:** `assert TAX_RATE == 0.22`, or `assert "Run the setup script" in
   readme`.
 
-### 5. Expected values come from an independent source
+### 7. Expected values come from an independent source
 
 The expected value comes from a spec, a hand-worked example, a closed-form
 result, or an invariant. It never comes from running the code and pasting what
 it printed: that test passes on the bug it was pasted from.
 
-- **Do:** a loan schedule checked against the amortization formula, or a
-  round trip that asserts `decode(encode(x)) == x`.
-- **Don't:** run the function, copy its output into the assertion, and call it
-  a regression test.
+Numeric and model code often has no independent exact value past one or two
+hand-worked cases. There, assert relationships instead: the result moves in
+the right direction when an input moves, stays monotonic across a range, or
+keeps a known ratio. Keep at least one anchored value alongside them. A
+direction holds for a function that is wrong by a factor of two, and only an
+anchored value catches that.
 
-### 6. Assert on outputs and observable effects, not on mock calls
+- **Do:** a loan schedule checked against the amortization formula, a round
+  trip that asserts `decode(encode(x)) == x`, or a projection test asserting
+  that a higher savings rate never gives a smaller ending balance, next to one
+  hand-worked case.
+- **Don't:** run the function, copy its output into the assertion, and call it
+  a regression test, or pin a projection to `1_284_331.07` that nobody worked
+  out by hand.
+
+### 8. Assert on outputs and observable effects, not on mock calls
 
 Assert what the code returns, writes, or sends. An assertion on the arguments a
 mock received restates the implementation, so it breaks on a refactor and
@@ -78,7 +125,7 @@ the test can read back, over a mock.
 - **Don't:** `mock_db.insert.assert_called_once_with({...})` as the only
   assertion.
 
-### 7. Cost is part of the design
+### 9. Cost is part of the design
 
 - No real sleeps. Inject a clock and advance it.
 - Run a suite's cases in one interpreter or process, not one per case. Spawn
@@ -93,7 +140,7 @@ the test can read back, over a mock.
 - **Don't:** `time.sleep(2)` to let a background job finish, or a shell suite
   that starts a fresh interpreter for each of 200 table rows.
 
-### 8. A bug fix brings one regression test
+### 10. A bug fix brings one regression test
 
 The fix adds one test that fails before the fix and passes after it. It does
 not add variations on that input that take the same path.
@@ -101,7 +148,7 @@ not add variations on that input that take the same path.
 - **Do:** one test reproducing the reported input.
 - **Don't:** five near-copies of it with the numbers nudged.
 
-### 9. A coverage gate is never a reason to write a test
+### 11. A coverage gate is never a reason to write a test
 
 A test written to move a coverage number is written without a bug in mind,
 which breaks rule 1. How a repo handles an uncovered line instead, whether by
@@ -112,30 +159,45 @@ that repo's own coverage policy.
 - **Don't:** call a function with arbitrary arguments and assert it doesn't
   raise, so the line counts as hit.
 
-### 10. Deleting a redundant test is a normal change
+### 12. Deleting a redundant test is a normal change
 
 A test that no longer earns its cost under these rules can be removed. The
 change names the test that still covers the behaviour, or says the behaviour
 needs no test and why. This is not the same as deleting a test to make a
 failing check pass, which stays forbidden.
 
+When pruning, start with the expensive tests: integration and end-to-end
+tests, tests that spawn a process, and tests that build a heavy fixture. They
+are where a duplicate costs the most, and they are the usual place a lower
+test's cases get repeated (rule 4). A redundant test that runs in a
+millisecond is not worth the review time to remove it.
+
 - **Do:** "Removes `test_parse_two`; `test_parse_table` covers the same path
-  with the two-item row."
-- **Don't:** delete a failing test so CI goes green.
+  with the two-item row," or "Drops the eight bracket rows from the API
+  suite; the calculator's unit table covers them, and one API case still
+  checks the wiring."
+- **Don't:** delete a failing test so CI goes green, or spend a pruning pass
+  on fast unit tests while a slow end-to-end suite repeats them.
 
 ## Reviewing tests
 
 For each test a change adds or edits, ask:
 
 1. What realistic bug makes this test fail? (rule 1)
-2. Does another case already take the same path? (rule 2)
-3. Is it testing our code, or the language, the framework or another tool?
-   (rule 3)
-4. Is it asserting that data or prose equals a copy of itself? (rule 4)
-5. Where did the expected value come from: an independent source, or the
-   code's own output? (rule 5)
-6. Does it assert a result or an effect, or only the calls a mock received?
-   (rule 6)
+2. Can the state it sets up happen, or start to happen? (rule 2)
+3. Does another case already take the same path, or build the same setup?
+   Are its inputs at the boundaries? (rule 3)
+4. Is it at the lowest level that can see the behaviour, or does it repeat a
+   lower test? (rule 4)
+5. Is it testing our code, or the language, the framework or another tool?
+   (rule 5)
+6. Is it asserting that data or prose equals a copy of itself? (rule 6)
+7. Where did the expected value come from: an independent source, or the
+   code's own output? (rule 7)
+8. Does it assert a result or an effect, or only the calls a mock received?
+   (rule 8)
 
 A test that fails one of these is a finding. Suggest merging it into an
-existing case or deleting it, and name the test that covers the behaviour.
+existing case, moving it down a level, or deleting it, and name the test that
+covers the behaviour. Look hardest at the expensive tests: a slow test that
+fails a question costs more than a fast one (rule 12).
